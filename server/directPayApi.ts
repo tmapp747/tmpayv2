@@ -18,7 +18,12 @@ export class DirectPayApi {
    */
   async getCsrfToken(): Promise<string> {
     try {
-      const response = await axios.get(`${this.baseUrl}/csrf_token`);
+      console.log(`Fetching CSRF token from ${this.baseUrl}/csrf_token`);
+      const response = await axios.get(`${this.baseUrl}/csrf_token`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
       
       // Extract the session ID from cookies
       const cookies = response.headers['set-cookie'];
@@ -26,17 +31,20 @@ export class DirectPayApi {
         const sessionIdMatch = cookies[0].match(/PHPSESSID=([^;]+)/);
         if (sessionIdMatch && sessionIdMatch[1]) {
           this.sessionId = sessionIdMatch[1];
+          console.log(`Extracted session ID: ${this.sessionId}`);
         }
       }
       
       // Store the CSRF token and return it
-      this.csrfToken = response.data.token;
-      
-      if (!this.csrfToken) {
+      if (response.data && response.data.token) {
+        this.csrfToken = response.data.token;
+        console.log(`Received CSRF token: ${this.csrfToken}`);
+      } else {
+        console.error('CSRF token response:', response.data);
         throw new Error('No CSRF token returned from DirectPay API');
       }
       
-      return this.csrfToken;
+      return this.csrfToken!;
     } catch (error) {
       console.error('Error fetching CSRF token:', error);
       throw new Error('Failed to fetch CSRF token from DirectPay API');
@@ -56,6 +64,8 @@ export class DirectPayApi {
         await this.getCsrfToken();
       }
       
+      console.log(`Logging in to DirectPay as ${username}...`);
+      
       // Set up cookies
       const cookieHeader = this.sessionId ? `PHPSESSID=${this.sessionId}` : '';
       
@@ -66,18 +76,26 @@ export class DirectPayApi {
           headers: {
             'X-CSRF-TOKEN': this.csrfToken || '',
             'Content-Type': 'application/json',
-            'Cookie': cookieHeader
+            'Cookie': cookieHeader,
+            'Accept': 'application/json'
           }
         }
       );
       
+      console.log('Login response:', response.data);
+      
       // Extract the bearer token and store it
       if (response.data && response.data.access_token) {
         this.authToken = response.data.access_token;
+        console.log(`Received access token: ${this.authToken}`);
         
         // Set token expiry (30 minutes from now)
         this.authTokenExpiry = new Date();
         this.authTokenExpiry.setMinutes(this.authTokenExpiry.getMinutes() + 30);
+        console.log(`Token expires at ${this.authTokenExpiry.toISOString()}`);
+      } else {
+        console.error('No access token in response:', response.data);
+        throw new Error('No access token received from DirectPay API');
       }
       
       return response.data;
@@ -107,6 +125,8 @@ export class DirectPayApi {
         throw new Error('No authentication token available');
       }
       
+      console.log(`Generating GCash QR code for amount: ${amount}, webhook: ${webhook}, redirectUrl: ${redirectUrl}`);
+      
       const response = await axios.post(
         `${this.baseUrl}/gcash_cashin`,
         {
@@ -118,10 +138,19 @@ export class DirectPayApi {
           headers: {
             'Authorization': `Bearer ${this.authToken}`,
             'Content-Type': 'application/json',
-            'Cookie': cookieHeader
+            'Cookie': cookieHeader,
+            'Accept': 'application/json'
           }
         }
       );
+      
+      console.log('GCash QR code response:', response.data);
+      
+      // Always log the full response for debugging
+      if (!response.data || !response.data.paymentLink) {
+        console.error('Invalid GCash QR code response:', response.data);
+        throw new Error('Invalid response from DirectPay API');
+      }
       
       return response.data;
     } catch (error) {
@@ -152,16 +181,21 @@ export class DirectPayApi {
         throw new Error('No authentication token available');
       }
       
+      console.log(`Checking payment status for reference: ${reference}`);
+      
       const response = await axios.get(
         `${this.baseUrl}/payment_status/${reference}`,
         {
           headers: {
             'Authorization': `Bearer ${this.authToken}`,
             'Content-Type': 'application/json',
-            'Cookie': cookieHeader
+            'Cookie': cookieHeader,
+            'Accept': 'application/json'
           }
         }
       );
+      
+      console.log('Payment status response:', response.data);
       
       // Map DirectPay statuses to our internal statuses
       const directPayStatus = response.data.status?.toLowerCase();

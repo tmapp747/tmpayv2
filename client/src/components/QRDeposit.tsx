@@ -161,11 +161,18 @@ const QRDeposit = () => {
                 </div>
                 <div className="flex justify-center">
                   {activeQrPayment ? (
-                    <img 
-                      src={activeQrPayment.qrCodeData} 
-                      className="w-44 h-44" 
-                      alt="QR Code" 
-                    />
+                    activeQrPayment.qrCodeData.includes('<iframe') ? (
+                      <div 
+                        className="w-44 h-44"
+                        dangerouslySetInnerHTML={{ __html: activeQrPayment.qrCodeData }}
+                      />
+                    ) : (
+                      <img 
+                        src={activeQrPayment.qrCodeData} 
+                        className="w-44 h-44" 
+                        alt="QR Code" 
+                      />
+                    )
                   ) : (
                     <div className="w-44 h-44 flex items-center justify-center bg-gray-200">
                       <span className="text-gray-500 text-sm">
