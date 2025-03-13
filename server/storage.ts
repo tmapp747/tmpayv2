@@ -3,6 +3,7 @@ import {
   transactions, 
   qrPayments,
   telegramPayments,
+  manualPayments,
   supportedCurrencies,
   type User, 
   type InsertUser,
@@ -12,6 +13,8 @@ import {
   type InsertQrPayment,
   type TelegramPayment,
   type InsertTelegramPayment,
+  type ManualPayment,
+  type InsertManualPayment,
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
@@ -80,6 +83,14 @@ export interface IStorage {
   getTelegramPaymentByReference(reference: string): Promise<TelegramPayment | undefined>;
   updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment>;
   getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined>;
+  
+  // Manual Payment operations
+  createManualPayment(payment: InsertManualPayment): Promise<ManualPayment>;
+  getManualPayment(id: number): Promise<ManualPayment | undefined>;
+  getManualPaymentByReference(reference: string): Promise<ManualPayment | undefined>;
+  updateManualPaymentStatus(id: number, status: string): Promise<ManualPayment>;
+  uploadManualPaymentReceipt(id: number, receiptUrl: string): Promise<ManualPayment>;
+  getActiveManualPaymentByUserId(userId: number): Promise<ManualPayment | undefined>;
 }
 
 // In-memory storage implementation
@@ -88,11 +99,13 @@ export class MemStorage implements IStorage {
   private transactions: Map<number, Transaction>;
   private qrPayments: Map<number, QrPayment>;
   private telegramPayments: Map<number, TelegramPayment>;
+  private manualPayments: Map<number, ManualPayment>;
   
   private userIdCounter: number;
   private transactionIdCounter: number;
   private qrPaymentIdCounter: number;
   private telegramPaymentIdCounter: number;
+  private manualPaymentIdCounter: number;
 
   sessionStore: session.Store;
 

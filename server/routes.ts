@@ -6,6 +6,8 @@ import {
   insertTransactionSchema, 
   insertQrPaymentSchema,
   insertTelegramPaymentSchema,
+  insertManualPaymentSchema,
+  manualPaymentSchema,
   updateBalanceSchema,
   verifyPaymentSchema,
   casinoDepositSchema,
