@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     error,
     isLoading,
   } = useQuery<{ user: User } | null>({
-    queryKey: ["/api/user"],
+    queryKey: ["/api/user/info"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -69,13 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
+      const res = await apiRequest("POST", "/api/auth/login", credentials);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["/api/user"], { user: data.user });
+      queryClient.setQueryData(["/api/user/info"], { user: data.user });
       
       toast({
         title: "Login successful",
@@ -93,13 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/register", userData);
+      const res = await apiRequest("POST", "/api/auth/register", userData);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed");
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["/api/user"], { user: data.user });
+      queryClient.setQueryData(["/api/user/info"], { user: data.user });
       
       toast({
         title: "Registration successful",
@@ -117,13 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
+      const res = await apiRequest("POST", "/api/auth/logout");
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Logout failed");
       return data;
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user"], { user: null });
+      queryClient.setQueryData(["/api/user/info"], { user: null });
       
       toast({
         title: "Logged out",
