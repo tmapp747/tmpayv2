@@ -128,97 +128,225 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // The list of allowed top managers
+  const ALLOWED_TOP_MANAGERS = ['alpha1', 'omega2', 'sigma3'];
+
+  // Helper function to generate a unique access token
+  function generateAccessToken(): string {
+    return randomBytes(32).toString('hex');
+  }
+
   // Auth and user management routes
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { username, password } = req.body;
+      // Validate the request body against the login schema
+      const loginData = loginSchema.parse(req.body);
+      const { username, password } = loginData;
       
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
-      
+      // Find the user in our database
       const user = await storage.getUserByUsername(username);
       
       if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid username or password" 
+        });
       }
+      
+      // Check if the user's casino details are available
+      // If not, we need to fetch them from the casino API
+      if (!user.casinoUsername || !user.topManager) {
+        try {
+          // Fetch user details from casino API
+          const casinoUserDetails = await casino747Api.getUserDetails(username);
+          
+          // Update user with casino details
+          await storage.updateUserHierarchyInfo(
+            user.id,
+            casinoUserDetails.topManager || '',
+            casinoUserDetails.immediateManager || '',
+            casinoUserDetails.userType || 'player'
+          );
+          
+          // Update the local user object with the fetched data
+          user.topManager = casinoUserDetails.topManager;
+          user.immediateManager = casinoUserDetails.immediateManager;
+          user.casinoUserType = casinoUserDetails.userType;
+          user.casinoUsername = casinoUserDetails.username;
+          user.casinoClientId = casinoUserDetails.clientId;
+        } catch (casinoError) {
+          console.error("Error fetching user details from casino API:", casinoError);
+          return res.status(403).json({ 
+            success: false, 
+            message: "Failed to verify user with casino system" 
+          });
+        }
+      }
+      
+      // Check if the user belongs to one of the allowed top managers
+      if (!user.topManager || !ALLOWED_TOP_MANAGERS.includes(user.topManager)) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "User is not authorized to use this system" 
+        });
+      }
+      
+      // Set allowed top managers for this user if not already set
+      if (!user.allowedTopManagers || user.allowedTopManagers.length === 0) {
+        await storage.setUserAllowedTopManagers(user.id, ALLOWED_TOP_MANAGERS);
+      }
+      
+      // Generate a new access token for this session
+      const accessToken = generateAccessToken();
+      await storage.updateUserAccessToken(user.id, accessToken);
+      
+      // Mark the user as authorized
+      await storage.updateUserAuthorizationStatus(user.id, true);
       
       // Don't send the password to the client
       const { password: _, ...userWithoutPassword } = user;
       
       return res.json({ 
-        user: userWithoutPassword,
+        success: true,
+        user: {
+          ...userWithoutPassword,
+          accessToken, // Include the access token in the response
+          isAuthorized: true
+        },
         message: "Login successful" 
       });
     } catch (error) {
       console.error("Login error:", error);
-      return res.status(500).json({ message: "Server error during login" });
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error during login" 
+      });
     }
   });
   
-  // User info and balance
-  app.get("/api/user/info", async (req: Request, res: Response) => {
+  // Authorization middleware
+  async function authMiddleware(req: Request, res: Response, next: Function) {
     try {
-      // In production, this would use the authenticated user ID
-      // For demo purposes, we're using a fixed user
-      const userId = 1;
+      // Get the access token from the authorization header
+      const authHeader = req.headers.authorization;
       
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Authorization token is required" 
+        });
       }
       
+      const token = authHeader.split(' ')[1];
+      
+      // Find the user with this access token
+      const user = await storage.getUserByAccessToken(token);
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid or expired token" 
+        });
+      }
+      
+      // Check if the user is authorized
+      if (!user.isAuthorized) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "User is not authorized to use this system" 
+        });
+      }
+      
+      // Attach the user to the request object
+      (req as any).user = user;
+      
+      // Continue to the next middleware or route handler
+      next();
+    } catch (error) {
+      console.error("Auth middleware error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Server error during authentication" 
+      });
+    }
+  }
+
+  // User info and balance
+  app.get("/api/user/info", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      // Get the authenticated user from the request
+      const user = (req as any).user;
+      
+      // Don't send the password to the client
       const { password: _, ...userWithoutPassword } = user;
       
-      return res.json({ user: userWithoutPassword });
+      return res.json({ 
+        success: true,
+        user: userWithoutPassword 
+      });
     } catch (error) {
       console.error("Get user info error:", error);
-      return res.status(500).json({ message: "Server error while fetching user info" });
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching user info" 
+      });
     }
   });
   
   // Transaction history
-  app.get("/api/transactions", async (req: Request, res: Response) => {
+  app.get("/api/transactions", authMiddleware, async (req: Request, res: Response) => {
     try {
-      // In production, this would use the authenticated user ID
-      // For demo purposes, we're using a fixed user
-      const userId = 1;
+      // Get the authenticated user from the request
+      const user = (req as any).user;
       
-      const transactions = await storage.getTransactionsByUserId(userId);
+      const transactions = await storage.getTransactionsByUserId(user.id);
       
-      return res.json({ transactions });
+      return res.json({ 
+        success: true,
+        transactions 
+      });
     } catch (error) {
       console.error("Get transactions error:", error);
-      return res.status(500).json({ message: "Server error while fetching transactions" });
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching transactions" 
+      });
     }
   });
   
   // Generate QR code for deposit
-  app.post("/api/payments/gcash/generate-qr", async (req: Request, res: Response) => {
+  app.post("/api/payments/gcash/generate-qr", authMiddleware, async (req: Request, res: Response) => {
     try {
-      // Validate request
-      const { amount } = req.body;
+      // Get the authenticated user from the request
+      const user = (req as any).user;
       
-      if (!amount || amount < 100 || amount > 50000) {
+      // Validate request with generateQrCodeSchema
+      const { amount } = generateQrCodeSchema.parse({
+        ...req.body,
+        userId: user.id,
+        username: user.username,
+        casinoId: user.casinoId
+      });
+      
+      if (amount < 100 || amount > 50000) {
         return res.status(400).json({ 
+          success: false,
           message: "Invalid amount. Must be between ₱100 and ₱50,000" 
         });
       }
       
-      // In production, this would use the authenticated user
-      // For demo purposes, we're using a fixed user
-      const userId = 1;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
       // Check if there's already an active QR code
-      const activeQr = await storage.getActiveQrPaymentByUserId(userId);
+      const activeQr = await storage.getActiveQrPaymentByUserId(user.id);
       if (activeQr) {
         return res.status(400).json({
+          success: false,
           message: "You already have an active QR code. Please complete or cancel the existing payment.",
           qrPayment: activeQr
         });
@@ -227,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a transaction record first
       const transactionReference = randomUUID();
       const transaction = await storage.createTransaction({
-        userId,
+        userId: user.id,
         type: "deposit",
         method: "gcash_qr",
         amount: amount.toString(),
@@ -259,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create QR payment record
       const qrPayment = await storage.createQrPayment({
-        userId,
+        userId: user.id,
         transactionId: transaction.id,
         qrCodeData,
         amount: amount.toString(),
@@ -278,28 +406,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Generate QR error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ 
+          success: false,
           message: "Validation error", 
           errors: error.errors 
         });
       }
-      return res.status(500).json({ message: "Server error while generating QR code" });
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while generating QR code" 
+      });
     }
   });
   
   // Endpoint to check payment status
-  app.get("/api/payments/status/:referenceId", async (req: Request, res: Response) => {
+  app.get("/api/payments/status/:referenceId", authMiddleware, async (req: Request, res: Response) => {
     try {
       const { referenceId } = req.params;
       
       if (!referenceId) {
-        return res.status(400).json({ message: "Reference ID is required" });
+        return res.status(400).json({ 
+          success: false,
+          message: "Reference ID is required" 
+        });
       }
+      
+      // Get the authenticated user
+      const authenticatedUser = (req as any).user;
       
       // Find the QR payment by reference
       const qrPayment = await storage.getQrPaymentByReference(referenceId);
       
       if (!qrPayment) {
-        return res.status(404).json({ message: "Payment not found" });
+        return res.status(404).json({ 
+          success: false,
+          message: "Payment not found" 
+        });
+      }
+      
+      // Check if the payment belongs to the authenticated user
+      if (qrPayment.userId !== authenticatedUser.id) {
+        return res.status(403).json({ 
+          success: false,
+          message: "You don't have permission to view this payment" 
+        });
       }
       
       // If payment is already completed or failed, just return the current status
@@ -378,7 +527,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Check payment status error:", error);
-      return res.status(500).json({ message: "Server error while checking payment status" });
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while checking payment status" 
+      });
     }
   });
   
@@ -553,24 +705,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Deposit to casino
-  app.post("/api/casino/deposit", async (req: Request, res: Response) => {
+  app.post("/api/casino/deposit", authMiddleware, async (req: Request, res: Response) => {
     try {
-      const { userId, casinoClientId, casinoUsername, amount, currency, method } = req.body;
+      // Get the authenticated user
+      const authenticatedUser = (req as any).user;
       
-      // Validate using the schema
-      const validatedData = casinoDepositSchema.parse(req.body);
+      // Validate using the schema, ensuring userId matches authenticated user
+      const validatedData = casinoDepositSchema.parse({
+        ...req.body,
+        userId: authenticatedUser.id,
+        casinoClientId: authenticatedUser.casinoClientId || req.body.casinoClientId,
+        casinoUsername: authenticatedUser.casinoUsername || req.body.casinoUsername
+      });
       
-      // Get user from our database
-      const user = await storage.getUser(validatedData.userId);
-      if (!user) {
-        return res.status(404).json({ 
+      // Check if the casino username belongs to the authenticated user
+      if (validatedData.casinoUsername !== authenticatedUser.casinoUsername) {
+        return res.status(403).json({ 
           success: false, 
-          message: "User not found" 
+          message: "You can only deposit to your own casino account" 
         });
       }
       
       // Check if user has enough balance
-      const userBalance = parseFloat(user.balance.toString());
+      const userBalance = parseFloat(authenticatedUser.balance.toString());
       if (userBalance < validatedData.amount) {
         return res.status(400).json({ 
           success: false, 
@@ -581,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a transaction record
       const transactionReference = randomUUID();
       const transaction = await storage.createTransaction({
-        userId: validatedData.userId,
+        userId: authenticatedUser.id,
         type: "casino_deposit",
         method: validatedData.method,
         amount: validatedData.amount.toString(),
@@ -594,14 +751,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // Transfer the funds to the casino
+        // Transfer the funds to the casino using the user's access token
         const transferResult = await casino747Api.transferFunds(
           validatedData.amount,
           validatedData.casinoClientId,
           validatedData.casinoUsername,
           validatedData.currency,
           validatedData.casinoUsername, // From the same user (e-wallet to casino)
-          `Deposit from e-wallet - ${transactionReference}`
+          `Deposit from e-wallet - ${transactionReference}`,
+          authenticatedUser.accessToken // Pass the user's access token for authorization
         );
         
         // Update transaction record
@@ -612,10 +770,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Deduct from user's e-wallet balance
-        const updatedUser = await storage.updateUserBalance(user.id, -validatedData.amount);
+        const updatedUser = await storage.updateUserBalance(authenticatedUser.id, -validatedData.amount);
         
         // Update user's casino balance
-        await storage.updateUserCasinoBalance(user.id, validatedData.amount);
+        await storage.updateUserCasinoBalance(authenticatedUser.id, validatedData.amount);
         
         return res.json({
           success: true,
