@@ -504,13 +504,18 @@ export class MemStorage implements IStorage {
   }
 
   async getTransactionsByUserId(userId: number): Promise<Transaction[]> {
-    return Array.from(this.transactions.values())
-      .filter(tx => tx.userId === userId)
-      .sort((a, b) => {
-        const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
-        const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
-        return dateB - dateA;
-      });
+    // If userId is 0, return all transactions (special case for admin)
+    const transactions = Array.from(this.transactions.values());
+    
+    const filteredTransactions = userId === 0 
+      ? transactions 
+      : transactions.filter(tx => tx.userId === userId);
+
+    return filteredTransactions.sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
+      return dateB - dateA;
+    });
   }
 
   async createTransaction(txData: InsertTransaction): Promise<Transaction> {

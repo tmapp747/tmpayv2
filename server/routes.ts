@@ -1551,6 +1551,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Admin endpoint to list all transactions
+  app.get("/api/admin/transactions", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      // Get all transactions
+      const allTransactions = await storage.getTransactionsByUserId(0); // 0 is a placeholder to get all
+      
+      // Sort by created date (newest first)
+      allTransactions.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      return res.json({
+        success: true,
+        transactions: allTransactions,
+        count: allTransactions.length
+      });
+    } catch (error) {
+      console.error("Get all transactions error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error retrieving transactions"
+      });
+    }
+  });
+  
   // Agent-only endpoint to view downlines
   app.get("/api/agent/downlines", roleAuthMiddleware(['admin', 'agent']), async (req: Request, res: Response) => {
     try {
