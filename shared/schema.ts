@@ -102,6 +102,23 @@ export const telegramPayments = pgTable("telegram_payments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Manual Payment schema (for receipt uploads)
+export const manualPayments = pgTable("manual_payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  transactionId: integer("transaction_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: text("payment_method").notNull(), // 'gcash', 'paymaya', 'bank_transfer', 'remittance', 'other'
+  notes: text("notes"),
+  proofImageUrl: text("proof_image_url").notNull(), // URL to uploaded receipt image
+  reference: text("reference").notNull(), // Generated unique reference
+  adminId: integer("admin_id"), // ID of admin who approved/rejected
+  adminNotes: text("admin_notes"), // Notes from admin
+  status: text("status").notNull().default("pending"), // 'pending', 'approved', 'rejected'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
   id: true,
   createdAt: true,
@@ -109,6 +126,12 @@ export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
 });
 
 export const insertTelegramPaymentSchema = createInsertSchema(telegramPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertManualPaymentSchema = createInsertSchema(manualPayments).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -221,6 +244,9 @@ export type InsertQrPayment = z.infer<typeof insertQrPaymentSchema>;
 export type TelegramPayment = typeof telegramPayments.$inferSelect;
 export type InsertTelegramPayment = z.infer<typeof insertTelegramPaymentSchema>;
 
+export type ManualPayment = typeof manualPayments.$inferSelect;
+export type InsertManualPayment = z.infer<typeof insertManualPaymentSchema>;
+
 // Add schema for Telegram payment requests
 export const generateTelegramPaymentSchema = z.object({
   userId: z.number(),
@@ -228,6 +254,14 @@ export const generateTelegramPaymentSchema = z.object({
   amount: z.number().min(10).max(1000000),
   casinoId: z.string(),
   currency: z.string().default("PHPT")
+});
+
+// Add schema for manual payment requests
+export const manualPaymentSchema = z.object({
+  amount: z.number().min(100).max(100000),
+  paymentMethod: z.enum(['gcash', 'paymaya', 'bank_transfer', 'remittance', 'other']),
+  notes: z.string().optional(),
+  reference: z.string()
 });
 
 export type GenerateQrCodeRequest = z.infer<typeof generateQrCodeSchema>;

@@ -63,9 +63,9 @@ export default function AdminDashboard() {
           .filter((user: User) => user.topManager)
           .map((user: User) => user.topManager as string);
         
-        // Deduplicate the list and ensure string[] type
-        const uniqueManagers = Array.from(new Set(managersList)) as string[];
-        setTopManagers(uniqueManagers);
+        // Deduplicate the list and use safe setter
+        const uniqueManagers = Array.from(new Set(managersList));
+        safeSetTopManagers(uniqueManagers);
 
         // Fetch transactions
         const transactionsResponse = await fetch('/api/admin/transactions');
