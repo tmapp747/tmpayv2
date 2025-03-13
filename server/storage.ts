@@ -48,7 +48,7 @@ export interface IStorage {
   getUserByCasinoAuthToken(token: string): Promise<User | undefined>;
   updateUserCasinoAuthToken(id: number, token: string, expiryDate: Date): Promise<User>;
   getUserByTopManager(topManager: string): Promise<User | undefined>;
-  getTopManagerForUser(userId: number): Promise<string | undefined>;
+  getTopManagerForUser(userId: number): Promise<string | null | undefined>;
   
   // Multi-currency operations
   getUserCurrencyBalance(id: number, currency: Currency): Promise<string>;
@@ -375,12 +375,12 @@ export class MemStorage implements IStorage {
     );
   }
   
-  async getTopManagerForUser(userId: number): Promise<string | undefined> {
+  async getTopManagerForUser(userId: number): Promise<string | null | undefined> {
     const user = await this.getUser(userId);
     if (!user) return undefined;
     
-    // Convert null to undefined for consistent return type
-    return user.topManager || undefined;
+    // Return the topManager as-is, which could be a string or null
+    return user.topManager;
   }
   
   // Multi-currency operations
