@@ -242,6 +242,45 @@ export class Casino747Api {
       throw new Error('Failed to send message using 747 Casino API');
     }
   }
+  
+  /**
+   * Get a user's hierarchy from the 747 API
+   * @param username The username to lookup
+   * @param isAgent Whether the user is an agent (true) or player (false)
+   * @returns The hierarchy details including top managers and immediate managers
+   */
+  async getUserHierarchy(username: string, isAgent: boolean): Promise<{
+    hierarchy: Array<{
+      id: number;
+      clientId: number;
+      username: string;
+      parentClientId: number | null;
+    }>;
+    user: {
+      id: number;
+      clientId: number;
+      username: string;
+      parentClientId: number;
+    };
+    status: number;
+    message: string;
+  }> {
+    try {
+      const response = await axios.get(
+        `${this.baseUrl}/Default/GetHierarchy?username=${encodeURIComponent(username)}&isAgent=${isAgent}`,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching hierarchy for ${username}:`, error);
+      throw new Error('Failed to fetch user hierarchy from 747 Casino API');
+    }
+  }
 
   /**
    * Get the auth token for a specific user
