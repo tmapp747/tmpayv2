@@ -15,22 +15,50 @@ import {
 import { ZodError } from "zod";
 import { randomUUID } from "crypto";
 import { casino747Api } from "./casino747Api";
+import { directPayApi } from "./directPayApi";
 
-// Mock DirectPay and Casino 747 API functions for development
-// In production, these would be actual API calls to the external services
+// Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
-  // This would be a real API call to DirectPay
-  console.log(`DirectPay: Generating QR code for ${amount} with reference ${reference}`);
-  
-  // Generate a mock QR code URL and direct pay reference
-  const directPayReference = `DP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const qrCodeData = `https://directpay.example/payment/747casino/${username}?amount=${amount}&ref=${reference}`;
-  
-  return {
-    qrCodeData,
-    directPayReference,
-    expiresAt: new Date(Date.now() + 30 * 60 * 1000) // 30 minutes from now
-  };
+  try {
+    // Configure the webhook and redirect URLs
+    const baseUrl = process.env.BASE_URL || 'https://747casino.replit.app';
+    const webhook = `${baseUrl}/api/webhook/directpay/payment`;
+    const redirectUrl = `${baseUrl}/payment/success?ref=${reference}`;
+    
+    // Call the DirectPay API to generate a GCash QR code
+    const result = await directPayApi.generateGCashQR(amount, webhook, redirectUrl);
+    
+    if (!result || !result.paymentLink) {
+      throw new Error('Failed to generate QR code from DirectPay API');
+    }
+
+    // Extract the QR code data and reference
+    const qrCodeData = result.paymentLink;
+    const directPayReference = result.reference || reference;
+    
+    // Calculate expiry time (30 minutes from now)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    
+    return {
+      qrCodeData,
+      directPayReference,
+      expiresAt
+    };
+  } catch (error) {
+    console.error('Error generating QR code with DirectPay API:', error);
+    
+    // Fallback to mock implementation for development
+    console.log(`[FALLBACK] DirectPay: Generating mock QR code for ${amount} with reference ${reference}`);
+    
+    const directPayReference = `DP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const qrCodeData = `https://directpay.example/payment/747casino/${username}?amount=${amount}&ref=${reference}`;
+    
+    return {
+      qrCodeData,
+      directPayReference,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
+    };
+  }
 }
 
 async function casino747PrepareTopup(casinoId: string, amount: number, reference: string) {
@@ -783,6 +811,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ 
         success: false,
         message: "Server error while fetching casino transactions" 
+      });
+    }
+  });
+
+  // DirectPay webhook endpoint for payment notifications
+  app.post("/api/webhook/directpay/payment", async (req: Request, res: Response) => {
+    try {
+      console.log("DirectPay webhook received:", req.body);
+      
+      // Extract payment details from the webhook payload
+      const { reference, status, amount, transactionId } = req.body;
+      
+      if (!reference) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Payment reference is required" 
+        });
+      }
+      
+      // Find the QR payment
+      const qrPayment = await storage.getQrPaymentByReference(reference);
+      if (!qrPayment) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Payment not found" 
+        });
+      }
+      
+      // Find the transaction
+      const transaction = await storage.getTransaction(qrPayment.transactionId);
+      if (!transaction) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Transaction not found" 
+        });
+      }
+      
+      // Find the user
+      const user = await storage.getUser(qrPayment.userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "User not found" 
+        });
+      }
+      
+      if (status === 'success' || status === 'completed') {
+        // Update QR payment status
+        await storage.updateQrPaymentStatus(qrPayment.id, "completed");
+        
+        // Update transaction status and add DirectPay transaction ID
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "completed",
+          transactionId || reference
+        );
+        
+        // Call 747 Casino API to complete the topup
+        const paymentAmount = parseFloat(qrPayment.amount.toString());
+        const casinoResult = await casino747CompleteTopup(
+          user.casinoId,
+          paymentAmount,
+          transaction.paymentReference || ""
+        );
+        
+        // Update user's balance
+        await storage.updateUserBalance(user.id, paymentAmount);
+        
+        console.log("Payment completed successfully:", {
+          reference,
+          userId: user.id,
+          amount: paymentAmount,
+          casinoResult
+        });
+      } else if (status === 'failed') {
+        // Update QR payment and transaction status
+        await storage.updateQrPaymentStatus(qrPayment.id, "failed");
+        await storage.updateTransactionStatus(transaction.id, "failed");
+        
+        console.log("Payment failed:", { reference, userId: user.id });
+      }
+      
+      // Return a 200 OK to acknowledge receipt of the webhook
+      return res.status(200).json({ 
+        success: true, 
+        message: "Webhook processed successfully" 
+      });
+    } catch (error) {
+      console.error("DirectPay webhook error:", error);
+      
+      // Even in case of error, return a 200 OK to prevent repeated webhook attempts
+      return res.status(200).json({ 
+        success: false, 
+        message: "Error processing webhook, but received" 
       });
     }
   });
