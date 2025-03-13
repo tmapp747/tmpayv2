@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { CasinoElements3D } from "@/components/CasinoElements3D";
 
 // UI components
 import { Button } from "@/components/ui/button";
@@ -222,7 +223,11 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] flex items-center justify-center">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] flex items-center justify-center relative overflow-hidden">
+      {/* Add 3D Casino Elements in the background */}
+      <div className="opacity-30 dark:opacity-20">
+        <CasinoElements3D />
+      </div>
       {/* Header - with back button */}
       <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-10">
         <Link href="/">
@@ -338,12 +343,12 @@ export default function AuthPage() {
                       
                       <Button 
                         type="submit" 
-                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm" 
+                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
                         disabled={verifyUsernameMutation.isPending}
                       >
                         {verifyUsernameMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Verifying...
                           </>
                         ) : (
@@ -452,12 +457,12 @@ export default function AuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm" 
+                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
                         disabled={loginMutation.isPending}
                       >
                         {loginMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Logging in...
                           </>
                         ) : (
@@ -594,12 +599,12 @@ export default function AuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-green-600 hover:bg-green-700 text-white shadow-lg text-xs sm:text-sm" 
+                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-green-600 hover:bg-green-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
                         disabled={registerMutation.isPending}
                       >
                         {registerMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Creating Account...
                           </>
                         ) : (
