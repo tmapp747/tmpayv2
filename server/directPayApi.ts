@@ -64,7 +64,7 @@ export class DirectPayApi {
         { username, password },
         {
           headers: {
-            'X-CSRF-TOKEN': this.csrfToken,
+            'X-CSRF-TOKEN': this.csrfToken || '',
             'Content-Type': 'application/json',
             'Cookie': cookieHeader
           }
@@ -102,6 +102,11 @@ export class DirectPayApi {
       // Set up cookies
       const cookieHeader = this.sessionId ? `PHPSESSID=${this.sessionId}` : '';
       
+      // Make sure we have an auth token
+      if (!this.authToken) {
+        throw new Error('No authentication token available');
+      }
+      
       const response = await axios.post(
         `${this.baseUrl}/gcash_cashin`,
         {
@@ -134,9 +139,12 @@ export class DirectPayApi {
     
     // If token is expired or not set, get a new one
     if (!this.authToken || !this.authTokenExpiry || now >= this.authTokenExpiry) {
-      // For now, we use hardcoded credentials
-      // In production, you would store these securely
-      await this.login('colorway', 'cassinoroyale@ngInaM0!2@');
+      // Get credentials from environment variables
+      const username = process.env.DIRECTPAY_USERNAME || 'colorway';
+      const password = process.env.DIRECTPAY_PASSWORD || 'cassinoroyale@ngInaM0!2@';
+      
+      console.log(`Authenticating with DirectPay as ${username}...`);
+      await this.login(username, password);
     }
   }
 }
