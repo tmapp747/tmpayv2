@@ -35,7 +35,7 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     console.log(`- Webhook: ${webhook}`);
     console.log(`- Redirect URL: ${redirectUrl}`);
     
-    // Call the DirectPay API to generate a GCash QR code
+    // Call the DirectPay API to generate a GCash QR code with iframe
     const result = await directPayApi.generateGCashQR(amount, webhook, redirectUrl);
     
     console.log('DirectPay API Response:', JSON.stringify(result, null, 2));
@@ -45,36 +45,16 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
       throw new Error('No response received from DirectPay API');
     }
     
-    // The paymentLink contains the QR code data or iframe URL
-    let qrCodeData;
-    let directPayReference;
-    
-    if (result.iframe) {
-      // Iframe response format (preferred for better user experience)
-      qrCodeData = result.iframe;
-      directPayReference = result.id || reference;
-      console.log(`Using iframe from API response for embedded payment form`);
-    } else if (result.paymentLink) {
-      // Standard response with payment link
-      qrCodeData = result.paymentLink;
-      directPayReference = result.reference || reference;
-      console.log(`Using paymentLink from API response: ${qrCodeData}`);
-    } else if (result.qrCodeUrl) {
-      // Alternative response format with QR code URL
-      qrCodeData = result.qrCodeUrl;
-      directPayReference = result.transactionId || reference;
-      console.log(`Using qrCodeUrl from API response: ${qrCodeData}`);
-    } else {
-      // If we can't find a standard format, log the entire response and throw an error
-      console.error('Unexpected DirectPay API response format:', result);
-      throw new Error('Invalid response format from DirectPay API');
-    }
+    // The result contains the payment data (could be iframe HTML or QR code URL)
+    const qrCodeData = result.qrCodeData;
+    const directPayReference = result.reference || reference;
     
     // Calculate expiry time (30 minutes from now)
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     
-    // Log successful payment form/QR code generation
-    const paymentType = result.iframe ? 'iframe payment form' : 'QR code';
+    // Determine payment type based on the content
+    const isIframe = qrCodeData && qrCodeData.includes('<iframe');
+    const paymentType = isIframe ? 'iframe payment form' : 'QR code';
     console.log(`Successfully generated ${paymentType} with DirectPay reference: ${directPayReference}`);
     
     return {
@@ -85,15 +65,9 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
   } catch (error) {
     console.error('Error generating payment form/QR code with DirectPay API:', error);
     
-    // Since we're now using the real API, we'll still provide a fallback for development
-    // but make it clear this is a fallback mechanism
-    console.log(`[FALLBACK] DirectPay: Generating mock payment form/QR code for ${amount} with reference ${reference}`);
-    
-    const directPayReference = `DP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    
-    // Instead of a fake URL, we'll use a real QR code generator service
-    // This at least gives a real QR code for testing purposes
-    const qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=747Casino:${username}:${amount}:${reference}`;
+    // Since we're in production, we don't want to use fallbacks. Instead, throw an error
+    // that will be handled by the calling code.
+    throw new Error('Failed to generate payment form with DirectPay API');
     
     return {
       qrCodeData,
