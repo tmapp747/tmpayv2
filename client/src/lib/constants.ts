@@ -1,13 +1,13 @@
 // API Endpoints
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/api/auth/login',
-    LOGOUT: '/api/auth/logout',
-    REGISTER: '/api/auth/register',
+    LOGIN: '/api/login',
+    LOGOUT: '/api/logout',
+    REGISTER: '/api/register',
     VERIFY_USERNAME: '/api/auth/verify-username',
   },
   USER: {
-    INFO: '/api/user/info',
+    INFO: '/api/user',
   },
   TRANSACTIONS: {
     LIST: '/api/transactions',
