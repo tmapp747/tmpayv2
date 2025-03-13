@@ -19,20 +19,11 @@ export default function LandingPage() {
   }, []);
   
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] relative overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
       {/* Background image with casino-themed elements */}
       <div className="absolute inset-0 z-0">
-        {/* SVG pattern background with low opacity */}
-        <div className="absolute inset-0 opacity-5 dark:opacity-10">
-          <img 
-            src={casinoBg} 
-            alt="Casino Pattern" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        
-        {/* Clean solid background with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-100 dark:from-gray-900 dark:to-gray-950"></div>
+        {/* Clean solid background with subtle gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900"></div>
       </div>
       
       {/* Header - fully responsive with mobile adjustments */}
