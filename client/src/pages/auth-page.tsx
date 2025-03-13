@@ -223,11 +223,16 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center relative overflow-hidden">
-      {/* Background image with casino-themed elements */}
+    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center relative overflow-hidden pattern-overlay">
+      {/* Background with glassmorphism elements */}
       <div className="absolute inset-0 z-0">
-        {/* Clean solid background with subtle gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900"></div>
+        {/* Gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-black"></div>
+        
+        {/* Glass shapes */}
+        <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-blue-400/10 dark:bg-blue-600/5 backdrop-blur-xl"></div>
+        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-blue-300/10 dark:bg-blue-500/5 backdrop-blur-xl"></div>
+        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-xl bg-blue-200/10 dark:bg-blue-400/5 backdrop-blur-lg"></div>
       </div>
       
       {/* Header - with back button */}
