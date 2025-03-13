@@ -1,0 +1,274 @@
+Integration of the 747 API with an E-Wallet WebApp
+
+The integration of the 747 CasinoBridge API into an e-wallet web app involves multiple processes including user authentication, balance management, deposits, withdrawals, and transaction tracking. Below is a comprehensive guide to integrating the API effectively.
+
+⸻
+
+1. Overview of 747 API Integration
+
+Key API Endpoints
+
+The 747 API provides multiple functionalities for managing user transactions, including:
+	•	Account Balances: /account/get-balances
+	•	Cryptocurrency Deposit Address Generation: /payments/generate-cryptapi-address
+	•	Fiat and Crypto Withdrawals: /payments/withdraw
+	•	Fund Transfers: /Default/Transfer
+	•	Transaction History & Statistics: /statistics/transactions-by-client-username
+	•	User Authentication & Hierarchy: /Default/GetHierarchy
+	•	Messaging & Notifications: /Default/SendMessage
+
+⸻
+
+2. Integration Flow & Logic
+
+The e-wallet system will interact with the 747 API for the following operations:
+
+Step 1: User Authentication & Account Hierarchy Retrieval
+	•	Authenticate users by fetching their details via:
+
+GET /Default/GetHierarchy?username={username}&isAgent={true/false}
+
+
+	•	Store and map their clientId, immediateManager, and topManager.
+
+Step 2: Fetch User Balance
+	•	Call:
+
+POST /account/get-balances
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "platform": 1,
+  "clientId": {CLIENT_ID},
+  "username": "{USERNAME}"
+}
+
+Response:
+
+{
+  "status": 1,
+  "message": "Success",
+  "balances": [
+    {
+      "balanceTypeId": "main",
+      "currencyId": "USD",
+      "balance": 500.75
+    }
+  ]
+}
+
+
+
+Step 3: Deposits (Crypto & Fiat)
+
+For Crypto Deposits:
+	•	Generate a crypto deposit address:
+
+POST /payments/generate-cryptapi-address
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "platform": 1,
+  "clientId": {CLIENT_ID},
+  "ticker": "USDT"
+}
+
+Response:
+
+{
+  "status": 1,
+  "message": "Success",
+  "address": "0x123456789abcdef"
+}
+
+
+	•	Display the generated crypto wallet address to the user for deposits.
+
+For Fiat Deposits:
+	•	Validate available fiat deposit providers:
+
+POST /payments/validation/providers
+
+
+	•	Initiate a fiat deposit transaction based on user input.
+
+Step 4: Withdrawals
+	•	Validate if the user can withdraw:
+
+GET /statistics/transactions-by-client-username
+
+
+	•	Perform a withdrawal:
+
+POST /payments/withdraw
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "platform": 1,
+  "amount": 50.00,
+  "currency": 1,
+  "destinationCurrency": 1,
+  "destinationNetwork": "ETH",
+  "address": "0x123456789abcdef",
+  "uniqueId": 12345678,
+  "clientId": {CLIENT_ID}
+}
+
+Response:
+
+{
+  "status": 1,
+  "message": "Withdrawal successful"
+}
+
+
+
+Step 5: Fund Transfers (Between Users)
+
+To transfer funds from one user to another within the casino:
+	•	Use:
+
+POST /Default/Transfer
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "platform": 1,
+  "amount": 100,
+  "toAgent": false,
+  "currency": "USD",
+  "clientId": {TO_CLIENT_ID},
+  "username": "{TO_USERNAME}",
+  "comment": "Transfer for gaming"
+}
+
+
+
+Step 6: Fetch Transaction History
+	•	Retrieve user betting, deposits, and withdrawals via:
+
+POST /statistics/transactions-by-client-username
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "currency": "USD",
+  "username": "{USERNAME}"
+}
+
+Response:
+
+{
+  "status": 1,
+  "message": "Success",
+  "statisticsForThePast7Days": {
+    "totalDeposit": 200.00,
+    "totalBet": 50.00,
+    "totalWithdraw": 20.00,
+    "canWithdraw": true,
+    "amountToBet": 30.00
+  }
+}
+
+
+
+Step 7: Sending User Notifications
+	•	Notify users via in-app messaging:
+
+POST /Default/SendMessage
+
+Request:
+
+{
+  "authToken": "{AUTH_TOKEN}",
+  "platform": 1,
+  "username": "{USERNAME}",
+  "subject": "Your Deposit was Successful",
+  "message": "Your deposit of $100 has been credited to your account."
+}
+
+
+
+⸻
+
+3. Security Considerations
+	1.	API Authentication: Use an authToken for all transactions.
+	2.	Rate Limiting: Implement request throttling to prevent abuse.
+	3.	Data Encryption: Encrypt sensitive user data (passwords, transactions).
+	4.	Error Handling: Handle API failures with appropriate messages.
+
+⸻
+
+4. Final Integration Architecture
+	1.	Frontend (React/Vue/Angular)
+	•	Displays balance, transactions, deposit & withdrawal UI.
+	•	Calls API endpoints via REST.
+	2.	Backend (Node.js, Python, PHP)
+	•	Handles authentication, transactions, and balance calculations.
+	•	Stores user information securely.
+	3.	Database (MySQL, PostgreSQL, MongoDB)
+	•	Stores user profiles, transaction logs, and balances.
+	4.	747 API
+	•	Connects to the casino system for payments and user management.
+
+⸻
+
+5. Example Code Snippets
+
+Fetching Balance (Node.js)
+
+const axios = require("axios");
+
+async function getBalance(authToken, clientId, username) {
+    const response = await axios.post("https://api.747casino.com/account/get-balances", {
+        authToken,
+        platform: 1,
+        clientId,
+        username
+    });
+    return response.data;
+}
+
+Processing Withdrawals (Python)
+
+import requests
+
+def withdraw_funds(auth_token, client_id, amount, address):
+    url = "https://api.747casino.com/payments/withdraw"
+    payload = {
+        "authToken": auth_token,
+        "platform": 1,
+        "amount": amount,
+        "currency": 1,
+        "destinationCurrency": 1,
+        "destinationNetwork": "ETH",
+        "address": address,
+        "uniqueId": 12345678,
+        "clientId": client_id
+    }
+    response = requests.post(url, json=payload)
+    return response.json()
+
+
+
+⸻
+
+6. Conclusion
+
+Integrating the 747 Casino API into an e-wallet web app involves:
+✔ Authenticating users
+✔ Managing balances
+✔ Handling deposits & withdrawals
+✔ Enabling fund transfers
+✔ Fetching transaction history
+✔ Sending notifications
+
+By following the structured API calls and best practices, your e-wallet can efficiently interact with the 747 Casino system while maintaining security and reliability.

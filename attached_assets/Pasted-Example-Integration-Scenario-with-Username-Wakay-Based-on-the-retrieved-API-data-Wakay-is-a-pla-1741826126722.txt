@@ -1,0 +1,117 @@
+Example Integration Scenario with Username: Wakay
+
+Based on the retrieved API data, “Wakay” is a player under the “Marcthepogi” account, with “platalyn@gmail.com” as their immediate manager.
+
+Scenario 1: Fetching User Balance
+
+API Request:
+
+{
+  "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+  "platform": 1,
+  "clientId": 329777805,
+  "username": "Wakay"
+}
+
+API Response:
+
+{
+  "status": 1,
+  "message": "Success",
+  "balances": [
+    {
+      "balanceTypeId": "main",
+      "currencyId": "USD",
+      "balance": 0.0
+    }
+  ]
+}
+
+Outcome: Wakay currently has $0.00 in their balance.
+
+⸻
+
+Scenario 2: Depositing Funds for Wakay
+
+API Request to Generate Crypto Deposit Address:
+
+{
+  "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+  "platform": 1,
+  "clientId": 329777805,
+  "ticker": "USDT"
+}
+
+API Response:
+
+{
+  "status": 1,
+  "message": "Success",
+  "address": "0xabc123456789def"
+}
+
+Outcome: Wakay is provided with the deposit address “0xabc123456789def” for USDT deposits.
+
+⸻
+
+Scenario 3: Withdrawing Funds for Wakay
+
+Since Wakay has no available balance and cannot withdraw ("canWithdraw": false), the system should reject any withdrawal request.
+
+If Wakay had funds, the API Request for withdrawal would be:
+
+{
+  "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+  "platform": 1,
+  "amount": 50.00,
+  "currency": 1,
+  "destinationCurrency": 1,
+  "destinationNetwork": "ETH",
+  "address": "0x123456789abcdef",
+  "uniqueId": 12345678,
+  "clientId": 329777805
+}
+
+But since withdrawal is not allowed, the response would be:
+
+{
+  "status": 0,
+  "message": "Withdrawal not allowed. Insufficient funds or wagering requirements not met."
+}
+
+
+
+⸻
+
+Scenario 4: Sending a Message to Wakay
+
+Since Wakay is a player, direct messaging is not allowed. Instead, the message will be sent to “platalyn@gmail.com” (their immediate manager).
+
+API Request (Message sent to Manager):
+
+{
+  "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+  "platform": 1,
+  "username": "platalyn@gmail.com",
+  "subject": "Notification for Player Wakay",
+  "message": "Dear Manager, please inform Wakay that they need to check their account for important updates."
+}
+
+Outcome:
+	•	platalyn@gmail.com will receive the message and is responsible for informing Wakay.
+
+⸻
+
+Final Summary of Workflow for “Wakay”
+
+Action	API Used	Outcome
+Get Balance	/account/get-balances	$0.00 balance
+Deposit Funds	/payments/generate-cryptapi-address	USDT Address generated
+Withdrawal Request	/payments/withdraw	Rejected (Insufficient funds)
+Message to Wakay	/Default/SendMessage (Sent to Manager)	Message sent to platalyn@gmail.com
+
+
+
+⸻
+
+This ensures proper fund management, compliance, and messaging hierarchy for non-agent players like Wakay.

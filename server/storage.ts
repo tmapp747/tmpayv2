@@ -18,12 +18,21 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(id: number, amount: number): Promise<User>;
   updateUserPendingBalance(id: number, amount: number): Promise<User>;
+  // Casino user operations
+  updateUserCasinoDetails(id: number, casinoDetails: Partial<User>): Promise<User>;
+  updateUserCasinoBalance(id: number, amount: number): Promise<User>;
+  getUserByCasinoUsername(casinoUsername: string): Promise<User | undefined>;
+  getUserByCasinoClientId(casinoClientId: number): Promise<User | undefined>;
   
   // Transaction operations
   getTransaction(id: number): Promise<Transaction | undefined>;
   getTransactionsByUserId(userId: number): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransactionStatus(id: number, status: string, reference?: string): Promise<Transaction>;
+  // Casino transaction operations
+  getTransactionByUniqueId(uniqueId: string): Promise<Transaction | undefined>;
+  getTransactionByCasinoReference(casinoReference: string): Promise<Transaction | undefined>;
+  getCasinoTransactions(userId: number, type?: string): Promise<Transaction[]>;
   
   // QR Payment operations
   createQrPayment(qrPayment: InsertQrPayment): Promise<QrPayment>;

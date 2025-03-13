@@ -1,0 +1,210 @@
+Here are the actual cURL commands needed for each API interaction using the 747 Casino API.
+
+⸻
+
+1. Fetch User Details (to determine auth token)
+
+Before making any requests, retrieve the user details to determine the topManager and immediateManager.
+
+Request:
+
+curl -X GET "https://tmpay747.azurewebsites.net/api/Bridge/get-user/wakay" -H "Content-Type: application/json"
+
+Response Example:
+
+{
+  "clientId": 329777805,
+  "isAgent": false,
+  "userType": "Player",
+  "username": "Wakay",
+  "topManager": "Marcthepogi",
+  "immediateManager": "platalyn@gmail.com"
+}
+
+Auth Token Selection:
+Since topManager = "Marcthepogi", the corresponding authToken is:
+
+e726f734-0b50-4ca2-b8d7-bca385955acf
+
+
+
+⸻
+
+2. Fetch Balance for User (“Wakay”)
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/account/get-balances" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "platform": 1,
+       "clientId": 329777805,
+       "username": "Wakay"
+     }'
+
+Response Example:
+
+{
+  "status": 1,
+  "message": "Success",
+  "balances": [
+    {
+      "balanceTypeId": "main",
+      "currencyId": "USD",
+      "balance": 0.0
+    }
+  ]
+}
+
+
+
+⸻
+
+3. Generate Crypto Deposit Address for “Wakay”
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/payments/generate-cryptapi-address" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "platform": 1,
+       "clientId": 329777805,
+       "ticker": "USDT"
+     }'
+
+Response Example:
+
+{
+  "status": 1,
+  "message": "Success",
+  "address": "0xabc123456789def"
+}
+
+
+
+⸻
+
+4. Withdraw Funds for “Wakay” (if eligible)
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/payments/withdraw" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "platform": 1,
+       "amount": 50.00,
+       "currency": 1,
+       "destinationCurrency": 1,
+       "destinationNetwork": "ETH",
+       "address": "0x123456789abcdef",
+       "uniqueId": 12345678,
+       "clientId": 329777805
+     }'
+
+Response Example (if withdrawal is not allowed):
+
+{
+  "status": 0,
+  "message": "Withdrawal not allowed. Insufficient funds or wagering requirements not met."
+}
+
+
+
+⸻
+
+5. Transfer Funds to Another User
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/Default/Transfer" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "platform": 1,
+       "amount": 100,
+       "toAgent": false,
+       "currency": "USD",
+       "clientId": 123456789,
+       "username": "recipientUser",
+       "comment": "Transfer for gaming"
+     }'
+
+
+
+⸻
+
+6. Fetch Transaction History for “Wakay”
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/statistics/transactions-by-client-username" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "currency": "USD",
+       "username": "Wakay"
+     }'
+
+Response Example:
+
+{
+  "status": 1,
+  "message": "Success",
+  "statisticsForThePast7Days": {
+    "totalDeposit": 200.00,
+    "totalBet": 50.00,
+    "totalWithdraw": 20.00,
+    "canWithdraw": true,
+    "amountToBet": 30.00
+  }
+}
+
+
+
+⸻
+
+7. Send Message to “Wakay” (Redirected to Immediate Manager)
+
+Since Wakay is a player, messages should be sent to their immediate manager (“platalyn@gmail.com”).
+
+Request:
+
+curl -X POST "https://bridge.747lc.com/Default/SendMessage" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "authToken": "e726f734-0b50-4ca2-b8d7-bca385955acf",
+       "platform": 1,
+       "username": "platalyn@gmail.com",
+       "subject": "Notification for Player Wakay",
+       "message": "Dear Manager, please inform Wakay about the latest updates."
+     }'
+
+Outcome: The immediate manager (“platalyn@gmail.com”) will receive the message and should inform Wakay.
+
+⸻
+
+8. Summary of cURL Requests
+
+Action	API Endpoint	Auth Token Used
+Fetch User Details	GET /api/Bridge/get-user/wakay	None
+Get Balance	POST /account/get-balances	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+Generate Crypto Address	POST /payments/generate-cryptapi-address	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+Withdraw Funds	POST /payments/withdraw	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+Transfer Funds	POST /Default/Transfer	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+Fetch Transactions	POST /statistics/transactions-by-client-username	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+Send Message	POST /Default/SendMessage	"e726f734-0b50-4ca2-b8d7-bca385955acf"
+
+
+
+⸻
+
+Final Notes
+	1.	Always retrieve user details first to determine the correct authToken.
+	2.	Players (non-agents) cannot receive direct messages; instead, send messages to their immediate manager.
+	3.	Withdrawals require prior balance verification; use the transaction history API before initiating a withdrawal.
+	4.	Ensure security by encrypting sensitive user data and securing API keys.
+
+These cURL requests provide a fully functional integration with the 747 API, ensuring smooth e-wallet transactions for Wakay and other users.
