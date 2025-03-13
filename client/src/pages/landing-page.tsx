@@ -128,21 +128,14 @@ export default function LandingPage() {
             Join the secure payment platform for 747 Casino
           </p>
           <div className="relative">
-            <div className="jackpot-text text-yellow-500 text-3xl font-bold mb-4">JACKPOT ACCESS</div>
             <Link href="/auth">
               <Button size="lg" className="casino-button text-sm sm:text-base bg-blue-600 hover:bg-blue-700 shadow-lg z-10 relative">
                 <span className="flex items-center">
                   <CreditCard className="mr-2 h-5 w-5" /> 
                   Create Account
-                  <DollarSign className="ml-2 h-5 w-5 animate-float" />
                 </span>
               </Button>
             </Link>
-            <div className="floating card hidden md:block absolute -left-16 top-0 rotate-12">
-              <div className="w-10 h-14 bg-white rounded-md border border-gray-300 shadow-md flex items-center justify-center">
-                <span className="text-red-600 text-xl font-bold">A</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>
