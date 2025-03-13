@@ -43,16 +43,22 @@ const QRDeposit = () => {
     onSuccess: (data) => {
       if (data.success) {
         setActiveQrPayment(data.qrPayment);
+        
+        // Check if the response contains an iframe or QR code
+        const isIframe = data.qrPayment.qrCodeData.includes('<iframe');
+        
         toast({
-          title: "QR Code Generated",
-          description: "Scan this QR code with your GCash app to make a deposit",
+          title: isIframe ? "Payment Form Ready" : "QR Code Generated",
+          description: isIframe 
+            ? "Complete the payment form to deposit funds" 
+            : "Scan this QR code with your GCash app to make a deposit",
         });
       }
     },
     onError: (error: any) => {
       toast({
         variant: "destructive",
-        title: "Error generating QR code",
+        title: "Error generating payment form",
         description: error.message || "Something went wrong",
       });
     }
@@ -217,8 +223,8 @@ const QRDeposit = () => {
         clearInterval(interval);
         toast({
           variant: "destructive",
-          title: "QR Code Expired",
-          description: "The QR code has expired. Please generate a new one.",
+          title: "Payment Form Expired",
+          description: "The payment form has expired. Please generate a new one.",
         });
         setActiveQrPayment(null);
         
@@ -238,7 +244,7 @@ const QRDeposit = () => {
       <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30">
         <div className="p-5">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg text-white font-medium">QR Code Deposit</h2>
+            <h2 className="text-lg text-white font-medium">DirectPay Deposit</h2>
             <div className="bg-accent/20 text-accent px-3 py-1 rounded-full text-sm font-medium">
               <CheckCircle className="h-3 w-3 inline mr-1" /> DirectPay
             </div>
@@ -282,7 +288,7 @@ const QRDeposit = () => {
                   ) : (
                     <div className="w-44 h-44 flex items-center justify-center bg-gray-200">
                       <span className="text-gray-500 text-sm">
-                        Click "Generate QR Code" to start
+                        Click "Generate Payment Form" to start
                       </span>
                     </div>
                   )}
@@ -388,7 +394,7 @@ const QRDeposit = () => {
                   onClick={handleGenerateQR}
                   disabled={generateQrMutation.isPending}
                 >
-                  {generateQrMutation.isPending ? "Generating..." : "Generate QR Code"}
+                  {generateQrMutation.isPending ? "Generating..." : "Generate Payment Form"}
                 </Button>
               )}
             </div>
