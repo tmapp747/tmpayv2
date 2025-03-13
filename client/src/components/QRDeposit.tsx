@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { paymentsApi } from "@/lib/api";
-import { formatCurrency, isValidAmount, getTimeRemaining } from "@/lib/utils";
-import { DEPOSIT_AMOUNTS, LIMITS } from "@/lib/constants";
-import { InfoIcon, CheckCircle } from "lucide-react";
+import { 
+  formatCurrency, 
+  isValidAmount, 
+  getTimeRemaining, 
+  isDevelopmentMode 
+} from "@/lib/utils";
+import { DEPOSIT_AMOUNTS, LIMITS, PAYMENT_STATUS } from "@/lib/constants";
+import { InfoIcon, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -19,8 +24,13 @@ const QRDeposit = () => {
   const [activeQrPayment, setActiveQrPayment] = useState<QrPayment | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string>("");
   const [newBalance, setNewBalance] = useState<string | number>(0);
+  const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(false);
+  
+  // Status check interval reference
+  const statusCheckIntervalRef = useRef<number | null>(null);
   
   const { toast } = useToast();
+  const inDevMode = isDevelopmentMode();
   
   // Query for user info
   const { data: userData } = useQuery({

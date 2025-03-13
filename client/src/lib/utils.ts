@@ -118,3 +118,10 @@ export function getInitials(name: string): string {
     .join("")
     .toUpperCase();
 }
+
+// Check if we're in development mode
+export function isDevelopmentMode(): boolean {
+  return import.meta.env.DEV === true || 
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1';
+}
