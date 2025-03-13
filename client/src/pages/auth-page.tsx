@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { z } from "zod";
@@ -43,7 +43,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const [activeTab, setActiveTab] = useState<string>("login");
+  const [activeTab, setActiveTab] = useState<string>("verification");
+  const [verifiedUsername, setVerifiedUsername] = useState<string>("");
+  const [verifiedUserType, setVerifiedUserType] = useState<"player" | "agent">("player");
+  const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
 
@@ -53,24 +56,81 @@ export default function AuthPage() {
     return null;
   }
 
-  const loginForm = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  // Username verification form
+  const verificationForm = useForm<UsernameVerificationFormValues>({
+    resolver: zodResolver(usernameVerificationSchema),
     defaultValues: {
       username: "",
-      password: "",
       userType: "player"
     }
   });
 
+  // Verify username mutation
+  const verifyUsernameMutation = useMutation({
+    mutationFn: async (data: UsernameVerificationFormValues) => {
+      const res = await apiRequest("POST", API_ENDPOINTS.AUTH.VERIFY_USERNAME, data);
+      const responseData = await res.json();
+      if (!res.ok) throw new Error(responseData.message || "Username verification failed");
+      return responseData;
+    },
+    onSuccess: (data) => {
+      // Store the verified username and type
+      setVerifiedUsername(verificationForm.getValues("username"));
+      setVerifiedUserType(verificationForm.getValues("userType") as "player" | "agent");
+      
+      // Show success message
+      toast({
+        title: "Username verified",
+        description: data.message || "Your username is eligible for this platform",
+        variant: "default",
+      });
+      
+      // Switch to login tab by default
+      setActiveTab("login");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Verification failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const onVerifySubmit = (data: UsernameVerificationFormValues) => {
+    verifyUsernameMutation.mutate(data);
+  };
+
+  // Login form
+  const loginForm = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: verifiedUsername,
+      password: "",
+      userType: verifiedUserType
+    }
+  });
+
+  // Registration form
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: "",
+      username: verifiedUsername,
       password: "",
       email: "",
-      userType: "player"
+      userType: verifiedUserType
     }
   });
+
+  // Update forms when verified details change
+  useEffect(() => {
+    if (verifiedUsername) {
+      loginForm.setValue("username", verifiedUsername);
+      loginForm.setValue("userType", verifiedUserType);
+      registerForm.setValue("username", verifiedUsername);
+      registerForm.setValue("userType", verifiedUserType);
+    }
+  }, [verifiedUsername, verifiedUserType, loginForm, registerForm]);
 
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
@@ -78,6 +138,12 @@ export default function AuthPage() {
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
+  };
+  
+  const goBackToVerification = () => {
+    setVerifiedUsername("");
+    setVerifiedUserType("player");
+    setActiveTab("verification");
   };
 
   return (
@@ -92,10 +158,96 @@ export default function AuthPage() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="verification" disabled={!!verifiedUsername}>Verify</TabsTrigger>
+              <TabsTrigger value="login" disabled={!verifiedUsername}>Login</TabsTrigger>
+              <TabsTrigger value="register" disabled={!verifiedUsername}>Register</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="verification">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Verify Casino Username</CardTitle>
+                  <CardDescription>
+                    First, verify if your 747 Casino account is eligible to use this platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...verificationForm}>
+                    <form onSubmit={verificationForm.handleSubmit(onVerifySubmit)} className="space-y-4">
+                      <FormField
+                        control={verificationForm.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter your 747 Casino username" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={verificationForm.control}
+                        name="userType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Account Type</FormLabel>
+                            <div className="flex space-x-4">
+                              <Button 
+                                type="button" 
+                                variant={field.value === "player" ? "default" : "outline"}
+                                onClick={() => verificationForm.setValue("userType", "player")}
+                                className="flex-1"
+                              >
+                                Player
+                              </Button>
+                              <Button 
+                                type="button" 
+                                variant={field.value === "agent" ? "default" : "outline"}
+                                onClick={() => verificationForm.setValue("userType", "agent")}
+                                className="flex-1"
+                              >
+                                Agent
+                              </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button type="submit" className="w-full mt-6" disabled={verifyUsernameMutation.isPending}>
+                        {verifyUsernameMutation.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (
+                          "Verify Username"
+                        )}
+                      </Button>
+                      
+                      {verifyUsernameMutation.isError && (
+                        <div className="text-destructive text-sm mt-2">
+                          {verifyUsernameMutation.error?.message || "Verification failed. Please check your username."}
+                        </div>
+                      )}
+                      
+                      <div className="mt-4 text-xs text-muted-foreground">
+                        <p className="mb-2">To use this e-wallet platform, you must be a player or agent under:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li><strong className="text-primary">Marcthepogi</strong></li>
+                          <li><strong className="text-primary">bossmarc747</strong></li>
+                          <li><strong className="text-primary">teammarc</strong></li>
+                        </ul>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="login">
               <Card>
@@ -184,7 +336,7 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex justify-center">
+                <CardFooter className="flex flex-col space-y-2 items-center">
                   <p className="text-xs text-muted-foreground">
                     Don't have an account?{" "}
                     <button
@@ -192,6 +344,15 @@ export default function AuthPage() {
                       className="text-primary underline"
                     >
                       Register here
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Not your username?{" "}
+                    <button
+                      onClick={goBackToVerification}
+                      className="text-primary underline"
+                    >
+                      Change username
                     </button>
                   </p>
                 </CardFooter>
@@ -299,7 +460,7 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex justify-center">
+                <CardFooter className="flex flex-col space-y-2 items-center">
                   <p className="text-xs text-muted-foreground">
                     Already have an account?{" "}
                     <button
@@ -307,6 +468,15 @@ export default function AuthPage() {
                       className="text-primary underline"
                     >
                       Login here
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Not your username?{" "}
+                    <button
+                      onClick={goBackToVerification}
+                      className="text-primary underline"
+                    >
+                      Change username
                     </button>
                   </p>
                 </CardFooter>
