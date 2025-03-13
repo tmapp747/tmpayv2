@@ -883,8 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const payment = await paygramGeneratePayment(
         user.id.toString(), 
         amount, 
-        currency as Currency,
-        `Deposit ${amount} ${currency} via Paygram for user ${user.username}`
+        currency as Currency
       );
       
       // Save payment details in our storage
@@ -1133,7 +1132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.updateTransactionStatus(
                     transaction.id, 
                     "completed",
-                    paygramStatus.transactionId || telegramPayment.invoiceId
+                    telegramPayment.invoiceId
                   );
                   
                   // Update user's balance with the specific currency (PHPT or USDT)
