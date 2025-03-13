@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import logo from "/attached_assets/Logo teammarc.png";
+// Let's use a simple emoji instead since the logo is not directly accessible
+const logo = "💼";
 
 // Login form schema
 const loginSchema = z.object({
@@ -33,11 +34,11 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Redirect if already logged in
   if (user) {
-    navigate("/");
+    setLocation("/");
     return null;
   }
 
@@ -74,7 +75,7 @@ export default function AuthPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="flex flex-col items-center text-center">
-            <img src={logo} alt="TeamMarc Logo" className="h-16 mb-4" />
+            <div className="text-4xl mb-4">{logo}</div>
             <h1 className="text-2xl font-bold">747 Casino E-Wallet</h1>
             <p className="text-muted-foreground">Manage your casino payments seamlessly</p>
           </div>

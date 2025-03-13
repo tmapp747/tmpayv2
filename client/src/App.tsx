@@ -7,27 +7,47 @@ import Home from "@/pages/Home";
 import Wallet from "@/pages/Wallet";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
+import AuthPage from "@/pages/auth-page";
 import Layout from "@/components/Layout";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/wallet" component={Wallet} />
-        <Route path="/history" component={History} />
-        <Route path="/profile" component={Profile} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/" component={() => (
+        <Layout>
+          <Home />
+        </Layout>
+      )} />
+      <ProtectedRoute path="/wallet" component={() => (
+        <Layout>
+          <Wallet />
+        </Layout>
+      )} />
+      <ProtectedRoute path="/history" component={() => (
+        <Layout>
+          <History />
+        </Layout>
+      )} />
+      <ProtectedRoute path="/profile" component={() => (
+        <Layout>
+          <Profile />
+        </Layout>
+      )} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
