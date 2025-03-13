@@ -82,6 +82,32 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // prune expired entries every 24h
     });
+    
+    // Add a test user
+    const testUser: User = {
+      id: this.userIdCounter++,
+      username: 'chubbyme',
+      password: 'player123',
+      email: null,
+      balance: '1000.00',
+      pendingBalance: '0.00',
+      isVip: false,
+      casinoId: '747-123456',
+      casinoUsername: 'chubbyme',
+      casinoClientId: 123456,
+      topManager: 'Marcthepogi',
+      immediateManager: 'manager1',
+      casinoUserType: 'player',
+      casinoBalance: '1000.00',
+      isAuthorized: true,
+      allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
+      accessToken: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.users.set(testUser.id, testUser);
+    console.log('Added test user:', testUser.username);
   }
 
   // User operations
