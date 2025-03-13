@@ -13,6 +13,14 @@ export const API_ENDPOINTS = {
     GENERATE_QR: '/api/payments/gcash/generate-qr',
     CHECK_STATUS: (referenceId: string) => `/api/payments/status/${referenceId}`,
     SIMULATE_COMPLETION: '/api/payments/simulate-completion',
+  },
+  CASINO: {
+    USER_DETAILS: '/api/casino/user-details',
+    BALANCE: '/api/casino/balance',
+    DEPOSIT: '/api/casino/deposit',
+    WITHDRAW: '/api/casino/withdraw',
+    TRANSFER: '/api/casino/transfer',
+    TRANSACTIONS: (username: string) => `/api/casino/transactions/${username}`,
   }
 };
 
@@ -67,6 +75,8 @@ export const TRANSACTION_TYPES = {
   DEPOSIT: 'deposit',
   WITHDRAW: 'withdraw',
   TRANSFER: 'transfer',
+  CASINO_DEPOSIT: 'casino_deposit',
+  CASINO_WITHDRAW: 'casino_withdraw',
 };
 
 // Transaction methods
@@ -74,6 +84,7 @@ export const TRANSACTION_METHODS = {
   GCASH_QR: 'gcash_qr',
   BANK_TRANSFER: 'bank_transfer',
   CRYPTO: 'crypto',
+  CASINO_TRANSFER: 'casino_transfer',
 };
 
 // Limits

@@ -7,6 +7,13 @@ export interface User {
   pendingBalance: string | number;
   isVip: boolean;
   casinoId: string;
+  // 747 Casino-specific fields
+  casinoUsername?: string;
+  casinoClientId?: number;
+  topManager?: string;
+  immediateManager?: string;
+  casinoUserType?: string;
+  casinoBalance?: string | number;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -15,13 +22,20 @@ export interface User {
 export interface Transaction {
   id: number;
   userId: number;
-  type: 'deposit' | 'withdraw' | 'transfer';
-  method: 'gcash_qr' | 'bank_transfer' | 'crypto' | string;
+  type: 'deposit' | 'withdraw' | 'transfer' | 'casino_deposit' | 'casino_withdraw';
+  method: 'gcash_qr' | 'bank_transfer' | 'crypto' | 'casino_transfer' | string;
   amount: string | number;
   status: 'pending' | 'completed' | 'failed' | 'expired';
   paymentReference?: string;
   transactionId?: string;
   casinoReference?: string;
+  // 747 Casino-specific fields
+  casinoClientId?: number;
+  casinoUsername?: string;
+  destinationAddress?: string;
+  destinationNetwork?: string;
+  uniqueId?: string;
+  currency?: string;
   metadata?: Record<string, any>;
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -82,6 +96,70 @@ export interface GetUserInfoResponse {
 
 export interface GetTransactionsResponse {
   transactions: Transaction[];
+}
+
+// Casino API Request/Response types
+export interface CasinoGetUserDetailsRequest {
+  username: string;
+}
+
+export interface CasinoGetUserDetailsResponse {
+  success: boolean;
+  casinoUser: {
+    clientId: number;
+    username: string;
+    balance: string | number;
+    userType: string;
+    topManager?: string;
+    immediateManager?: string;
+  };
+  message?: string;
+}
+
+export interface CasinoBalanceRequest {
+  casinoClientId: number;
+  casinoUsername: string;
+}
+
+export interface CasinoBalanceResponse {
+  success: boolean;
+  balance: string | number;
+  message?: string;
+}
+
+export interface CasinoDepositRequest {
+  casinoUsername: string;
+  amount: number;
+}
+
+export interface CasinoWithdrawRequest {
+  casinoUsername: string;
+  amount: number;
+}
+
+export interface CasinoTransferRequest {
+  amount: number;
+  fromUsername: string;
+  toUsername: string;
+  comment?: string;
+}
+
+export interface CasinoTransactionResponse {
+  success: boolean;
+  transaction: Transaction;
+  newCasinoBalance?: string | number;
+  newBalance: string | number;
+  message: string;
+}
+
+export interface CasinoTransactionsRequest {
+  username: string;
+}
+
+export interface CasinoTransactionsResponse {
+  success: boolean;
+  transactions: any[];
+  message?: string;
 }
 
 // Navigation Link type
