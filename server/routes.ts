@@ -63,6 +63,12 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     
     // Determine payment type based on the content
+
+// Helper function to generate a unique transaction reference
+function generateTransactionReference(): string {
+  return `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+}
+
     const isIframe = qrCodeData && qrCodeData.includes('<iframe');
     const paymentType = isIframe ? 'iframe payment form' : 'QR code';
     console.log(`Successfully generated ${paymentType} with DirectPay reference: ${directPayReference}`);
@@ -583,6 +589,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const token = authHeader.split(' ')[1];
       
+      // Validate the token format using authSchema
+      try {
+        authSchema.parse({ token });
+      } catch (validationError) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid token format"
+        });
+      }
+      
       // Find the user with this access token
       const user = await storage.getUserByAccessToken(token);
       
@@ -762,12 +778,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Check balance
+      // Check balance with additional validation
       const currentBalance = await storage.getUserCurrencyBalance(user.id, fromCurrency as Currency);
-      if (parseFloat(currentBalance) < amount) {
+      const numericBalance = parseFloat(currentBalance);
+      
+      // Ensure the balance is a valid number
+      if (isNaN(numericBalance)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid ${fromCurrency} balance format.`
+        });
+      }
+      
+      // Check if user has sufficient balance
+      if (numericBalance < amount) {
         return res.status(400).json({ 
           success: false, 
           message: `Insufficient ${fromCurrency} balance. Available: ${currentBalance}` 
+        });
+      }
+      
+      // Ensure amount is not negative or zero
+      if (amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Exchange amount must be greater than zero"
         });
       }
       
@@ -1225,6 +1260,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     "completed",
                     telegramPayment.invoiceId || undefined
                   );
+                  
+                  // Ensure payment status is also updated
+                  await storage.updateTelegramPaymentStatus(telegramPayment.id, "completed");
                   
                   // Update user's balance with the specific currency (PHPT or USDT)
                   const currency = transaction.currency || telegramPayment.currency || 'PHPT';
@@ -2022,6 +2060,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
+
+  // Additional endpoint to handle submission from ManualPaymentForm
+  app.post("/api/payments/manual/submit", authMiddleware, async (req: Request, res: Response) => {
+    // Redirect to the correct endpoint
+    return res.redirect(307, '/api/payments/manual/create');
+  });
+
       console.error("Casino transfer error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ 
@@ -2175,11 +2220,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentStatus = status || state || payment_status || '';
       const txId = transactionId || transaction_id || Date.now().toString();
       
-      // Process based on payment status
+      // Normalize the payment status to handle different formats
+      const normalizedStatus = paymentStatus.toLowerCase().trim();
+      
+      // Process based on payment status with more comprehensive status matching
       if (
-        paymentStatus.toLowerCase() === 'success' || 
-        paymentStatus.toLowerCase() === 'completed' || 
-        paymentStatus.toLowerCase() === 'paid'
+        ['success', 'completed', 'paid', 'successful', 'approved', 'settled', 'confirmed'].includes(normalizedStatus)
       ) {
         // Update QR payment status
         await storage.updateQrPaymentStatus(qrPayment.id, "completed");

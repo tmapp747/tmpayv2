@@ -31,16 +31,24 @@ async function comparePasswords(supplied: string, stored: string) {
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "casino747_session_secret", // Use env variable in production
+    secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" 
+      ? randomBytes(32).toString('hex') // Generate a secure random secret in production
+      : "casino747_dev_session_secret"),
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'strict' // Prevent CSRF
     }
   };
+  
+  // Log a warning if using default session secret in production
+  if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+    console.warn("WARNING: Using auto-generated session secret in production. Set SESSION_SECRET env variable for persistent sessions.");
+  }
 
   app.set("trust proxy", 1);
   app.use(session(sessionSettings));
