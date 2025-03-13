@@ -61,16 +61,53 @@ export class MemStorage implements IStorage {
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
     
-    // Add some initial data
+    // Add some initial test data
     this.createUser({
-      username: "JohnPlayer123",
-      password: "password123",
-      email: "john@example.com",
-      casinoId: "747-player-001",
-      balance: "12450.00",
+      username: "colorway",
+      password: "cassinoroyale@ngInaM0!2@",
+      email: "colorway@example.com",
+      casinoId: "747-player-123",
+      balance: "5000.00",
       pendingBalance: "0.00",
-      isVip: true
+      isVip: true,
+      casinoUsername: "colorway",
+      casinoClientId: 24601,
+      casinoUserType: "player",
+      casinoBalance: "7500.00",
+      topManager: "alpha1",
+      immediateManager: "beta7"
     });
+    
+    // Add some sample transactions
+    setTimeout(() => {
+      const user = this.users.get(1);
+      if (user) {
+        // Add casino deposit transaction
+        this.createTransaction({
+          userId: 1,
+          type: "casino_deposit",
+          method: "casino_transfer",
+          amount: "1000.00",
+          status: "completed",
+          casinoClientId: 24601,
+          casinoUsername: "colorway",
+          casinoReference: "747DEP12345",
+          uniqueId: "DP" + Date.now().toString(),
+          currency: "USD"
+        });
+        
+        // Add GCash QR deposit transaction
+        this.createTransaction({
+          userId: 1,
+          type: "deposit",
+          method: "gcash_qr",
+          amount: "500.00",
+          status: "completed",
+          paymentReference: "GCQR-" + Date.now().toString(),
+          transactionId: "TR-" + Date.now().toString()
+        });
+      }
+    }, 100);
   }
 
   // User operations
@@ -123,6 +160,48 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
+  // Casino user operations
+  async updateUserCasinoDetails(id: number, casinoDetails: Partial<User>): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      ...casinoDetails,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserCasinoBalance(id: number, amount: number): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Parse the casino balance - default to 0 if undefined
+    const currentBalance = user.casinoBalance ? parseFloat(user.casinoBalance.toString()) : 0;
+    
+    const updatedUser = { 
+      ...user, 
+      casinoBalance: (currentBalance + amount).toFixed(2),
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async getUserByCasinoUsername(casinoUsername: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.casinoUsername === casinoUsername
+    );
+  }
+
+  async getUserByCasinoClientId(casinoClientId: number): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.casinoClientId === casinoClientId
+    );
+  }
+
   // Transaction operations
   async getTransaction(id: number): Promise<Transaction | undefined> {
     return this.transactions.get(id);
@@ -131,7 +210,11 @@ export class MemStorage implements IStorage {
   async getTransactionsByUserId(userId: number): Promise<Transaction[]> {
     return Array.from(this.transactions.values())
       .filter(tx => tx.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      .sort((a, b) => {
+        const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
+        const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
+        return dateB - dateA;
+      });
   }
 
   async createTransaction(txData: InsertTransaction): Promise<Transaction> {
@@ -163,6 +246,37 @@ export class MemStorage implements IStorage {
     
     this.transactions.set(id, updatedTransaction);
     return updatedTransaction;
+  }
+
+  // Casino transaction operations
+  async getTransactionByUniqueId(uniqueId: string): Promise<Transaction | undefined> {
+    return Array.from(this.transactions.values()).find(
+      (tx) => tx.uniqueId === uniqueId
+    );
+  }
+
+  async getTransactionByCasinoReference(casinoReference: string): Promise<Transaction | undefined> {
+    return Array.from(this.transactions.values()).find(
+      (tx) => tx.casinoReference === casinoReference
+    );
+  }
+
+  async getCasinoTransactions(userId: number, type?: string): Promise<Transaction[]> {
+    let transactions = Array.from(this.transactions.values())
+      .filter(tx => tx.userId === userId && 
+        (tx.type === 'casino_deposit' || 
+         tx.type === 'casino_withdraw' || 
+         tx.method === 'casino_transfer'));
+    
+    if (type) {
+      transactions = transactions.filter(tx => tx.type === type);
+    }
+    
+    return transactions.sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
+      return dateB - dateA;
+    });
   }
 
   // QR Payment operations

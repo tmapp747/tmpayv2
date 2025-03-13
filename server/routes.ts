@@ -6,10 +6,15 @@ import {
   insertTransactionSchema, 
   insertQrPaymentSchema,
   updateBalanceSchema,
-  verifyPaymentSchema 
+  verifyPaymentSchema,
+  casinoDepositSchema,
+  casinoWithdrawSchema,
+  casinoTransferSchema,
+  casinoGetUserDetailsSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
 import { randomUUID } from "crypto";
+import { casino747Api } from "./casino747Api";
 
 // Mock DirectPay and Casino 747 API functions for development
 // In production, these would be actual API calls to the external services
@@ -309,6 +314,476 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Simulate payment completion error:", error);
       return res.status(500).json({ message: "Server error while processing payment completion" });
+    }
+  });
+
+  // 747 Casino API routes
+  
+  // Get user details from casino
+  app.post("/api/casino/user-details", async (req: Request, res: Response) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      
+      // Validate using the schema
+      casinoGetUserDetailsSchema.parse({ username });
+      
+      // First check if we have this user locally
+      const existingUser = await storage.getUserByCasinoUsername(username);
+      
+      // If user exists locally, return the user details
+      if (existingUser) {
+        const { password: _, ...userWithoutPassword } = existingUser;
+        return res.json({ 
+          success: true, 
+          user: userWithoutPassword,
+          source: "local"
+        });
+      }
+      
+      // If not, fetch from casino API
+      try {
+        const casinoUserDetails = await casino747Api.getUserDetails(username);
+        
+        return res.json({
+          success: true,
+          user: casinoUserDetails,
+          source: "casino"
+        });
+      } catch (casinoError) {
+        console.error("Error fetching user from casino API:", casinoError);
+        return res.status(404).json({ 
+          success: false, 
+          message: "User not found in casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Get casino user details error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching user details" 
+      });
+    }
+  });
+  
+  // Get user balance from casino
+  app.post("/api/casino/balance", async (req: Request, res: Response) => {
+    try {
+      const { username, clientId } = req.body;
+      
+      if (!username || !clientId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username and client ID are required" 
+        });
+      }
+      
+      try {
+        const balanceResult = await casino747Api.getUserBalance(clientId, username);
+        
+        // Find user in our database to update their casino balance
+        const localUser = await storage.getUserByCasinoUsername(username);
+        if (localUser) {
+          await storage.updateUserCasinoDetails(localUser.id, {
+            casinoBalance: balanceResult.balance.toString()
+          });
+        }
+        
+        return res.json({
+          success: true,
+          balance: balanceResult.balance,
+          currency: balanceResult.currency
+        });
+      } catch (casinoError) {
+        console.error("Error fetching balance from casino API:", casinoError);
+        return res.status(400).json({ 
+          success: false,
+          message: "Failed to fetch balance from casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Get casino balance error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching casino balance" 
+      });
+    }
+  });
+  
+  // Deposit to casino
+  app.post("/api/casino/deposit", async (req: Request, res: Response) => {
+    try {
+      const { userId, casinoClientId, casinoUsername, amount, currency, method } = req.body;
+      
+      // Validate using the schema
+      const validatedData = casinoDepositSchema.parse(req.body);
+      
+      // Get user from our database
+      const user = await storage.getUser(validatedData.userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "User not found" 
+        });
+      }
+      
+      // Check if user has enough balance
+      const userBalance = parseFloat(user.balance.toString());
+      if (userBalance < validatedData.amount) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Insufficient funds" 
+        });
+      }
+      
+      // Create a transaction record
+      const transactionReference = randomUUID();
+      const transaction = await storage.createTransaction({
+        userId: validatedData.userId,
+        type: "casino_deposit",
+        method: validatedData.method,
+        amount: validatedData.amount.toString(),
+        status: "pending",
+        casinoClientId: validatedData.casinoClientId,
+        casinoUsername: validatedData.casinoUsername,
+        currency: validatedData.currency,
+        uniqueId: `CD-${Date.now()}`,
+        metadata: { initiatedAt: new Date().toISOString() }
+      });
+      
+      try {
+        // Transfer the funds to the casino
+        const transferResult = await casino747Api.transferFunds(
+          validatedData.amount,
+          validatedData.casinoClientId,
+          validatedData.casinoUsername,
+          validatedData.currency,
+          validatedData.casinoUsername, // From the same user (e-wallet to casino)
+          `Deposit from e-wallet - ${transactionReference}`
+        );
+        
+        // Update transaction record
+        await storage.updateTransactionStatus(
+          transaction.id, 
+          "completed", 
+          transferResult.transactionId
+        );
+        
+        // Deduct from user's e-wallet balance
+        const updatedUser = await storage.updateUserBalance(user.id, -validatedData.amount);
+        
+        // Update user's casino balance
+        await storage.updateUserCasinoBalance(user.id, validatedData.amount);
+        
+        return res.json({
+          success: true,
+          message: "Deposit to casino completed successfully",
+          transaction: {
+            ...transaction,
+            status: "completed",
+            casinoReference: transferResult.transactionId
+          },
+          newBalance: updatedUser.balance,
+          newCasinoBalance: transferResult.newBalance
+        });
+      } catch (casinoError) {
+        console.error("Error depositing to casino:", casinoError);
+        
+        // Update transaction to failed
+        await storage.updateTransactionStatus(transaction.id, "failed");
+        
+        return res.status(400).json({ 
+          success: false, 
+          message: "Failed to deposit to casino system",
+          transaction: {
+            ...transaction,
+            status: "failed"
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Casino deposit error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while processing casino deposit" 
+      });
+    }
+  });
+  
+  // Withdraw from casino
+  app.post("/api/casino/withdraw", async (req: Request, res: Response) => {
+    try {
+      // Validate request using the schema
+      const validatedData = casinoWithdrawSchema.parse(req.body);
+      
+      // Get user from our database
+      const user = await storage.getUser(validatedData.userId);
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "User not found" 
+        });
+      }
+      
+      // Create a transaction record
+      const transactionReference = randomUUID();
+      const uniqueId = Date.now();
+      
+      const transaction = await storage.createTransaction({
+        userId: validatedData.userId,
+        type: "casino_withdraw",
+        method: "crypto",
+        amount: validatedData.amount.toString(),
+        status: "pending",
+        casinoClientId: validatedData.casinoClientId,
+        casinoUsername: validatedData.casinoUsername,
+        destinationAddress: validatedData.destinationAddress,
+        destinationNetwork: validatedData.destinationNetwork,
+        uniqueId: uniqueId.toString(),
+        metadata: { initiatedAt: new Date().toISOString() }
+      });
+      
+      try {
+        // Process the withdrawal through the casino API
+        const withdrawResult = await casino747Api.withdrawFunds(
+          validatedData.casinoClientId,
+          validatedData.amount,
+          validatedData.currency,
+          validatedData.destinationCurrency,
+          validatedData.destinationNetwork,
+          validatedData.destinationAddress
+        );
+        
+        // Update transaction record
+        await storage.updateTransactionStatus(
+          transaction.id, 
+          "completed", 
+          withdrawResult.transactionId
+        );
+        
+        // Update user's casino balance
+        await storage.updateUserCasinoBalance(user.id, -validatedData.amount);
+        
+        return res.json({
+          success: true,
+          message: "Withdrawal from casino completed successfully",
+          transaction: {
+            ...transaction,
+            status: "completed",
+            casinoReference: withdrawResult.transactionId
+          }
+        });
+      } catch (casinoError) {
+        console.error("Error withdrawing from casino:", casinoError);
+        
+        // Update transaction to failed
+        await storage.updateTransactionStatus(transaction.id, "failed");
+        
+        return res.status(400).json({ 
+          success: false, 
+          message: "Failed to withdraw from casino system",
+          transaction: {
+            ...transaction,
+            status: "failed"
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Casino withdraw error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while processing casino withdrawal" 
+      });
+    }
+  });
+  
+  // Transfer between casino accounts
+  app.post("/api/casino/transfer", async (req: Request, res: Response) => {
+    try {
+      // Validate request using the schema
+      const validatedData = casinoTransferSchema.parse(req.body);
+      
+      // Get user from our database
+      const fromUser = await storage.getUserByUsername(validatedData.fromCasinoUsername);
+      if (!fromUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Sender not found" 
+        });
+      }
+      
+      // Create a transaction record
+      const transactionReference = randomUUID();
+      
+      const transaction = await storage.createTransaction({
+        userId: validatedData.fromUserId,
+        type: "transfer",
+        method: "casino_transfer",
+        amount: validatedData.amount.toString(),
+        status: "pending",
+        casinoUsername: validatedData.toUsername, // Target username in this case
+        casinoClientId: validatedData.toClientId, // Target client ID
+        uniqueId: `CT-${Date.now()}`,
+        currency: validatedData.currency,
+        metadata: { 
+          initiatedAt: new Date().toISOString(),
+          comment: validatedData.comment
+        }
+      });
+      
+      try {
+        // Process the transfer through the casino API
+        const transferResult = await casino747Api.transferFunds(
+          validatedData.amount,
+          validatedData.toClientId,
+          validatedData.toUsername,
+          validatedData.currency,
+          validatedData.fromCasinoUsername,
+          validatedData.comment || "Transfer from e-wallet"
+        );
+        
+        // Update transaction record
+        await storage.updateTransactionStatus(
+          transaction.id, 
+          "completed", 
+          transferResult.transactionId
+        );
+        
+        // Update sender's casino balance
+        await storage.updateUserCasinoBalance(fromUser.id, -validatedData.amount);
+        
+        return res.json({
+          success: true,
+          message: "Casino transfer completed successfully",
+          transaction: {
+            ...transaction,
+            status: "completed",
+            casinoReference: transferResult.transactionId
+          }
+        });
+      } catch (casinoError) {
+        console.error("Error processing casino transfer:", casinoError);
+        
+        // Update transaction to failed
+        await storage.updateTransactionStatus(transaction.id, "failed");
+        
+        return res.status(400).json({ 
+          success: false, 
+          message: "Failed to process casino transfer",
+          transaction: {
+            ...transaction,
+            status: "failed"
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Casino transfer error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while processing casino transfer" 
+      });
+    }
+  });
+  
+  // Get casino transaction history
+  app.get("/api/casino/transactions/:username", async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+      const { currency } = req.query;
+      
+      if (!username) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username is required" 
+        });
+      }
+      
+      try {
+        // Get user from our database
+        const user = await storage.getUserByCasinoUsername(username);
+        if (!user) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "User not found" 
+          });
+        }
+        
+        // Get transactions from casino API
+        const transactionHistory = await casino747Api.getTransactionHistory(
+          username, 
+          currency as string || "USD"
+        );
+        
+        // Also get local casino transactions
+        const localTransactions = await storage.getCasinoTransactions(user.id);
+        
+        // Merge and sort transactions by date
+        // This would need proper implementation to merge and deduplicate
+        
+        return res.json({
+          success: true,
+          casinoTransactions: transactionHistory.transactions,
+          localTransactions: localTransactions
+        });
+      } catch (casinoError) {
+        console.error("Error fetching transactions from casino:", casinoError);
+        
+        // If casino API fails, return just the local transactions
+        if (username) {
+          const user = await storage.getUserByCasinoUsername(username);
+          if (user) {
+            const localTransactions = await storage.getCasinoTransactions(user.id);
+            return res.json({
+              success: true,
+              casinoTransactions: [],
+              localTransactions: localTransactions,
+              message: "Could not fetch transactions from casino API. Showing local transactions only."
+            });
+          }
+        }
+        
+        return res.status(400).json({ 
+          success: false, 
+          message: "Failed to fetch transactions from casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Casino transactions error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching casino transactions" 
+      });
     }
   });
 
