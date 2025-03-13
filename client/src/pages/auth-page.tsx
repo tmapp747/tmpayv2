@@ -49,18 +49,17 @@ export default function AuthPage() {
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
+  const [shouldRender, setShouldRender] = useState(true);
 
   // Use useEffect for navigation to avoid setState during render
   useEffect(() => {
     if (user) {
       navigate("/");
+      setShouldRender(false);
+    } else {
+      setShouldRender(true);
     }
   }, [user, navigate]);
-
-  // Return early but after all hook calls
-  if (user) {
-    return null;
-  }
 
   // Username verification form
   const verificationForm = useForm<UsernameVerificationFormValues>({
