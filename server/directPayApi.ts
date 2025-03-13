@@ -129,6 +129,67 @@ export class DirectPayApi {
       throw new Error('Failed to generate GCash QR code from DirectPay API');
     }
   }
+  
+  /**
+   * Check the status of a payment
+   * @param reference The DirectPay reference ID
+   * @returns The payment status
+   */
+  async checkPaymentStatus(reference: string): Promise<{
+    status: 'pending' | 'completed' | 'failed' | 'expired';
+    transactionId?: string;
+    message?: string;
+  }> {
+    try {
+      // Make sure we have a valid auth token
+      await this.ensureValidToken();
+      
+      // Set up cookies
+      const cookieHeader = this.sessionId ? `PHPSESSID=${this.sessionId}` : '';
+      
+      // Make sure we have an auth token
+      if (!this.authToken) {
+        throw new Error('No authentication token available');
+      }
+      
+      const response = await axios.get(
+        `${this.baseUrl}/payment_status/${reference}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${this.authToken}`,
+            'Content-Type': 'application/json',
+            'Cookie': cookieHeader
+          }
+        }
+      );
+      
+      // Map DirectPay statuses to our internal statuses
+      const directPayStatus = response.data.status?.toLowerCase();
+      let status: 'pending' | 'completed' | 'failed' | 'expired' = 'pending';
+      
+      if (directPayStatus === 'success' || directPayStatus === 'completed') {
+        status = 'completed';
+      } else if (directPayStatus === 'failed' || directPayStatus === 'cancelled') {
+        status = 'failed';
+      } else if (directPayStatus === 'expired') {
+        status = 'expired';
+      }
+      
+      return {
+        status,
+        transactionId: response.data.transactionId,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      
+      // If we can't connect to DirectPay, we'll assume the payment is still pending
+      return {
+        status: 'pending',
+        message: 'Unable to check payment status with DirectPay API'
+      };
+    }
+  }
 
   /**
    * Ensure we have a valid auth token
@@ -137,14 +198,32 @@ export class DirectPayApi {
   private async ensureValidToken(): Promise<void> {
     const now = new Date();
     
-    // If token is expired or not set, get a new one
-    if (!this.authToken || !this.authTokenExpiry || now >= this.authTokenExpiry) {
+    // If token is missing, expired, or about to expire (within 1 minute), get a new one
+    const isExpired = !this.authToken || !this.authTokenExpiry;
+    const isAboutToExpire = this.authTokenExpiry && 
+      ((this.authTokenExpiry.getTime() - now.getTime()) < 60000); // 1 minute buffer
+    
+    if (isExpired || isAboutToExpire) {
       // Get credentials from environment variables
       const username = process.env.DIRECTPAY_USERNAME || 'colorway';
       const password = process.env.DIRECTPAY_PASSWORD || 'cassinoroyale@ngInaM0!2@';
       
-      console.log(`Authenticating with DirectPay as ${username}...`);
-      await this.login(username, password);
+      // Only log if this is a new authentication, not a refresh
+      if (!this.authToken) {
+        console.log(`Authenticating with DirectPay as ${username}...`);
+      } else {
+        console.log(`Refreshing DirectPay authentication token (expires in ${
+          isAboutToExpire ? 'less than 1 minute' : 'expired'
+        })...`);
+      }
+      
+      try {
+        await this.login(username, password);
+        console.log(`DirectPay authentication successful, token valid until ${this.authTokenExpiry?.toISOString()}`);
+      } catch (error) {
+        console.error('Failed to authenticate with DirectPay:', error);
+        throw new Error('DirectPay authentication failed. Please check your credentials.');
+      }
     }
   }
 }

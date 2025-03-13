@@ -299,6 +299,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Payment not found" });
       }
       
+      // If payment is already completed or failed, just return the current status
+      if (qrPayment.status === "completed" || qrPayment.status === "failed") {
+        return res.json({
+          success: true,
+          status: qrPayment.status,
+          qrPayment
+        });
+      }
+      
       // Check if the payment has expired
       if (qrPayment.status === "pending" && new Date() > qrPayment.expiresAt) {
         await storage.updateQrPaymentStatus(qrPayment.id, "expired");
@@ -309,8 +318,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // For pending payments, check with DirectPay for the latest status
+      // This is useful for cases where the webhook might not have been received
+      if (qrPayment.status === "pending") {
+        try {
+          // Query DirectPay API for the latest payment status
+          const directPayStatus = await directPayApi.checkPaymentStatus(qrPayment.directPayReference || referenceId);
+          
+          // If DirectPay says the payment is completed or failed, update our status
+          if (directPayStatus.status !== "pending") {
+            console.log(`Payment status from DirectPay: ${directPayStatus.status} for reference ${referenceId}`);
+            
+            // Update our QR payment status
+            await storage.updateQrPaymentStatus(qrPayment.id, directPayStatus.status);
+            qrPayment.status = directPayStatus.status;
+            
+            // If payment is completed, also update the transaction and user balance
+            if (directPayStatus.status === "completed") {
+              // Get the transaction and user
+              const transaction = await storage.getTransaction(qrPayment.transactionId);
+              const user = await storage.getUser(qrPayment.userId);
+              
+              if (transaction && user) {
+                // Update transaction status
+                await storage.updateTransactionStatus(
+                  transaction.id, 
+                  "completed",
+                  directPayStatus.transactionId
+                );
+                
+                // Call 747 Casino API to complete the topup
+                const amount = parseFloat(qrPayment.amount.toString());
+                const casinoResult = await casino747CompleteTopup(
+                  user.casinoId,
+                  amount,
+                  transaction.paymentReference || ""
+                );
+                
+                // Update user's balance
+                await storage.updateUserBalance(user.id, amount);
+                
+                console.log(`Payment completed via status check: ${referenceId}, amount: ${amount}`);
+              }
+            }
+          }
+        } catch (directPayError) {
+          // If there's an error checking with DirectPay, just continue with our current status
+          console.error("Error checking payment status with DirectPay:", directPayError);
+        }
+      }
+      
       return res.json({
-        success: true,
+        success: qrPayment.status === "completed",
         status: qrPayment.status,
         qrPayment
       });
@@ -860,46 +919,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DirectPay webhook endpoint for payment notifications
   app.post("/api/webhook/directpay/payment", async (req: Request, res: Response) => {
     try {
-      console.log("DirectPay webhook received:", req.body);
+      console.log("DirectPay webhook received:", JSON.stringify(req.body));
       
       // Extract payment details from the webhook payload
-      const { reference, status, amount, transactionId } = req.body;
+      // DirectPay might send different structured data, so we handle common formats
+      const { 
+        reference, status, state, payment_status, 
+        amount, transactionId, transaction_id, 
+        payment_reference
+      } = req.body;
       
-      if (!reference) {
-        return res.status(400).json({ 
+      // Determine the actual reference value from possible fields
+      const paymentReference = reference || payment_reference || req.body.ref;
+      
+      if (!paymentReference) {
+        console.warn("Payment reference is missing in webhook:", req.body);
+        return res.status(200).json({ 
           success: false, 
-          message: "Payment reference is required" 
+          message: "Payment reference is required, but webhook acknowledged" 
         });
       }
       
-      // Find the QR payment
-      const qrPayment = await storage.getQrPaymentByReference(reference);
+      // Find the QR payment by reference
+      const qrPayment = await storage.getQrPaymentByReference(paymentReference);
       if (!qrPayment) {
-        return res.status(404).json({ 
+        console.warn(`QR Payment not found for reference: ${paymentReference}`);
+        return res.status(200).json({ 
           success: false, 
-          message: "Payment not found" 
+          message: "Payment not found, but webhook acknowledged" 
+        });
+      }
+      
+      // Avoid processing the same payment multiple times
+      if (qrPayment.status !== "pending") {
+        console.log(`Payment ${paymentReference} already processed with status: ${qrPayment.status}`);
+        return res.status(200).json({ 
+          success: true, 
+          message: `Payment already ${qrPayment.status}, webhook acknowledged` 
         });
       }
       
       // Find the transaction
       const transaction = await storage.getTransaction(qrPayment.transactionId);
       if (!transaction) {
-        return res.status(404).json({ 
+        console.error(`Transaction not found for QR payment ID: ${qrPayment.id}`);
+        return res.status(200).json({ 
           success: false, 
-          message: "Transaction not found" 
+          message: "Transaction not found, but webhook acknowledged" 
         });
       }
       
       // Find the user
       const user = await storage.getUser(qrPayment.userId);
       if (!user) {
-        return res.status(404).json({ 
+        console.error(`User not found for QR payment user ID: ${qrPayment.userId}`);
+        return res.status(200).json({ 
           success: false, 
-          message: "User not found" 
+          message: "User not found, but webhook acknowledged" 
         });
       }
       
-      if (status === 'success' || status === 'completed') {
+      // Determine the payment status from various possible fields
+      const paymentStatus = status || state || payment_status || '';
+      const txId = transactionId || transaction_id || Date.now().toString();
+      
+      // Process based on payment status
+      if (
+        paymentStatus.toLowerCase() === 'success' || 
+        paymentStatus.toLowerCase() === 'completed' || 
+        paymentStatus.toLowerCase() === 'paid'
+      ) {
         // Update QR payment status
         await storage.updateQrPaymentStatus(qrPayment.id, "completed");
         
@@ -907,32 +996,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateTransactionStatus(
           transaction.id,
           "completed",
-          transactionId || reference
+          txId
         );
         
         // Call 747 Casino API to complete the topup
         const paymentAmount = parseFloat(qrPayment.amount.toString());
-        const casinoResult = await casino747CompleteTopup(
-          user.casinoId,
-          paymentAmount,
-          transaction.paymentReference || ""
-        );
-        
-        // Update user's balance
-        await storage.updateUserBalance(user.id, paymentAmount);
-        
-        console.log("Payment completed successfully:", {
-          reference,
-          userId: user.id,
-          amount: paymentAmount,
-          casinoResult
-        });
-      } else if (status === 'failed') {
+        try {
+          const casinoResult = await casino747CompleteTopup(
+            user.casinoId,
+            paymentAmount,
+            transaction.paymentReference || ""
+          );
+          
+          // Update user's balance
+          await storage.updateUserBalance(user.id, paymentAmount);
+          
+          console.log("Payment completed successfully via webhook:", {
+            reference: paymentReference,
+            userId: user.id,
+            amount: paymentAmount,
+            casinoResult
+          });
+        } catch (casinoError) {
+          console.error("Error completing casino topup:", casinoError);
+          // We still mark the payment as completed but log the casino error
+          // A manual reconciliation may be needed
+        }
+      } else if (
+        paymentStatus.toLowerCase() === 'failed' || 
+        paymentStatus.toLowerCase() === 'cancelled' || 
+        paymentStatus.toLowerCase() === 'declined'
+      ) {
         // Update QR payment and transaction status
         await storage.updateQrPaymentStatus(qrPayment.id, "failed");
         await storage.updateTransactionStatus(transaction.id, "failed");
         
-        console.log("Payment failed:", { reference, userId: user.id });
+        console.log("Payment failed via webhook:", { 
+          reference: paymentReference, 
+          userId: user.id,
+          status: paymentStatus
+        });
+      } else {
+        // Unknown status, log but don't change anything
+        console.log(`Unknown payment status received: ${paymentStatus} for reference ${paymentReference}`);
       }
       
       // Return a 200 OK to acknowledge receipt of the webhook
@@ -941,12 +1047,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Webhook processed successfully" 
       });
     } catch (error) {
-      console.error("DirectPay webhook error:", error);
+      console.error("DirectPay webhook processing error:", error);
       
       // Even in case of error, return a 200 OK to prevent repeated webhook attempts
       return res.status(200).json({ 
         success: false, 
-        message: "Error processing webhook, but received" 
+        message: "Error processing webhook, but acknowledged" 
       });
     }
   });
