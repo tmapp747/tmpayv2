@@ -50,11 +50,11 @@ export default function LandingPage() {
       <section className="py-12 md:py-20 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">
+            <span className="text-blue-600 dark:text-blue-400">
               Casino Financial Gateway
             </span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10">
+          <p className="text-gray-800 dark:text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium">
             The secure and efficient payment platform designed exclusively for 747 Casino players and agents
           </p>
           
@@ -87,7 +87,7 @@ export default function LandingPage() {
                 <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Secure Transactions</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
                 State-of-the-art encryption and security measures to protect your financial operations
               </p>
             </div>
@@ -97,7 +97,7 @@ export default function LandingPage() {
                 <Wallet className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Fast Deposits</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
                 Instant deposits and quick withdrawals to and from your casino account
               </p>
               <div className="floating dice hidden md:block absolute -right-5 -bottom-5 w-10 h-10">
@@ -110,7 +110,7 @@ export default function LandingPage() {
                 <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Real-time Updates</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
                 Monitor your transactions and balance in real-time with instant notifications
               </p>
             </div>
@@ -124,7 +124,7 @@ export default function LandingPage() {
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
             Ready to manage your casino finances?
           </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">
+          <p className="text-gray-700 dark:text-gray-300 font-medium mb-8">
             Join the secure payment platform for 747 Casino
           </p>
           <div className="relative">

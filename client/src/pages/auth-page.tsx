@@ -261,7 +261,7 @@ export default function AuthPage() {
             <CardTitle className="text-center text-lg sm:text-xl text-gray-900 dark:text-white">
               Account Access
             </CardTitle>
-            <CardDescription className="text-center text-sm text-gray-600 dark:text-gray-400">
+            <CardDescription className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
               Manage your casino payments securely
             </CardDescription>
           </CardHeader>
@@ -454,7 +454,7 @@ export default function AuthPage() {
                                 Agent
                               </Button>
                             </div>
-                            <FormDescription className="text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            <FormDescription className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                               {field.value === "player" ? "Player Account" : "Agent Account"}
                             </FormDescription>
                             <FormMessage className="text-xs sm:text-sm" />
