@@ -578,12 +578,23 @@ export class MemStorage implements IStorage {
   async createTelegramPayment(paymentData: InsertTelegramPayment): Promise<TelegramPayment> {
     const id = this.telegramPaymentIdCounter++;
     const now = new Date();
+    
+    // Create with default values for required fields
     const telegramPayment: TelegramPayment = { 
-      ...paymentData, 
       id,
+      userId: paymentData.userId,
+      transactionId: paymentData.transactionId,
+      payUrl: paymentData.payUrl,
+      amount: paymentData.amount,
+      currency: paymentData.currency || 'PHPT',
+      expiresAt: paymentData.expiresAt,
+      telegramReference: paymentData.telegramReference || null,
+      invoiceId: paymentData.invoiceId || null,
+      status: paymentData.status || 'pending',
       createdAt: now, 
       updatedAt: now 
     };
+    
     this.telegramPayments.set(id, telegramPayment);
     return telegramPayment;
   }

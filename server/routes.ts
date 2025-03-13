@@ -1110,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Check payment status with Paygram API
             const paygramStatus = await paygramApi.checkPaymentStatus(
               authenticatedUser.id.toString(), 
-              telegramPayment.invoiceId || ''
+              telegramPayment.invoiceId || '' // Empty string as fallback in case invoiceId is null
             );
             
             // If Paygram says the payment is completed or failed, update our status
@@ -1132,7 +1132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.updateTransactionStatus(
                     transaction.id, 
                     "completed",
-                    telegramPayment.invoiceId
+                    telegramPayment.invoiceId || undefined
                   );
                   
                   // Update user's balance with the specific currency (PHPT or USDT)
