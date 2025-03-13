@@ -6,6 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { casino747Api } from "./casino747Api";
 
 declare global {
   namespace Express {
@@ -96,12 +97,64 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    // Remove password from the response
-    const userResponse = { ...req.user };
-    delete userResponse.password;
-    
-    res.status(200).json({ success: true, user: userResponse, message: "Login successful" });
+  app.post("/api/login", passport.authenticate("local"), async (req, res) => {
+    try {
+      // Get the authenticated user from request
+      const user = req.user;
+      
+      // If the user has a casino username, try to fetch the hierarchy info
+      if (user.casinoUsername) {
+        // Determine if the user is an agent based on their stored user type
+        const isAgent = user.casinoUserType === 'agent';
+        
+        try {
+          // Fetch user hierarchy from casino API
+          const hierarchyData = await casino747Api.getUserHierarchy(user.casinoUsername, isAgent);
+          
+          if (hierarchyData.hierarchy && hierarchyData.hierarchy.length >= 3) {
+            // Get top manager (3rd element, index 2)
+            const topManager = hierarchyData.hierarchy[2]?.username;
+            
+            // Find immediate manager by finding parent
+            let immediateManager = '';
+            
+            // Find the immediate manager by matching parentClientId
+            for (const agent of hierarchyData.hierarchy) {
+              if (agent.clientId === hierarchyData.user.parentClientId) {
+                immediateManager = agent.username;
+                break;
+              }
+            }
+            
+            // Update user with hierarchy info from API
+            await storage.updateUserHierarchyInfo(
+              user.id, 
+              topManager || user.topManager || "", 
+              immediateManager || user.immediateManager || "", 
+              user.casinoUserType || (isAgent ? 'agent' : 'player')
+            );
+            
+            // Get updated user
+            const updatedUser = await storage.getUser(user.id);
+            if (updatedUser) {
+              req.user = updatedUser;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching hierarchy data during login:", error);
+          // Don't fail the login if we can't get hierarchy, just continue with existing data
+        }
+      }
+      
+      // Remove password from the response
+      const userResponse = { ...req.user };
+      delete userResponse.password;
+      
+      res.status(200).json({ success: true, user: userResponse, message: "Login successful" });
+    } catch (error) {
+      console.error("Error in login endpoint:", error);
+      res.status(500).json({ success: false, message: "Error processing login" });
+    }
   });
 
   app.post("/api/logout", (req, res, next) => {
