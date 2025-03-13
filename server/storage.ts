@@ -41,6 +41,11 @@ export interface IStorage {
   updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
   setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;
   isUserAuthorized(username: string): Promise<boolean>;
+  // Casino authentication
+  getUserByCasinoAuthToken(token: string): Promise<User | undefined>;
+  updateUserCasinoAuthToken(id: number, token: string, expiryDate: Date): Promise<User>;
+  getUserByTopManager(topManager: string): Promise<User | undefined>;
+  getTopManagerForUser(userId: number): Promise<string | undefined>;
   
   // Multi-currency operations
   getUserCurrencyBalance(id: number, currency: Currency): Promise<string>;

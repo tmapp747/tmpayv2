@@ -28,6 +28,8 @@ export const users = pgTable("users", {
   casinoBalance: numeric("casino_balance", { precision: 10, scale: 2 }).default("0"),
   // Auth and hierarchy fields
   accessToken: text("access_token"), // Each user has a unique token for transfers
+  casinoAuthToken: text("casino_auth_token"), // Casino API auth token (typically from top manager)
+  casinoAuthTokenExpiry: timestamp("casino_auth_token_expiry"), // When the casino auth token expires
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
   hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
   allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
