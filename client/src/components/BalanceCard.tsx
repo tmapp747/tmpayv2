@@ -35,55 +35,76 @@ const BalanceCard = () => {
   };
 
   return (
-    <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30">
-      <div className="bg-gradient-to-r from-primary to-dark p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg text-gray-300 font-medium">Total Balance</h2>
+    <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30 hover:shadow-xl hover:shadow-secondary/5 transition-all duration-300 transform hover:-translate-y-1">
+      <div className="bg-gradient-to-br from-primary via-primary to-dark p-6 relative">
+        {/* Background glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-50 rounded-t-xl"></div>
+        
+        <div className="relative flex justify-between items-center mb-4">
+          <h2 className="text-lg text-white font-medium tracking-wide">Total Balance</h2>
           <Button 
             variant="outline" 
             size="sm"
-            className="text-sm px-3 py-1 rounded-full bg-secondary/20 text-secondary font-semibold border-secondary/30 hover:bg-secondary/30"
+            className="text-sm px-3 py-1 rounded-full bg-secondary/20 text-secondary font-semibold border-secondary/30 hover:bg-secondary/40 hover:scale-105 transition-all"
             onClick={handleRefresh}
             disabled={isLoading}
           >
-            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+            <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : 'group-hover:animate-spin'}`} /> 
+            Refresh
           </Button>
         </div>
-        <div className="flex items-end space-x-2 mb-4">
-          <h1 className="text-3xl font-bold text-white">
-            {isLoading ? "Loading..." : formatCurrency(data?.user?.balance || 0)}
+        
+        <div className="relative flex items-end space-x-2 mb-4">
+          <h1 className="text-4xl font-bold text-white tracking-tight" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+            {isLoading ? (
+              <div className="animate-pulse">Loading...</div>
+            ) : (
+              <div className="animate-fadeIn">{formatCurrency(data?.user?.balance || 0)}</div>
+            )}
           </h1>
-          <span className="text-accent mb-1 text-sm">
-            <ArrowUp className="h-3 w-3 inline" /> +₱850.00
+          <span className="text-accent mb-1 text-sm bg-accent/10 px-2 py-1 rounded-full animate-pulse">
+            <ArrowUp className="h-3 w-3 inline mr-1" /> +₱850.00
           </span>
         </div>
-        <div className="flex space-x-4 pt-4">
+        
+        <div className="relative flex space-x-4 pt-4">
           <Button 
-            className="flex-1 bg-gradient-to-br from-secondary to-secondary/80 text-white font-bold py-3 px-4 rounded-lg shadow-sm hover:from-secondary/90 hover:to-secondary/70 transition duration-300"
+            className="flex-1 bg-gradient-to-br from-secondary to-secondary/80 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-xl hover:from-secondary hover:to-secondary/90 transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
             onClick={handleDeposit}
           >
-            <Plus className="h-5 w-5 mr-2" /> Deposit
+            <Plus className="h-5 w-5 mr-2 transition-transform group-hover:rotate-180 duration-300" /> 
+            Deposit
           </Button>
           <Button 
             variant="outline"
-            className="flex-1 bg-primary border border-secondary text-white font-bold py-3 px-4 rounded-lg shadow-sm hover:bg-primary/80 transition duration-300"
+            className="flex-1 bg-primary/80 backdrop-blur-sm border border-secondary/50 text-white font-bold py-3 px-4 rounded-xl shadow hover:shadow-lg hover:bg-primary/50 hover:border-secondary transition-all duration-300 transform hover:scale-[1.02] active:scale-95"
           >
-            <ArrowRight className="h-5 w-5 mr-2" /> Transfer
+            <ArrowRight className="h-5 w-5 mr-2 group-hover:translate-x-1 transition-transform" /> 
+            Transfer
           </Button>
         </div>
       </div>
-      <div className="bg-dark/50 p-4 border-t border-secondary/30">
-        <div className="flex justify-between text-sm">
-          <div className="text-gray-300">
-            <span>Available for Play:</span>
-            <span className="text-white font-medium ml-2">
-              {isLoading ? "Loading..." : formatCurrency(data?.user?.balance || 0)}
+      
+      <div className="bg-dark/50 backdrop-blur-sm p-5 border-t border-secondary/30">
+        <div className="flex flex-wrap md:flex-nowrap justify-between text-sm gap-4">
+          <div className="bg-dark/30 rounded-lg p-3 flex-1 hover:bg-dark/50 transition-colors duration-200">
+            <span className="text-gray-400 block mb-1">Available for Play</span>
+            <span className="text-white font-medium text-lg">
+              {isLoading ? (
+                <div className="h-6 w-24 bg-gray-700 animate-pulse rounded"></div>
+              ) : (
+                formatCurrency(data?.user?.balance || 0)
+              )}
             </span>
           </div>
-          <div className="text-gray-300">
-            <span>Pending Deposits:</span>
-            <span className="text-white font-medium ml-2">
-              {isLoading ? "Loading..." : formatCurrency(data?.user?.pendingBalance || 0)}
+          <div className="bg-dark/30 rounded-lg p-3 flex-1 hover:bg-dark/50 transition-colors duration-200">
+            <span className="text-gray-400 block mb-1">Pending Deposits</span>
+            <span className="text-white font-medium text-lg">
+              {isLoading ? (
+                <div className="h-6 w-24 bg-gray-700 animate-pulse rounded"></div>
+              ) : (
+                formatCurrency(data?.user?.pendingBalance || 0)
+              )}
             </span>
           </div>
         </div>

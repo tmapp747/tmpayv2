@@ -81,6 +81,49 @@ const QRDeposit = () => {
     }
   });
   
+  // Mutation for checking payment status
+  const checkPaymentStatusMutation = useMutation({
+    mutationFn: (referenceId: string) => paymentsApi.checkPaymentStatus(referenceId),
+    onSuccess: (data) => {
+      if (data.success && data.status === PAYMENT_STATUS.COMPLETED) {
+        // Payment is complete
+        if (data.qrPayment) {
+          const paymentAmount = parseFloat(data.qrPayment.amount.toString());
+          setNewBalance(userData?.user?.balance || 0);
+          setShowProcessingModal(false);
+          setShowSuccessModal(true);
+          // Clear the status check interval
+          if (statusCheckIntervalRef.current) {
+            clearInterval(statusCheckIntervalRef.current);
+            statusCheckIntervalRef.current = null;
+          }
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ['/api/user/info'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        }
+      } else if (data.status === PAYMENT_STATUS.FAILED) {
+        // Payment failed
+        toast({
+          variant: "destructive",
+          title: "Payment Failed",
+          description: data.message || "Your payment has failed. Please try again.",
+        });
+        setShowProcessingModal(false);
+        // Clear the status check interval
+        if (statusCheckIntervalRef.current) {
+          clearInterval(statusCheckIntervalRef.current);
+          statusCheckIntervalRef.current = null;
+        }
+      }
+      // For pending status, we continue checking
+      setIsCheckingStatus(false);
+    },
+    onError: (error: any) => {
+      console.error("Error checking payment status:", error);
+      setIsCheckingStatus(false);
+    }
+  });
+  
   // Handle amount change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -108,7 +151,31 @@ const QRDeposit = () => {
     generateQrMutation.mutate({ amount });
   };
   
-  // Handle simulating payment process
+  // Handle checking payment status
+  const startCheckingPaymentStatus = () => {
+    if (!activeQrPayment?.directPayReference) return;
+    
+    setShowProcessingModal(true);
+    setIsCheckingStatus(true);
+    
+    // Check immediately
+    checkPaymentStatusMutation.mutate(activeQrPayment.directPayReference);
+    
+    // Set up interval to check payment status every 5 seconds
+    const intervalId = window.setInterval(() => {
+      if (activeQrPayment?.directPayReference) {
+        checkPaymentStatusMutation.mutate(activeQrPayment.directPayReference);
+      } else {
+        // Clear interval if no payment is active
+        clearInterval(intervalId);
+      }
+    }, 5000);
+    
+    // Store interval ID for cleanup
+    statusCheckIntervalRef.current = intervalId;
+  };
+  
+  // Handle simulating payment process (only in development mode)
   const handleSimulatePayment = () => {
     if (!activeQrPayment?.directPayReference) return;
     
@@ -126,9 +193,21 @@ const QRDeposit = () => {
     setActiveQrPayment(null);
   };
   
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+      }
+    };
+  }, []);
+  
   // Update timer for QR code expiration
   useEffect(() => {
     if (!activeQrPayment) return;
+    
+    // Start checking payment status automatically when QR is generated
+    startCheckingPaymentStatus();
     
     const interval = setInterval(() => {
       const remaining = getTimeRemaining(activeQrPayment.expiresAt);
@@ -142,6 +221,12 @@ const QRDeposit = () => {
           description: "The QR code has expired. Please generate a new one.",
         });
         setActiveQrPayment(null);
+        
+        // Clear payment check interval when QR expires
+        if (statusCheckIntervalRef.current) {
+          clearInterval(statusCheckIntervalRef.current);
+          statusCheckIntervalRef.current = null;
+        }
       }
     }, 1000);
     
@@ -264,13 +349,26 @@ const QRDeposit = () => {
               </div>
               
               {activeQrPayment ? (
-                <Button
-                  className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300"
-                  onClick={handleSimulatePayment}
-                >
-                  {/* This button is for demo purposes */}
-                  Simulate Payment Completion
-                </Button>
+                <>
+                  {inDevMode ? (
+                    <Button
+                      className="w-full bg-accent hover:bg-accent/90 text-white font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300"
+                      onClick={handleSimulatePayment}
+                    >
+                      {/* This button is for demo purposes */}
+                      Simulate Payment Completion
+                    </Button>
+                  ) : (
+                    <div className="p-3 bg-accent/10 rounded-lg text-center text-sm text-gray-300">
+                      <Loader2 className="animate-spin h-5 w-5 inline-block mr-2" />
+                      {isCheckingStatus ? (
+                        <span>Checking payment status...</span>
+                      ) : (
+                        <span>Scan QR code with GCash app to complete payment</span>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <Button
                   className="w-full bg-secondary hover:bg-secondary/90 text-white font-bold py-3 px-4 rounded-lg shadow-sm transition duration-300"
