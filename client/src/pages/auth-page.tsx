@@ -235,21 +235,22 @@ export default function AuthPage() {
         <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-xl bg-blue-200/10 dark:bg-blue-400/5 backdrop-blur-lg"></div>
       </div>
       
-      {/* Header - with back button */}
-      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-10 relative">
+      {/* Glassmorphism Header - with back button */}
+      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white/80 dark:bg-black/80 border-b border-white/20 dark:border-white/5 backdrop-blur-md shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-20">
         {/* Dice confined to header area only */}
         <div className="absolute inset-0 overflow-hidden">
           <CasinoElements3D />
         </div>
         
         <Link href="/" className="z-10">
-          <div className="flex items-center space-x-2 cursor-pointer">
-            <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
-            <span className="font-medium text-base sm:text-lg text-blue-600">747 Casino E-Wallet</span>
+          <div className="flex items-center space-x-2 cursor-pointer group">
+            <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
+            <span className="font-medium text-base sm:text-lg text-blue-600 dark:text-blue-500 transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400">747 Casino E-Wallet</span>
           </div>
         </Link>
+        
         <Link href="/" className="z-10">
-          <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+          <Button variant="ghost" size="sm" className="text-xs sm:text-sm bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-700/50 backdrop-blur-sm">
             Back to Home
           </Button>
         </Link>
@@ -405,7 +406,7 @@ export default function AuthPage() {
                                 placeholder="Enter your 747 casino username" 
                                 {...field} 
                                 disabled
-                                className="h-9 sm:h-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base"
+                                className="h-9 sm:h-10 glass-input bg-gray-50/70 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 text-sm sm:text-base"
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -519,7 +520,7 @@ export default function AuthPage() {
                                 placeholder="Your existing 747 casino username" 
                                 {...field} 
                                 disabled
-                                className="h-9 sm:h-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm sm:text-base"
+                                className="h-9 sm:h-10 glass-input bg-gray-50/70 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 text-sm sm:text-base"
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -666,8 +667,9 @@ export default function AuthPage() {
                     <Button
                       onClick={goBackToVerification}
                       variant="outline"
-                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-700/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-700/30"
+                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-700/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-700/30 transition-all duration-300 hover:shadow-md"
                     >
+                      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 opacity-70" />
                       Verify Different Username
                     </Button>
                   </div>
