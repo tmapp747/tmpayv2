@@ -151,6 +151,11 @@ export default function AuthPage() {
     setActiveTab("verification");
   };
 
+  // Don't render anything if user is logged in
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Form Section */}
