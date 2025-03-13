@@ -1,4 +1,4 @@
-/* Casino-themed Animations */
+/* Casino-themed Animations with Glassmorphism */
 
 /* Gradient background animation */
 @keyframes gradientBG {
@@ -66,6 +66,16 @@
   }
 }
 
+/* Glass shine effect animation */
+@keyframes glassShine {
+  0% {
+    background-position: -500px 0;
+  }
+  100% {
+    background-position: 500px 0;
+  }
+}
+
 /* Button pulse animation */
 @keyframes buttonPulse {
   0%, 100% {
@@ -101,18 +111,56 @@
   }
 }
 
-/* Card hover effect */
-.card-hover {
+/* Glassmorphism Card Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-.card-hover:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
+.dark .glass-card {
+  background: rgba(17, 25, 40, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Casino Button Effect */
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Glass card with shine effect */
+.glass-card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: skewX(-15deg);
+  animation: glassShine 8s infinite;
+}
+
+/* Casino Button with Glassmorphism */
 .casino-button {
+  background: rgba(37, 99, 235, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   position: relative;
   overflow: hidden;
@@ -128,7 +176,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.3),
     transparent
   );
   transition: all 0.5s;
@@ -141,6 +189,7 @@
 .casino-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 7px 14px rgba(0, 0, 0, 0.15), 0 5px 5px rgba(0, 0, 0, 0.12);
+  background: rgba(37, 99, 235, 0.95);
 }
 
 .casino-button:active {
@@ -148,11 +197,48 @@
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 3px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Moving gradient background */
+/* Moving gradient backgrounds */
 .gradient-bg {
   background: linear-gradient(45deg, #0f172a, #1e293b, #121826, #1a2234);
   background-size: 400% 400%;
   animation: gradientBG 15s ease infinite;
+}
+
+/* Glass Panel Styles */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.dark .glass-panel {
+  background: rgba(17, 25, 40, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Premium Glass */
+.premium-glass {
+  background: linear-gradient(
+    135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.dark .premium-glass {
+  background: linear-gradient(
+    135deg, 
+    rgba(17, 25, 40, 0.75) 0%, 
+    rgba(28, 40, 65, 0.75) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Floating elements */
