@@ -19,6 +19,7 @@ import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
+import { setupAuth } from "./auth";
 
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
@@ -165,6 +166,9 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication with Passport and session support
+  setupAuth(app);
+  
   // The list of allowed top managers
   const ALLOWED_TOP_MANAGERS = ['alpha1', 'omega2', 'sigma3'];
 

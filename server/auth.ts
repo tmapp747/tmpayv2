@@ -33,9 +33,7 @@ export function setupAuth(app: Express) {
     secret: process.env.SESSION_SECRET || "casino747_session_secret", // Use env variable in production
     resave: false,
     saveUninitialized: false,
-    store: new session.MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    }),
+    store: storage.sessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,

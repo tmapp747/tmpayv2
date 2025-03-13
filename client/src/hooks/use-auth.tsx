@@ -69,16 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/auth/login", credentials);
+      const res = await apiRequest("POST", "/api/login", credentials);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Login failed");
       return data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-      
-      // Update auth header for future requests
-      localStorage.setItem("auth_token", data.user.accessToken);
       
       toast({
         title: "Login successful",
@@ -96,16 +93,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
-      const res = await apiRequest("POST", "/api/auth/register", userData);
+      const res = await apiRequest("POST", "/api/register", userData);
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Registration failed");
       return data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-      
-      // Update auth header for future requests
-      localStorage.setItem("auth_token", data.user.accessToken);
       
       toast({
         title: "Registration successful",
@@ -123,16 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/auth/logout");
+      const res = await apiRequest("POST", "/api/logout");
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Logout failed");
       return data;
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user/info"], { user: null });
-      
-      // Clear auth token
-      localStorage.removeItem("auth_token");
       
       toast({
         title: "Logged out",
