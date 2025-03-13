@@ -1051,6 +1051,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Endpoint to create manual payment with receipt
+  app.post("/api/payments/manual/create", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      // Get the authenticated user from the request
+      const user = (req as any).user;
+      
+      // Validate request with manualPaymentSchema
+      const { amount, paymentMethod, notes, reference } = manualPaymentSchema.parse(req.body);
+      
+      // Check required fields
+      if (!req.body.proofImageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "Proof image URL is required"
+        });
+      }
+      
+      // Create a new transaction for this payment
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'deposit',
+        method: `manual_${paymentMethod}`,
+        amount: amount.toString(),
+        status: 'pending',
+        paymentReference: reference,
+        currency: 'PHP'
+      });
+      
+      // Create manual payment record
+      const manualPayment = await storage.createManualPayment({
+        userId: user.id,
+        transactionId: transaction.id,
+        amount: amount.toString(),
+        paymentMethod,
+        notes: notes || '',
+        proofImageUrl: req.body.proofImageUrl,
+        reference,
+        status: 'pending'
+      });
+      
+      // Return the manual payment data to the client
+      return res.json({
+        success: true,
+        manualPayment,
+        transaction
+      });
+    } catch (error) {
+      console.error("Manual payment creation error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid request data: " + error.message
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        message: "Error creating manual payment: " + (error instanceof Error ? error.message : String(error))
+      });
+    }
+  });
   
   // Endpoint to check payment status
   app.get("/api/payments/status/:referenceId", authMiddleware, async (req: Request, res: Response) => {
