@@ -2,14 +2,21 @@ import { pgTable, text, serial, integer, timestamp, boolean, numeric, json } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Currency definition
+export const supportedCurrencies = ['PHP', 'USD', 'EUR', 'CNY', 'JPY', 'KRW', 'USDT'];
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email"),
+  // Primary balance in PHP (Philippine Peso) for DirectPay transactions
   balance: numeric("balance", { precision: 10, scale: 2 }).default("0").notNull(),
   pendingBalance: numeric("pending_balance", { precision: 10, scale: 2 }).default("0").notNull(),
+  // Multi-currency support
+  balances: json("balances").default({}).notNull(), // JSON object with currency as key and balance as value
+  preferredCurrency: text("preferred_currency").default("PHP").notNull(),
   isVip: boolean("is_vip").default(false),
   casinoId: text("casino_id").notNull(),
   // 747 Casino-specific fields
@@ -88,13 +95,15 @@ export const generateQrCodeSchema = z.object({
   userId: z.number(),
   username: z.string(),
   amount: z.number().min(100).max(50000),
-  casinoId: z.string()
+  casinoId: z.string(),
+  currency: z.string().default("PHP")
 });
 
 export const verifyPaymentSchema = z.object({
   paymentReference: z.string(),
   transactionId: z.string().optional(),
   amount: z.number(),
+  currency: z.string().default("PHP"),
   status: z.enum(['success', 'failed', 'pending'])
 });
 
@@ -102,7 +111,28 @@ export const updateBalanceSchema = z.object({
   userId: z.number(),
   casinoId: z.string(),
   amount: z.number(),
+  currency: z.string().default("PHP"),
   transactionId: z.string()
+});
+
+// Multi-currency schemas
+export const currencySchema = z.enum(supportedCurrencies as [string, ...string[]]);
+
+export const updatePreferredCurrencySchema = z.object({
+  userId: z.number(),
+  currency: currencySchema
+});
+
+export const getCurrencyBalanceSchema = z.object({
+  userId: z.number(),
+  currency: currencySchema
+});
+
+export const exchangeCurrencySchema = z.object({
+  userId: z.number(), 
+  fromCurrency: currencySchema,
+  toCurrency: currencySchema,
+  amount: z.number().positive()
 });
 
 // 747 Casino-specific API request schemas
@@ -167,6 +197,13 @@ export type InsertQrPayment = z.infer<typeof insertQrPaymentSchema>;
 export type GenerateQrCodeRequest = z.infer<typeof generateQrCodeSchema>;
 export type VerifyPaymentRequest = z.infer<typeof verifyPaymentSchema>;
 export type UpdateBalanceRequest = z.infer<typeof updateBalanceSchema>;
+
+// Multi-currency types
+export type Currency = z.infer<typeof currencySchema>;
+export type UpdatePreferredCurrencyRequest = z.infer<typeof updatePreferredCurrencySchema>;
+export type GetCurrencyBalanceRequest = z.infer<typeof getCurrencyBalanceSchema>;
+export type ExchangeCurrencyRequest = z.infer<typeof exchangeCurrencySchema>;
+export type CurrencyBalances = Record<Currency, string>;
 
 // 747 Casino-specific types
 export type CasinoDepositRequest = z.infer<typeof casinoDepositSchema>;

@@ -2,12 +2,15 @@ import {
   users, 
   transactions, 
   qrPayments, 
+  supportedCurrencies,
   type User, 
   type InsertUser,
   type Transaction,
   type InsertTransaction,
   type QrPayment,
-  type InsertQrPayment
+  type InsertQrPayment,
+  type Currency,
+  type CurrencyBalances
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -38,6 +41,12 @@ export interface IStorage {
   updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
   setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;
   isUserAuthorized(username: string): Promise<boolean>;
+  
+  // Multi-currency operations
+  getUserCurrencyBalance(id: number, currency: Currency): Promise<string>;
+  updateUserCurrencyBalance(id: number, currency: Currency, amount: number): Promise<User>;
+  exchangeCurrency(id: number, fromCurrency: Currency, toCurrency: Currency, amount: number): Promise<User>;
+  updatePreferredCurrency(id: number, currency: Currency): Promise<User>;
   
   // Transaction operations
   getTransaction(id: number): Promise<Transaction | undefined>;
@@ -291,6 +300,104 @@ export class MemStorage implements IStorage {
     }
     
     return false;
+  }
+  
+  // Multi-currency operations
+  async getUserCurrencyBalance(id: number, currency: Currency): Promise<string> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // If the user already has balances property
+    if (user.balances && typeof user.balances === 'object') {
+      const balances = user.balances as CurrencyBalances;
+      return balances[currency] || '0.00';
+    }
+    
+    // If no balances property exists yet, check if this is the default currency
+    if (currency === 'PHP') {
+      // Return the main balance for PHP
+      return user.balance || '0.00';
+    }
+    
+    // Return 0 for other currencies that don't exist yet
+    return '0.00';
+  }
+  
+  async updateUserCurrencyBalance(id: number, currency: Currency, amount: number): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Initialize balances if it doesn't exist
+    const balances = (user.balances as CurrencyBalances) || {} as CurrencyBalances;
+    
+    // Get current balance for this currency (default to 0)
+    const currentBalance = parseFloat(balances[currency] || '0.00');
+    
+    // Update the balance
+    balances[currency] = (currentBalance + amount).toFixed(2);
+    
+    // Special case for PHP which also updates the main balance
+    let updatedMainBalance = user.balance;
+    if (currency === 'PHP') {
+      updatedMainBalance = balances[currency];
+    }
+    
+    const updatedUser = { 
+      ...user, 
+      balances,
+      balance: updatedMainBalance,
+      updatedAt: new Date() 
+    };
+    
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async exchangeCurrency(id: number, fromCurrency: Currency, toCurrency: Currency, amount: number): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Get current balances
+    const fromBalance = parseFloat(await this.getUserCurrencyBalance(id, fromCurrency));
+    
+    // Verify user has enough in the source currency
+    if (fromBalance < amount) {
+      throw new Error(`Insufficient ${fromCurrency} balance for exchange`);
+    }
+    
+    // Apply exchange rate (simplified for demo)
+    // In production, this would use an actual exchange rate API
+    const exchangeRates: Record<string, Record<string, number>> = {
+      'PHP': { 'USD': 0.018, 'EUR': 0.016, 'CNY': 0.13, 'JPY': 2.53, 'KRW': 23.5, 'USDT': 0.018 },
+      'USD': { 'PHP': 55.5, 'EUR': 0.91, 'CNY': 7.2, 'JPY': 140.5, 'KRW': 1300, 'USDT': 1.0 },
+      'EUR': { 'PHP': 60.95, 'USD': 1.1, 'CNY': 7.9, 'JPY': 154.5, 'KRW': 1431, 'USDT': 1.1 },
+      'CNY': { 'PHP': 7.7, 'USD': 0.14, 'EUR': 0.13, 'JPY': 19.6, 'KRW': 181, 'USDT': 0.14 },
+      'JPY': { 'PHP': 0.39, 'USD': 0.0071, 'EUR': 0.0065, 'CNY': 0.051, 'KRW': 9.3, 'USDT': 0.0071 },
+      'KRW': { 'PHP': 0.042, 'USD': 0.00077, 'EUR': 0.0007, 'CNY': 0.0055, 'JPY': 0.11, 'USDT': 0.00077 },
+      'USDT': { 'PHP': 55.5, 'USD': 1.0, 'EUR': 0.91, 'CNY': 7.2, 'JPY': 140.5, 'KRW': 1300 }
+    };
+    
+    const rate = exchangeRates[fromCurrency]?.[toCurrency] || 1;
+    const convertedAmount = amount * rate;
+    
+    // Deduct from source currency
+    await this.updateUserCurrencyBalance(id, fromCurrency, -amount);
+    
+    // Add to target currency
+    return this.updateUserCurrencyBalance(id, toCurrency, convertedAmount);
+  }
+  
+  async updatePreferredCurrency(id: number, currency: Currency): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      preferredCurrency: currency,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Transaction operations
