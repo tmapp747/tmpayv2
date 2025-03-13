@@ -114,11 +114,13 @@ export class MemStorage implements IStorage {
     this.transactions = new Map();
     this.qrPayments = new Map();
     this.telegramPayments = new Map();
+    this.manualPayments = new Map();
     
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
     this.telegramPaymentIdCounter = 1;
+    this.manualPaymentIdCounter = 1;
 
     // Initialize the session store
     this.sessionStore = new MemoryStore({
@@ -690,6 +692,77 @@ export class MemStorage implements IStorage {
     return Array.from(this.telegramPayments.values()).find(
       (payment) => payment.userId === userId && 
                   (payment.status === 'pending') && 
+                  new Date() < payment.expiresAt
+    );
+  }
+
+  // Manual Payment operations
+  async createManualPayment(paymentData: InsertManualPayment): Promise<ManualPayment> {
+    const id = this.manualPaymentIdCounter++;
+    const now = new Date();
+    
+    // Calculate expiry time (24 hours from now for manual payments)
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    // Create a new manual payment record
+    const manualPayment: ManualPayment = { 
+      ...paymentData, 
+      id,
+      status: paymentData.status || 'pending',
+      receiptUrl: paymentData.receiptUrl || null,
+      adminId: paymentData.adminId || null,
+      adminNotes: paymentData.adminNotes || null,
+      expiresAt,
+      createdAt: now, 
+      updatedAt: now 
+    };
+    
+    this.manualPayments.set(id, manualPayment);
+    return manualPayment;
+  }
+
+  async getManualPayment(id: number): Promise<ManualPayment | undefined> {
+    return this.manualPayments.get(id);
+  }
+
+  async getManualPaymentByReference(reference: string): Promise<ManualPayment | undefined> {
+    return Array.from(this.manualPayments.values()).find(
+      (payment) => payment.reference === reference
+    );
+  }
+
+  async updateManualPaymentStatus(id: number, status: string): Promise<ManualPayment> {
+    const payment = await this.getManualPayment(id);
+    if (!payment) throw new Error(`Manual payment with ID ${id} not found`);
+    
+    const updatedPayment: ManualPayment = { 
+      ...payment, 
+      status, 
+      updatedAt: new Date() 
+    };
+    
+    this.manualPayments.set(id, updatedPayment);
+    return updatedPayment;
+  }
+
+  async uploadManualPaymentReceipt(id: number, receiptUrl: string): Promise<ManualPayment> {
+    const payment = await this.getManualPayment(id);
+    if (!payment) throw new Error(`Manual payment with ID ${id} not found`);
+    
+    const updatedPayment: ManualPayment = { 
+      ...payment, 
+      receiptUrl,
+      updatedAt: new Date() 
+    };
+    
+    this.manualPayments.set(id, updatedPayment);
+    return updatedPayment;
+  }
+
+  async getActiveManualPaymentByUserId(userId: number): Promise<ManualPayment | undefined> {
+    return Array.from(this.manualPayments.values()).find(
+      (payment) => payment.userId === userId && 
+                  (payment.status === 'pending' || payment.status === 'processing') && 
                   new Date() < payment.expiresAt
     );
   }
