@@ -1,7 +1,8 @@
 import { 
   users, 
   transactions, 
-  qrPayments, 
+  qrPayments,
+  telegramPayments,
   supportedCurrencies,
   type User, 
   type InsertUser,
@@ -9,6 +10,8 @@ import {
   type InsertTransaction,
   type QrPayment,
   type InsertQrPayment,
+  type TelegramPayment,
+  type InsertTelegramPayment,
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
@@ -69,6 +72,13 @@ export interface IStorage {
   getQrPaymentByReference(reference: string): Promise<QrPayment | undefined>;
   updateQrPaymentStatus(id: number, status: string): Promise<QrPayment>;
   getActiveQrPaymentByUserId(userId: number): Promise<QrPayment | undefined>;
+  
+  // Paygram Payment operations
+  createTelegramPayment(payment: InsertTelegramPayment): Promise<TelegramPayment>;
+  getTelegramPayment(id: number): Promise<TelegramPayment | undefined>;
+  getTelegramPaymentByInvoiceCode(invoiceCode: string): Promise<TelegramPayment | undefined>;
+  updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment>;
+  getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined>;
 }
 
 // In-memory storage implementation
@@ -76,10 +86,12 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private transactions: Map<number, Transaction>;
   private qrPayments: Map<number, QrPayment>;
+  private telegramPayments: Map<number, TelegramPayment>;
   
   private userIdCounter: number;
   private transactionIdCounter: number;
   private qrPaymentIdCounter: number;
+  private telegramPaymentIdCounter: number;
 
   sessionStore: session.Store;
 
@@ -87,10 +99,12 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.transactions = new Map();
     this.qrPayments = new Map();
+    this.telegramPayments = new Map();
     
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
+    this.telegramPaymentIdCounter = 1;
 
     // Initialize the session store
     this.sessionStore = new MemoryStore({
@@ -556,6 +570,51 @@ export class MemStorage implements IStorage {
   async getActiveQrPaymentByUserId(userId: number): Promise<QrPayment | undefined> {
     return Array.from(this.qrPayments.values()).find(
       (qr) => qr.userId === userId && (qr.status === 'pending') && new Date() < qr.expiresAt
+    );
+  }
+
+  // Paygram/Telegram Payment operations
+  async createTelegramPayment(paymentData: InsertTelegramPayment): Promise<TelegramPayment> {
+    const id = this.telegramPaymentIdCounter++;
+    const now = new Date();
+    const telegramPayment: TelegramPayment = { 
+      ...paymentData, 
+      id,
+      createdAt: now, 
+      updatedAt: now 
+    };
+    this.telegramPayments.set(id, telegramPayment);
+    return telegramPayment;
+  }
+
+  async getTelegramPayment(id: number): Promise<TelegramPayment | undefined> {
+    return this.telegramPayments.get(id);
+  }
+
+  async getTelegramPaymentByInvoiceCode(invoiceCode: string): Promise<TelegramPayment | undefined> {
+    return Array.from(this.telegramPayments.values()).find(
+      (payment) => payment.invoiceCode === invoiceCode
+    );
+  }
+
+  async updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment> {
+    const telegramPayment = await this.getTelegramPayment(id);
+    if (!telegramPayment) throw new Error(`Telegram Payment with ID ${id} not found`);
+    
+    const updatedPayment: TelegramPayment = { 
+      ...telegramPayment, 
+      status,
+      updatedAt: new Date() 
+    };
+    this.telegramPayments.set(id, updatedPayment);
+    return updatedPayment;
+  }
+
+  async getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined> {
+    return Array.from(this.telegramPayments.values()).find(
+      (payment) => payment.userId === userId && 
+                  (payment.status === 'pending') && 
+                  new Date() < payment.expiresAt
     );
   }
 }

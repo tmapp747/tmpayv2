@@ -38,7 +38,6 @@ export class PaygramApi {
    * @param userId Unique user identifier in our system
    * @param amount The amount to be paid
    * @param currency The currency code (PHPT, USDT)
-   * @param description Optional description for the payment
    * @returns The payment URL and invoice code
    */
   async generatePaymentUrl(

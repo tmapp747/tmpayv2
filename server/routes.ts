@@ -5,6 +5,7 @@ import {
   generateQrCodeSchema, 
   insertTransactionSchema, 
   insertQrPaymentSchema,
+  insertTelegramPaymentSchema,
   updateBalanceSchema,
   verifyPaymentSchema,
   casinoDepositSchema,
@@ -18,12 +19,14 @@ import {
   Currency,
   updatePreferredCurrencySchema,
   getCurrencyBalanceSchema,
-  exchangeCurrencySchema
+  exchangeCurrencySchema,
+  generateTelegramPaymentSchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
+import { paygramApi } from "./paygramApi";
 import { setupAuth } from "./auth";
 
 // Real DirectPay function to generate QR code using DirectPay API
@@ -95,6 +98,42 @@ async function casino747PrepareTopup(casinoId: string, amount: number, reference
   } catch (error) {
     console.error('Error preparing topup with Casino747 API:', error);
     throw new Error('Failed to prepare topup with Casino747 API');
+  }
+}
+
+// Function to generate payment URL using Paygram API
+async function paygramGeneratePayment(userId: string, amount: number, currency: Currency = 'PHPT') {
+  try {
+    console.log(`Paygram: Generating payment with amount ${amount} ${currency} for user ${userId}`);
+    
+    // Generate a unique reference for this transaction
+    const telegramReference = `PGRAM-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    
+    // Call the Paygram API to generate a payment URL
+    const result = await paygramApi.generatePaymentUrl(
+      userId,
+      amount,
+      currency
+    );
+    
+    console.log('Paygram API Response:', JSON.stringify(result, null, 2));
+    
+    if (!result || !result.payUrl) {
+      throw new Error('No payment URL received from Paygram API');
+    }
+    
+    // Calculate expiry time (30 minutes from now)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    
+    return {
+      payUrl: result.payUrl,
+      invoiceCode: result.invoiceCode,
+      telegramReference,
+      expiresAt
+    };
+  } catch (error) {
+    console.error('Error generating payment URL with Paygram API:', error);
+    throw new Error('Failed to generate payment URL with Paygram API');
   }
 }
 
@@ -810,6 +849,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Generate QR code for deposit
+  // Endpoint to generate a PHPT payment URL using Paygram
+  app.post("/api/payments/paygram/generate", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      // Get authenticated user
+      const user = (req as any).user;
+      
+      // Validate request body using the generate schema
+      const { amount, currency = 'PHPT' } = generateTelegramPaymentSchema.parse(req.body);
+      
+      // Check if the user already has an active payment
+      const activePayment = await storage.getActiveTelegramPaymentByUserId(user.id);
+      
+      if (activePayment) {
+        return res.status(400).json({
+          success: false,
+          message: "You already have an active payment. Please complete or cancel it before creating a new one.",
+          payment: activePayment
+        });
+      }
+      
+      // Generate a transaction with pending status
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: 'deposit',
+        method: 'telegram',
+        amount: amount.toString(),
+        currency,
+        status: 'pending'
+      });
+      
+      // Generate the payment via Paygram API
+      const payment = await paygramGeneratePayment(
+        user.id.toString(), 
+        amount, 
+        currency as Currency,
+        `Deposit ${amount} ${currency} via Paygram for user ${user.username}`
+      );
+      
+      // Save payment details in our storage
+      const telegramPayment = await storage.createTelegramPayment({
+        userId: user.id,
+        transactionId: transaction.id,
+        amount: amount.toString(),
+        currency,
+        payUrl: payment.payUrl,
+        invoiceId: payment.invoiceCode,
+        telegramReference: payment.telegramReference,
+        expiresAt: payment.expiresAt,
+        status: 'pending'
+      });
+      
+      // Update the transaction with the payment reference
+      await storage.updateTransactionStatus(
+        transaction.id, 
+        'pending', 
+        payment.telegramReference
+      );
+      
+      // Return success with payment details
+      return res.status(201).json({
+        success: true,
+        telegramPayment,
+        transaction,
+        message: "Payment URL generated successfully. Please complete the payment via Telegram."
+      });
+    } catch (error) {
+      console.error('Error generating Paygram payment:', error);
+      
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid request data", 
+          errors: error.errors 
+        });
+      }
+      
+      return res.status(500).json({
+        success: false,
+        message: "Error generating payment: " + (error instanceof Error ? error.message : String(error))
+      });
+    }
+  });
+  
   app.post("/api/payments/gcash/generate-qr", authMiddleware, async (req: Request, res: Response) => {
     try {
       // Get the authenticated user from the request
@@ -944,99 +1066,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the authenticated user
       const authenticatedUser = (req as any).user;
       
-      // Find the QR payment by reference
-      const qrPayment = await storage.getQrPaymentByReference(referenceId);
-      
-      if (!qrPayment) {
-        return res.status(404).json({ 
-          success: false,
-          message: "Payment not found" 
-        });
-      }
-      
-      // Check if the payment belongs to the authenticated user
-      if (qrPayment.userId !== authenticatedUser.id) {
-        return res.status(403).json({ 
-          success: false,
-          message: "You don't have permission to view this payment" 
-        });
-      }
-      
-      // If payment is already completed or failed, just return the current status
-      if (qrPayment.status === "completed" || qrPayment.status === "failed") {
+      // Check if this is a Telegram/Paygram payment reference (starts with PGRAM-)
+      if (referenceId.startsWith('PGRAM-')) {
+        // Find the Telegram payment by reference
+        const telegramPayment = await storage.getTelegramPaymentByReference(referenceId);
+        
+        if (!telegramPayment) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Telegram payment not found" 
+          });
+        }
+        
+        // Check if the payment belongs to the authenticated user
+        if (telegramPayment.userId !== authenticatedUser.id) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to view this payment" 
+          });
+        }
+        
+        // If payment is already completed or failed, just return the current status
+        if (telegramPayment.status === "completed" || telegramPayment.status === "failed") {
+          return res.json({
+            success: true,
+            status: telegramPayment.status,
+            telegramPayment
+          });
+        }
+        
+        // Check if the payment has expired
+        if (telegramPayment.status === "pending" && new Date() > telegramPayment.expiresAt) {
+          await storage.updateTelegramPaymentStatus(telegramPayment.id, "expired");
+          return res.json({
+            success: false,
+            status: "expired",
+            message: "Payment has expired"
+          });
+        }
+        
+        // For pending payments, check with Paygram API for the latest status
+        if (telegramPayment.status === "pending") {
+          try {
+            // Check payment status with Paygram API
+            const paygramStatus = await paygramApi.checkPaymentStatus(
+              authenticatedUser.id.toString(), 
+              telegramPayment.invoiceId || ''
+            );
+            
+            // If Paygram says the payment is completed or failed, update our status
+            if (paygramStatus.status !== "pending") {
+              console.log(`Payment status from Paygram: ${paygramStatus.status} for invoice ${telegramPayment.invoiceId}`);
+              
+              // Update our Telegram payment status
+              await storage.updateTelegramPaymentStatus(telegramPayment.id, paygramStatus.status);
+              telegramPayment.status = paygramStatus.status;
+              
+              // If payment is completed, also update the transaction and user balance
+              if (paygramStatus.status === "completed") {
+                // Get the transaction and user
+                const transaction = await storage.getTransaction(telegramPayment.transactionId);
+                const user = await storage.getUser(telegramPayment.userId);
+                
+                if (transaction && user) {
+                  // Update transaction status
+                  await storage.updateTransactionStatus(
+                    transaction.id, 
+                    "completed",
+                    paygramStatus.transactionId || telegramPayment.invoiceId
+                  );
+                  
+                  // Update user's balance with the specific currency (PHPT or USDT)
+                  const currency = transaction.currency || telegramPayment.currency || 'PHPT';
+                  const amount = parseFloat(telegramPayment.amount.toString());
+                  await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+                  
+                  console.log(`Telegram payment completed via status check: ${telegramPayment.invoiceId}, amount: ${amount} ${currency}`);
+                }
+              }
+            }
+          } catch (paygramError) {
+            // If there's an error checking with Paygram, just continue with our current status
+            console.error("Error checking payment status with Paygram:", paygramError);
+          }
+        }
+        
         return res.json({
-          success: true,
+          success: telegramPayment.status === "completed",
+          status: telegramPayment.status,
+          telegramPayment
+        });
+      } else {
+        // This is a GCash QR payment - Find the QR payment by reference
+        const qrPayment = await storage.getQrPaymentByReference(referenceId);
+        
+        if (!qrPayment) {
+          return res.status(404).json({ 
+            success: false,
+            message: "Payment not found" 
+          });
+        }
+        
+        // Check if the payment belongs to the authenticated user
+        if (qrPayment.userId !== authenticatedUser.id) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to view this payment" 
+          });
+        }
+        
+        // If payment is already completed or failed, just return the current status
+        if (qrPayment.status === "completed" || qrPayment.status === "failed") {
+          return res.json({
+            success: true,
+            status: qrPayment.status,
+            qrPayment
+          });
+        }
+        
+        // Check if the payment has expired
+        if (qrPayment.status === "pending" && new Date() > qrPayment.expiresAt) {
+          await storage.updateQrPaymentStatus(qrPayment.id, "expired");
+          return res.json({
+            success: false,
+            status: "expired",
+            message: "Payment has expired"
+          });
+        }
+        
+        // For pending payments, check with DirectPay for the latest status
+        // This is useful for cases where the webhook might not have been received
+        if (qrPayment.status === "pending") {
+          try {
+            // Query DirectPay API for the latest payment status
+            const directPayStatus = await directPayApi.checkPaymentStatus(qrPayment.directPayReference || referenceId);
+            
+            // If DirectPay says the payment is completed or failed, update our status
+            if (directPayStatus.status !== "pending") {
+              console.log(`Payment status from DirectPay: ${directPayStatus.status} for reference ${referenceId}`);
+              
+              // Update our QR payment status
+              await storage.updateQrPaymentStatus(qrPayment.id, directPayStatus.status);
+              qrPayment.status = directPayStatus.status;
+              
+              // If payment is completed, also update the transaction and user balance
+              if (directPayStatus.status === "completed") {
+                // Get the transaction and user
+                const transaction = await storage.getTransaction(qrPayment.transactionId);
+                const user = await storage.getUser(qrPayment.userId);
+                
+                if (transaction && user) {
+                  // Update transaction status
+                  await storage.updateTransactionStatus(
+                    transaction.id, 
+                    "completed",
+                    directPayStatus.transactionId
+                  );
+                  
+                  // Call 747 Casino API to complete the topup
+                  const amount = parseFloat(qrPayment.amount.toString());
+                  const casinoResult = await casino747CompleteTopup(
+                    user.casinoId,
+                    amount,
+                    transaction.paymentReference || ""
+                  );
+                  
+                  // Update user's balance using the currency from the transaction
+                  const currency = transaction.currency || 'PHP'; // Default to PHP for GCash transactions
+                  await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+                  
+                  console.log(`Payment completed via status check: ${referenceId}, amount: ${amount}`);
+                }
+              }
+            }
+          } catch (directPayError) {
+            // If there's an error checking with DirectPay, just continue with our current status
+            console.error("Error checking payment status with DirectPay:", directPayError);
+          }
+        }
+        
+        return res.json({
+          success: qrPayment.status === "completed",
           status: qrPayment.status,
           qrPayment
         });
       }
-      
-      // Check if the payment has expired
-      if (qrPayment.status === "pending" && new Date() > qrPayment.expiresAt) {
-        await storage.updateQrPaymentStatus(qrPayment.id, "expired");
-        return res.json({
-          success: false,
-          status: "expired",
-          message: "Payment has expired"
-        });
-      }
-      
-      // For pending payments, check with DirectPay for the latest status
-      // This is useful for cases where the webhook might not have been received
-      if (qrPayment.status === "pending") {
-        try {
-          // Query DirectPay API for the latest payment status
-          const directPayStatus = await directPayApi.checkPaymentStatus(qrPayment.directPayReference || referenceId);
-          
-          // If DirectPay says the payment is completed or failed, update our status
-          if (directPayStatus.status !== "pending") {
-            console.log(`Payment status from DirectPay: ${directPayStatus.status} for reference ${referenceId}`);
-            
-            // Update our QR payment status
-            await storage.updateQrPaymentStatus(qrPayment.id, directPayStatus.status);
-            qrPayment.status = directPayStatus.status;
-            
-            // If payment is completed, also update the transaction and user balance
-            if (directPayStatus.status === "completed") {
-              // Get the transaction and user
-              const transaction = await storage.getTransaction(qrPayment.transactionId);
-              const user = await storage.getUser(qrPayment.userId);
-              
-              if (transaction && user) {
-                // Update transaction status
-                await storage.updateTransactionStatus(
-                  transaction.id, 
-                  "completed",
-                  directPayStatus.transactionId
-                );
-                
-                // Call 747 Casino API to complete the topup
-                const amount = parseFloat(qrPayment.amount.toString());
-                const casinoResult = await casino747CompleteTopup(
-                  user.casinoId,
-                  amount,
-                  transaction.paymentReference || ""
-                );
-                
-                // Update user's balance using the currency from the transaction
-                const currency = transaction.currency || 'PHP'; // Default to PHP for GCash transactions
-                await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
-                
-                console.log(`Payment completed via status check: ${referenceId}, amount: ${amount}`);
-              }
-            }
-          }
-        } catch (directPayError) {
-          // If there's an error checking with DirectPay, just continue with our current status
-          console.error("Error checking payment status with DirectPay:", directPayError);
-        }
-      }
-      
-      return res.json({
-        success: qrPayment.status === "completed",
-        status: qrPayment.status,
-        qrPayment
-      });
     } catch (error) {
       console.error("Check payment status error:", error);
       return res.status(500).json({ 
