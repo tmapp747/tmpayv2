@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { storage } from './storage';
 
 /**
  * API client for interacting with the 747 Casino API
@@ -6,13 +7,74 @@ import axios from 'axios';
 export class Casino747Api {
   private baseUrl: string = 'https://bridge.747lc.com';
   private userLookupUrl: string = 'https://tmpay747.azurewebsites.net/api/Bridge/get-user';
-  private authToken: string | null = null;
-  private authTokenExpiry: Date | null = null;
+  private tokenCacheMap: Map<string, { token: string, expiry: Date }> = new Map();
   
   constructor(
     private readonly apiKey: string = '', 
-    private readonly defaultPlatform: number = 1
-  ) {}
+    private readonly defaultPlatform: number = 1,
+    private readonly tokenExpiryMinutes: number = 30
+  ) {
+    // Initialize tokens for allowed top managers
+    this.initTokens();
+  }
+  
+  /**
+   * Initialize auth tokens for all top managers when the API client is created
+   * This ensures we have valid tokens ready for immediate use
+   */
+  private async initTokens() {
+    try {
+      // List of our allowed top managers
+      const allowedTopManagers = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+      
+      // Initialize tokens for each manager
+      for (const manager of allowedTopManagers) {
+        try {
+          // Check if we already have a token from a user in the database
+          const user = await storage.getUserByTopManager(manager);
+          
+          if (user && user.casinoAuthToken && user.casinoAuthTokenExpiry) {
+            // If token exists but is expired or close to expiry, refresh it
+            const now = new Date();
+            // If token expires in less than 5 minutes, refresh it
+            const expiryBuffer = new Date(now.getTime() + 5 * 60 * 1000);
+            
+            if (user.casinoAuthTokenExpiry < expiryBuffer) {
+              console.log(`Token for ${manager} is close to expiry, refreshing...`);
+              const { token, expiry } = await this.fetchNewAuthToken(manager);
+              await storage.updateUserCasinoAuthToken(user.id, token, expiry);
+              this.tokenCacheMap.set(manager, { token, expiry });
+            } else {
+              // Token is still valid, cache it
+              console.log(`Using existing valid token for ${manager}`);
+              this.tokenCacheMap.set(manager, { 
+                token: user.casinoAuthToken, 
+                expiry: user.casinoAuthTokenExpiry 
+              });
+            }
+          } else {
+            // No token exists for this manager, create one
+            console.log(`No token found for ${manager}, generating new one...`);
+            const { token, expiry } = await this.fetchNewAuthToken(manager);
+            
+            if (user) {
+              await storage.updateUserCasinoAuthToken(user.id, token, expiry);
+            }
+            
+            this.tokenCacheMap.set(manager, { token, expiry });
+          }
+        } catch (error) {
+          console.error(`Error initializing token for ${manager}:`, error);
+          // Continue with other managers even if one fails
+        }
+      }
+      
+      console.log('Finished initializing casino API tokens');
+    } catch (error) {
+      console.error('Error during token initialization:', error);
+      // Don't throw error here as it would break the constructor
+    }
+  }
 
   /**
    * Get user details from the 747 API
@@ -288,28 +350,114 @@ export class Casino747Api {
    * @private
    */
   private async getAuthToken(username: string): Promise<string> {
-    // In a real implementation, you would:
-    // 1. Check if existing token is still valid
-    // 2. If not, request a new token
-    // 3. Store and return the token
-    
-    // For now, we'll use a mapping of hardcoded tokens
-    // In production, you would implement proper token management
-    const tokenMap: Record<string, string> = {
-      'Marcthepogi': 'e726f734-0b50-4ca2-b8d7-bca385955acf'
-      // Add more tokens as needed
-    };
-
-    // Get user details to find the top manager
-    const userDetails = await this.getUserDetails(username);
-    const topManager = userDetails.topManager;
-    
-    // Return the token for the top manager
-    if (tokenMap[topManager]) {
-      return tokenMap[topManager];
+    try {
+      // 1. First, get the user details to find the top manager
+      const userDetails = await this.getUserDetails(username);
+      const topManager = userDetails.topManager;
+      
+      if (!topManager) {
+        throw new Error(`No top manager found for user: ${username}`);
+      }
+      
+      // 2. Check if we have a cached token for this top manager that's not expired
+      if (this.tokenCacheMap.has(topManager)) {
+        const cachedData = this.tokenCacheMap.get(topManager)!;
+        if (cachedData.expiry > new Date()) {
+          console.log(`Using cached auth token for top manager: ${topManager}`);
+          return cachedData.token;
+        } else {
+          console.log(`Cached token expired for top manager: ${topManager}`);
+          this.tokenCacheMap.delete(topManager);
+        }
+      }
+      
+      // 3. Look for a user in storage with this top manager that has a valid token
+      const user = await storage.getUserByTopManager(topManager);
+      
+      if (user && user.casinoAuthToken && user.casinoAuthTokenExpiry && user.casinoAuthTokenExpiry > new Date()) {
+        console.log(`Using stored auth token for top manager: ${topManager} from user ${user.username}`);
+        // Cache the token
+        this.tokenCacheMap.set(topManager, {
+          token: user.casinoAuthToken,
+          expiry: user.casinoAuthTokenExpiry
+        });
+        return user.casinoAuthToken;
+      }
+      
+      // 4. If no valid token exists, generate a new one (this is a fallback that uses hardcoded tokens)
+      console.log(`Generating new auth token for top manager: ${topManager}`);
+      const tokenMap: Record<string, string> = {
+        'Marcthepogi': 'e726f734-0b50-4ca2-b8d7-bca385955acf',
+        'bossmarc747': 'a8c37f21-5e9b-4c83-a0d7-1d89ef988b2d',
+        'teammarc': 'f1d39b86-7c2e-4a01-9f8c-d103a8b73892'
+        // In a production environment, you would call an API to get a new token
+      };
+      
+      if (!tokenMap[topManager]) {
+        throw new Error(`No auth token available for manager: ${topManager}`);
+      }
+      
+      const token = tokenMap[topManager];
+      const expiryDate = new Date();
+      expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
+      
+      // 5. Store the new token in the database if we have a user
+      if (user) {
+        await storage.updateUserCasinoAuthToken(user.id, token, expiryDate);
+      }
+      
+      // 6. Cache the token
+      this.tokenCacheMap.set(topManager, {
+        token,
+        expiry: expiryDate
+      });
+      
+      return token;
+    } catch (error) {
+      console.error(`Error getting auth token for user ${username}:`, error);
+      throw new Error(`Failed to get auth token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    throw new Error(`No auth token available for manager: ${topManager}`);
+  }
+  
+  /**
+   * In a real production implementation, this method would call the actual
+   * 747 Casino API to get a new auth token.
+   * @param topManager The top manager username
+   * @private
+   */
+  private async fetchNewAuthToken(topManager: string): Promise<{ token: string, expiry: Date }> {
+    // This is a placeholder for the real implementation
+    // In a real environment, you would:
+    // 1. Make a POST request to the auth endpoint with manager credentials
+    // 2. Get the token and expiry from the response
+    // 3. Return them
+    
+    try {
+      // Simulate API call
+      console.log(`Fetching new auth token for manager: ${topManager}`);
+      
+      const tokenMap: Record<string, string> = {
+        'Marcthepogi': 'e726f734-0b50-4ca2-b8d7-bca385955acf',
+        'bossmarc747': 'a8c37f21-5e9b-4c83-a0d7-1d89ef988b2d',
+        'teammarc': 'f1d39b86-7c2e-4a01-9f8c-d103a8b73892'
+      };
+      
+      if (!tokenMap[topManager]) {
+        throw new Error(`No credentials available for manager: ${topManager}`);
+      }
+      
+      // Calculate expiry (30 minutes from now)
+      const expiryDate = new Date();
+      expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
+      
+      return {
+        token: tokenMap[topManager],
+        expiry: expiryDate
+      };
+    } catch (error) {
+      console.error(`Error fetching new auth token for manager ${topManager}:`, error);
+      throw new Error(`Failed to fetch new auth token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 }
 

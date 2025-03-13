@@ -13,7 +13,12 @@ import {
   casinoGetUserDetailsSchema,
   loginSchema,
   authSchema,
-  allowedTopManagersSchema
+  allowedTopManagersSchema,
+  supportedCurrencies,
+  Currency,
+  updatePreferredCurrencySchema,
+  getCurrencyBalanceSchema,
+  exchangeCurrencySchema
 } from "@shared/schema";
 import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";

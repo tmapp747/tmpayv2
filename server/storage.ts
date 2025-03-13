@@ -307,6 +307,40 @@ export class MemStorage implements IStorage {
     return false;
   }
   
+  // Casino authentication methods
+  async getUserByCasinoAuthToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.casinoAuthToken === token
+    );
+  }
+  
+  async updateUserCasinoAuthToken(id: number, token: string, expiryDate: Date): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      casinoAuthToken: token,
+      casinoAuthTokenExpiry: expiryDate,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async getUserByTopManager(topManager: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.topManager === topManager && user.hierarchyLevel === 3
+    );
+  }
+  
+  async getTopManagerForUser(userId: number): Promise<string | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+    
+    return user.topManager;
+  }
+  
   // Multi-currency operations
   async getUserCurrencyBalance(id: number, currency: Currency): Promise<string> {
     const user = await this.getUser(id);
