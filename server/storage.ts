@@ -77,6 +77,7 @@ export interface IStorage {
   createTelegramPayment(payment: InsertTelegramPayment): Promise<TelegramPayment>;
   getTelegramPayment(id: number): Promise<TelegramPayment | undefined>;
   getTelegramPaymentByInvoiceCode(invoiceCode: string): Promise<TelegramPayment | undefined>;
+  getTelegramPaymentByReference(reference: string): Promise<TelegramPayment | undefined>;
   updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment>;
   getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined>;
 }
@@ -593,7 +594,13 @@ export class MemStorage implements IStorage {
 
   async getTelegramPaymentByInvoiceCode(invoiceCode: string): Promise<TelegramPayment | undefined> {
     return Array.from(this.telegramPayments.values()).find(
-      (payment) => payment.invoiceCode === invoiceCode
+      (payment) => payment.invoiceId === invoiceCode
+    );
+  }
+  
+  async getTelegramPaymentByReference(reference: string): Promise<TelegramPayment | undefined> {
+    return Array.from(this.telegramPayments.values()).find(
+      (payment) => payment.telegramReference === reference
     );
   }
 
