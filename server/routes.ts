@@ -311,6 +311,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find the user by username
       const user = await storage.getUserByUsername(username);
       
+      // Since we're storing passwords in plain text for development, we'll do a direct comparison
+      // In production, this would use a secure password hashing and comparison method
       if (!user || user.password !== password) {
         return res.status(401).json({ 
           success: false, 
