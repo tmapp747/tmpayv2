@@ -120,6 +120,8 @@ export class MemStorage implements IStorage {
       email: null,
       balance: '1000.00',
       pendingBalance: '0.00',
+      balances: { PHP: '1000.00', PHPT: '500.00', USDT: '100.00' },
+      preferredCurrency: 'PHP',
       isVip: false,
       casinoId: '747-123456',
       casinoUsername: 'chubbyme',
@@ -131,6 +133,9 @@ export class MemStorage implements IStorage {
       isAuthorized: true,
       allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
       accessToken: null,
+      casinoAuthToken: null,
+      casinoAuthTokenExpiry: null,
+      hierarchyLevel: 0,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -153,12 +158,33 @@ export class MemStorage implements IStorage {
   async createUser(userData: InsertUser): Promise<User> {
     const id = this.userIdCounter++;
     const now = new Date();
+    
+    // Ensure all required fields are present with defaults
     const user: User = { 
       ...userData, 
-      id, 
+      id,
+      email: userData.email || null,
+      balance: userData.balance || '0.00',
+      pendingBalance: userData.pendingBalance || '0.00',
+      balances: userData.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
+      preferredCurrency: userData.preferredCurrency || 'PHP',
+      isVip: userData.isVip || false,
+      casinoUsername: userData.casinoUsername || null,
+      casinoClientId: userData.casinoClientId || null,
+      topManager: userData.topManager || null,
+      immediateManager: userData.immediateManager || null,
+      casinoUserType: userData.casinoUserType || 'player',
+      casinoBalance: userData.casinoBalance || '0.00',
+      isAuthorized: userData.isAuthorized || false,
+      allowedTopManagers: userData.allowedTopManagers || [],
+      accessToken: userData.accessToken || null,
+      casinoAuthToken: userData.casinoAuthToken || null,
+      casinoAuthTokenExpiry: userData.casinoAuthTokenExpiry || null,
+      hierarchyLevel: userData.hierarchyLevel || 0,
       createdAt: now, 
       updatedAt: now 
     };
+    
     this.users.set(id, user);
     return user;
   }
@@ -353,7 +379,8 @@ export class MemStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return undefined;
     
-    return user.topManager;
+    // Convert null to undefined for consistent return type
+    return user.topManager || undefined;
   }
   
   // Multi-currency operations
@@ -472,12 +499,25 @@ export class MemStorage implements IStorage {
   async createTransaction(txData: InsertTransaction): Promise<Transaction> {
     const id = this.transactionIdCounter++;
     const now = new Date();
+    
+    // Make sure all required fields are set with defaults
     const transaction: Transaction = { 
       ...txData, 
       id, 
+      casinoUsername: txData.casinoUsername || null,
+      casinoClientId: txData.casinoClientId || null,
+      paymentReference: txData.paymentReference || null,
+      transactionId: txData.transactionId || null,
+      casinoReference: txData.casinoReference || null,
+      destinationAddress: txData.destinationAddress || null,
+      destinationNetwork: txData.destinationNetwork || null,
+      uniqueId: txData.uniqueId || null,
+      currency: txData.currency || 'PHP',
+      metadata: txData.metadata || null,
       createdAt: now, 
       updatedAt: now 
     };
+    
     this.transactions.set(id, transaction);
     return transaction;
   }
@@ -535,12 +575,17 @@ export class MemStorage implements IStorage {
   async createQrPayment(qrPaymentData: InsertQrPayment): Promise<QrPayment> {
     const id = this.qrPaymentIdCounter++;
     const now = new Date();
+    
+    // Ensure all fields with proper defaults
     const qrPayment: QrPayment = { 
       ...qrPaymentData, 
       id,
+      status: qrPaymentData.status || 'pending',
+      directPayReference: qrPaymentData.directPayReference || null, 
       createdAt: now, 
       updatedAt: now 
     };
+    
     this.qrPayments.set(id, qrPayment);
     return qrPayment;
   }
