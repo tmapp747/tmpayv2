@@ -21,8 +21,8 @@ interface User {
   immediateManager?: string;
   casinoUserType?: string;
   casinoBalance?: string | number;
-  accessToken: string;
   isAuthorized: boolean;
+  allowedTopManagers?: string[];
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["/api/user/info"], { user: data.user });
+      queryClient.setQueryData(["/api/user"], { user: data.user });
       
       toast({
         title: "Login successful",
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["/api/user/info"], { user: data.user });
+      queryClient.setQueryData(["/api/user"], { user: data.user });
       
       toast({
         title: "Registration successful",
@@ -123,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     },
     onSuccess: () => {
-      queryClient.setQueryData(["/api/user/info"], { user: null });
+      queryClient.setQueryData(["/api/user"], { user: null });
       
       toast({
         title: "Logged out",

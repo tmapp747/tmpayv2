@@ -87,8 +87,10 @@ export function setupAuth(app: Express) {
       req.login(user, (err) => {
         if (err) return next(err);
         // Remove password from the response
-        const userResponse = { ...user };
-        delete userResponse.password;
+        const userResponse = { ...user } as Partial<SelectUser>;
+        if (userResponse.password) {
+          delete userResponse.password;
+        }
         
         res.status(201).json({ success: true, user: userResponse, message: "User registered successfully" });
       });
@@ -100,10 +102,10 @@ export function setupAuth(app: Express) {
   app.post("/api/login", passport.authenticate("local"), async (req, res) => {
     try {
       // Get the authenticated user from request
-      const user = req.user;
+      const user = req.user as SelectUser;
       
       // If the user has a casino username, try to fetch the hierarchy info
-      if (user.casinoUsername) {
+      if (user && user.casinoUsername) {
         // Determine if the user is an agent based on their stored user type
         const isAgent = user.casinoUserType === 'agent';
         
@@ -147,8 +149,10 @@ export function setupAuth(app: Express) {
       }
       
       // Remove password from the response
-      const userResponse = { ...req.user };
-      delete userResponse.password;
+      const userResponse = { ...req.user } as Partial<SelectUser>;
+      if (userResponse.password) {
+        delete userResponse.password;
+      }
       
       res.status(200).json({ success: true, user: userResponse, message: "Login successful" });
     } catch (error) {
@@ -170,8 +174,10 @@ export function setupAuth(app: Express) {
     }
     
     // Remove password from the response
-    const userResponse = { ...req.user };
-    delete userResponse.password;
+    const userResponse = { ...req.user } as Partial<SelectUser>;
+    if (userResponse.password) {
+      delete userResponse.password;
+    }
     
     res.json({ success: true, user: userResponse });
   });
