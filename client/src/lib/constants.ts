@@ -30,28 +30,32 @@ export const API_ENDPOINTS = {
 // Quick action buttons
 export const QUICK_ACTIONS = [
   {
-    id: 'gcash_qr',
-    name: 'GCash QR',
+    id: 'deposit',
+    name: 'Deposit',
     icon: 'qrcode',
-    color: 'secondary',
+    color: 'green',
+    description: 'Top up your wallet',
   },
   {
-    id: 'cards',
-    name: 'Cards',
-    icon: 'credit-card',
-    color: 'secondary',
-  },
-  {
-    id: 'crypto',
-    name: 'Crypto',
-    icon: 'coins',
-    color: 'secondary',
-  },
-  {
-    id: 'more',
-    name: 'More',
+    id: 'transfer',
+    name: 'Transfer',
     icon: 'exchange-alt',
-    color: 'secondary',
+    color: 'blue',
+    description: 'Send to casino account',
+  },
+  {
+    id: 'history',
+    name: 'History',
+    icon: 'trending-up',
+    color: 'purple',
+    description: 'View all transactions',
+  },
+  {
+    id: 'casino',
+    name: 'Casino',
+    icon: 'coins',
+    color: 'yellow',
+    description: 'Play now',
   },
 ];
 
