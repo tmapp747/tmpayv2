@@ -4,14 +4,24 @@ import { useLocation } from "wouter";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { API_ENDPOINTS } from "@/lib/constants";
+import { useToast } from "@/hooks/use-toast";
 // Let's use a simple emoji instead since the logo is not directly accessible
 const logo = "💼";
+
+// Username verification schema
+const usernameVerificationSchema = z.object({
+  username: z.string().min(3, { message: "Username must be at least 3 characters" }),
+  userType: z.enum(["player", "agent"]).default("player")
+});
 
 // Login form schema
 const loginSchema = z.object({
@@ -28,6 +38,7 @@ const registerSchema = z.object({
   userType: z.enum(["player", "agent"]).default("player")
 });
 
+type UsernameVerificationFormValues = z.infer<typeof usernameVerificationSchema>;
 type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 

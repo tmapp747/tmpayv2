@@ -136,6 +136,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return randomBytes(32).toString('hex');
   }
 
+  // Helper function to verify if a username is allowed
+  async function isUsernameAllowed(username: string, isAgent: boolean = false): Promise<{
+    allowed: boolean;
+    message?: string;
+    topManager?: string;
+    immediateManager?: string;
+    userType?: string;
+    casinoClientId?: number;
+  }> {
+    try {
+      // Fetch user hierarchy from casino API
+      const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
+      
+      if (!hierarchyData.hierarchy || hierarchyData.hierarchy.length < 3) {
+        return { 
+          allowed: false, 
+          message: "Invalid user hierarchy structure"
+        };
+      }
+      
+      // The hierarchy array typically has structure:
+      // [0] = Root admin
+      // [1] = Higher-level manager 
+      // [2] = Top manager (the 3 approved top managers)
+      // [3] = Immediate manager (direct upline)
+      // [4] = The user themselves
+      
+      // Get top manager (3rd element, index 2)
+      const topManager = hierarchyData.hierarchy[2]?.username;
+      
+      // Check if this top manager is in our allowed list
+      const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+      
+      if (!topManager || !ALLOWED_TOP_MANAGERS.includes(topManager)) {
+        return { 
+          allowed: false, 
+          message: "User is not under an authorized top manager (Marcthepogi, bossmarc747, teammarc)"
+        };
+      }
+      
+      // Get immediate manager by finding parent
+      const userClientId = hierarchyData.user.clientId;
+      let immediateManager = '';
+      
+      // Find the immediate manager by matching parentClientId
+      for (const agent of hierarchyData.hierarchy) {
+        if (agent.clientId === hierarchyData.user.parentClientId) {
+          immediateManager = agent.username;
+          break;
+        }
+      }
+      
+      // Determine user type (agent or player)
+      const userType = hierarchyData.user.isAgent ? 'agent' : 'player';
+      
+      return {
+        allowed: true,
+        topManager,
+        immediateManager,
+        userType,
+        casinoClientId: hierarchyData.user.clientId
+      };
+    } catch (error) {
+      console.error("Error verifying username eligibility:", error);
+      return {
+        allowed: false,
+        message: "Error verifying user eligibility: " + (error instanceof Error ? error.message : String(error))
+      };
+    }
+  }
+  
+  // Add a route to verify if a username is eligible before login/register
+  app.post("/api/auth/verify-username", async (req: Request, res: Response) => {
+    try {
+      // Validate the username from request
+      const { username, userType } = z.object({
+        username: z.string().min(3),
+        userType: z.enum(['player', 'agent']).default('player')
+      }).parse(req.body);
+      
+      const isAgent = userType === 'agent';
+      
+      // Check if username is eligible
+      const eligibilityCheck = await isUsernameAllowed(username, isAgent);
+      
+      if (!eligibilityCheck.allowed) {
+        return res.status(403).json({
+          success: false,
+          message: eligibilityCheck.message
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: "Username is eligible for registration/login",
+        topManager: eligibilityCheck.topManager,
+        immediateManager: eligibilityCheck.immediateManager,
+        userType: eligibilityCheck.userType
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid request data: " + error.message 
+        });
+      }
+      
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error verifying username: " + (error instanceof Error ? error.message : String(error))
+      });
+    }
+  });
+
   // Auth and user management routes
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
@@ -147,6 +261,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Default to player if not specified
       const isAgent = req.body.userType === 'agent';
       
+      // First verify if the username is allowed
+      const eligibilityCheck = await isUsernameAllowed(username, isAgent);
+      
+      if (!eligibilityCheck.allowed) {
+        return res.status(403).json({
+          success: false,
+          message: eligibilityCheck.message
+        });
+      }
+      
       // Find the user by username
       const user = await storage.getUserByUsername(username);
       
@@ -157,101 +281,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Fetch user hierarchy from casino API to verify top manager and role
-      try {
-        const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
-        
-        if (!hierarchyData.hierarchy || hierarchyData.hierarchy.length < 3) {
-          return res.status(403).json({ 
-            success: false, 
-            message: "Invalid user hierarchy structure" 
-          });
-        }
-        
-        // The hierarchy array typically has structure:
-        // [0] = Root admin
-        // [1] = Higher-level manager 
-        // [2] = Top manager (the 3 approved top managers)
-        // [3] = Immediate manager (direct upline)
-        // [4] = The user themselves
-        
-        // Get top manager (3rd element, index 2)
-        const topManager = hierarchyData.hierarchy[2]?.username;
-        
-        // Check if this top manager is in our allowed list
-        const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
-        
-        if (!topManager || !ALLOWED_TOP_MANAGERS.includes(topManager)) {
-          return res.status(403).json({ 
-            success: false, 
-            message: "User is not under an authorized top manager (Marcthepogi, bossmarc747, teammarc)" 
-          });
-        }
-        
-        // Get immediate manager (usually 4th element, index 3)
-        // We need to find the parent of the user
-        const userClientId = hierarchyData.user.clientId;
-        let immediateManager = '';
-        
-        // Find the immediate manager by matching parentClientId
-        for (const agent of hierarchyData.hierarchy) {
-          if (agent.clientId === hierarchyData.user.parentClientId) {
-            immediateManager = agent.username;
-            break;
-          }
-        }
-        
-        // Determine user type/role - use requested role but verify with API data
-        let userType = isAgent ? 'agent' : 'player';
-        
-        // Update user with hierarchy info from API
-        await storage.updateUserHierarchyInfo(
-          user.id, 
-          topManager, 
-          immediateManager, 
-          userType
-        );
-        
-        // Update casino details
+      // User is eligible and credentials are valid
+      const topManager = eligibilityCheck.topManager;
+      const immediateManager = eligibilityCheck.immediateManager;
+      const userType = eligibilityCheck.userType || (isAgent ? 'agent' : 'player');
+      
+      // Update user with hierarchy info from API
+      await storage.updateUserHierarchyInfo(
+        user.id, 
+        topManager || "", 
+        immediateManager || "", 
+        userType
+      );
+      
+      // Update casino details if we have the client ID
+      const casinoClientId = eligibilityCheck.casinoClientId || user.casinoClientId;
+      if (casinoClientId) {
         await storage.updateUserCasinoDetails(user.id, {
           casinoUsername: username,
-          casinoClientId: hierarchyData.user.clientId
-        });
-        
-        // Set allowed top managers
-        await storage.setUserAllowedTopManagers(user.id, ALLOWED_TOP_MANAGERS);
-        
-        // Mark user as authorized
-        await storage.updateUserAuthorizationStatus(user.id, true);
-        
-        // Generate and store access token
-        const accessToken = generateAccessToken();
-        await storage.updateUserAccessToken(user.id, accessToken);
-        
-        // Don't return the password to the client
-        const { password: _, ...userWithoutPassword } = user;
-        
-        // Return updated user info
-        return res.json({
-          success: true,
-          message: "Login successful",
-          user: { 
-            ...userWithoutPassword, 
-            topManager,
-            immediateManager, 
-            casinoUserType: userType,
-            accessToken,
-            isAuthorized: true,
-            casinoClientId: hierarchyData.user.clientId
-          }
-        });
-      } catch (casinoError) {
-        console.error("Error verifying with casino API:", casinoError);
-        return res.status(403).json({ 
-          success: false, 
-          message: "Failed to verify user with casino system" 
+          casinoClientId
         });
       }
+      
+      // Set allowed top managers
+      const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+      await storage.setUserAllowedTopManagers(user.id, ALLOWED_TOP_MANAGERS);
+      
+      // Mark user as authorized
+      await storage.updateUserAuthorizationStatus(user.id, true);
+      
+      // Generate and store access token
+      const accessToken = generateAccessToken();
+      await storage.updateUserAccessToken(user.id, accessToken);
+      
+      // Get updated user
+      const updatedUser = await storage.getUser(user.id);
+      
+      if (!updatedUser) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to retrieve updated user details"
+        });
+      }
+      
+      // Don't return the password to the client
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      
+      // Return updated user info
+      return res.json({
+        success: true,
+        message: "Login successful",
+        user: { 
+          ...userWithoutPassword, 
+          accessToken,
+          isAuthorized: true
+        }
+      });
     } catch (error) {
       console.error("Login error:", error);
       if (error instanceof ZodError) {
@@ -316,84 +401,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determine if this is an agent or player based on form selection
       const isAgent = userType === 'agent';
       
-      // Verify username exists in casino and check hierarchy
-      try {
-        const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
-        
-        if (!hierarchyData.hierarchy || hierarchyData.hierarchy.length < 3) {
-          return res.status(403).json({ 
-            success: false, 
-            message: "Invalid user hierarchy structure" 
-          });
-        }
-        
-        // Extract top manager (3rd element, index 2)
-        const topManager = hierarchyData.hierarchy[2]?.username;
-        
-        // Check if this top manager is in our allowed list
-        const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
-        
-        if (!topManager || !ALLOWED_TOP_MANAGERS.includes(topManager)) {
-          return res.status(403).json({ 
-            success: false, 
-            message: "Only users under Marcthepogi, bossmarc747, or teammarc can register" 
-          });
-        }
-        
-        // Get immediate manager - find by parent client ID
-        let immediateManager = '';
-        for (const agent of hierarchyData.hierarchy) {
-          if (agent.clientId === hierarchyData.user.parentClientId) {
-            immediateManager = agent.username;
-            break;
-          }
-        }
-        
-        // Get client ID from user data in hierarchy
-        const casinoClientId = hierarchyData.user.clientId;
-        
-        // Create new user in our system
-        const newUser = await storage.createUser({
-          username,
-          password, // In production, this would be hashed
-          email: email || null,
-          casinoId: `747-${casinoClientId}`,
-          balance: "0.00",
-          pendingBalance: "0.00",
-          isVip: false,
-          casinoUsername: username,
-          casinoClientId: casinoClientId,
-          topManager: topManager,
-          immediateManager: immediateManager,
-          casinoUserType: isAgent ? 'agent' : 'player',
-          isAuthorized: true // Pre-authorized since we checked the hierarchy
-        });
-        
-        // Set allowed top managers
-        await storage.setUserAllowedTopManagers(newUser.id, ALLOWED_TOP_MANAGERS);
-        
-        // Generate access token
-        const accessToken = generateAccessToken();
-        await storage.updateUserAccessToken(newUser.id, accessToken);
-        
-        // Return success with user details (minus password)
-        const { password: _, ...userWithoutPassword } = newUser;
-        
-        return res.status(201).json({
-          success: true,
-          message: "Registration successful",
-          user: {
-            ...userWithoutPassword,
-            accessToken
-          }
-        });
-      } catch (error) {
-        console.error("Error verifying with casino API:", error);
-        return res.status(400).json({ 
-          success: false, 
-          message: "Could not verify casino account or hierarchy. Make sure username exists in 747 Casino." 
+      // First verify if the username is allowed (in the correct hierarchy)
+      const eligibilityCheck = await isUsernameAllowed(username, isAgent);
+      
+      if (!eligibilityCheck.allowed) {
+        return res.status(403).json({
+          success: false,
+          message: eligibilityCheck.message || "User is not eligible for registration"
         });
       }
+      
+      // User is verified and eligible
+      const topManager = eligibilityCheck.topManager || "";
+      const immediateManager = eligibilityCheck.immediateManager || "";
+      
+      // Get client ID 
+      const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
+      const casinoClientId = hierarchyData.user.clientId;
+      
+      // Create new user in our system
+      const newUser = await storage.createUser({
+        username,
+        password, // In production, this would be hashed
+        email: email || null,
+        casinoId: `747-${casinoClientId}`,
+        balance: "0.00",
+        pendingBalance: "0.00",
+        isVip: false,
+        casinoUsername: username,
+        casinoClientId: casinoClientId,
+        topManager: topManager,
+        immediateManager: immediateManager,
+        casinoUserType: isAgent ? 'agent' : 'player',
+        isAuthorized: true // Pre-authorized since we checked the hierarchy
+      });
+      
+      // Set allowed top managers
+      const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+      await storage.setUserAllowedTopManagers(newUser.id, ALLOWED_TOP_MANAGERS);
+      
+      // Generate access token
+      const accessToken = generateAccessToken();
+      await storage.updateUserAccessToken(newUser.id, accessToken);
+      
+      // Return success with user details (minus password)
+      const { password: _, ...userWithoutPassword } = newUser;
+      
+      return res.status(201).json({
+        success: true,
+        message: "Registration successful",
+        user: {
+          ...userWithoutPassword,
+          accessToken
+        }
+      });
     } catch (error) {
       console.error("Registration error:", error);
       if (error instanceof ZodError) {
@@ -403,6 +464,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: error.errors 
         });
       }
+      
+      // Check if it's an API error
+      if (error.message && error.message.includes("casino")) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Could not verify casino account or hierarchy. Make sure username exists in 747 Casino." 
+        });
+      }
+      
       return res.status(500).json({ 
         success: false, 
         message: "Server error during registration" 

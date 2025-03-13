@@ -2,6 +2,9 @@
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: '/api/auth/login',
+    LOGOUT: '/api/auth/logout',
+    REGISTER: '/api/auth/register',
+    VERIFY_USERNAME: '/api/auth/verify-username',
   },
   USER: {
     INFO: '/api/user/info',
