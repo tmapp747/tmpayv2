@@ -102,7 +102,7 @@ export default function AuthPage() {
   // Use useEffect for navigation to avoid setState during render
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/dashboard");
       setShouldRender(false);
     } else {
       setShouldRender(true);
@@ -618,11 +618,11 @@ export default function AuthPage() {
               </TabsContent>
             </CardContent>
             
-            <CardFooter className="flex flex-col items-center pb-6">
+            <CardFooter className="flex flex-col items-center p-4 sm:p-6 pb-6">
               {verifiedUsername && (
                 <>
                   {activeTab === "login" && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Don't have an account?{" "}
                       <button
                         onClick={() => setActiveTab("register")}
@@ -634,7 +634,7 @@ export default function AuthPage() {
                   )}
                   
                   {activeTab === "register" && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Already have an account?{" "}
                       <button
                         onClick={() => setActiveTab("login")}
@@ -645,11 +645,11 @@ export default function AuthPage() {
                     </p>
                   )}
                   
-                  <div className="w-full mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                     <Button
                       onClick={goBackToVerification}
                       variant="outline"
-                      className="w-full text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700"
+                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700"
                     >
                       Verify Different Username
                     </Button>
