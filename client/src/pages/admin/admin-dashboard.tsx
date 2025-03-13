@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
 import { useLocation } from "wouter";
+import ManualPaymentReview from "@/components/admin/ManualPaymentReview";
 
 // Admin dashboard component
 export default function AdminDashboard() {
@@ -103,73 +104,7 @@ export default function AdminDashboard() {
     fetchAdminData();
   }, [toast, setLocation]);
 
-  // Handle manual payment approval
-  const handleApprovePayment = async (paymentId: number) => {
-    try {
-      const response = await fetch(`/api/admin/manual-payments/${paymentId}/approve`, {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to approve payment');
-      }
-      
-      // Update the local state
-      setManualPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, status: 'approved' } 
-            : payment
-        )
-      );
-      
-      toast({
-        title: 'Success',
-        description: 'Payment approved successfully',
-      });
-    } catch (error) {
-      console.error('Error approving payment:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to approve payment',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Handle manual payment rejection
-  const handleRejectPayment = async (paymentId: number) => {
-    try {
-      const response = await fetch(`/api/admin/manual-payments/${paymentId}/reject`, {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to reject payment');
-      }
-      
-      // Update the local state
-      setManualPayments(prevPayments => 
-        prevPayments.map(payment => 
-          payment.id === paymentId 
-            ? { ...payment, status: 'rejected' } 
-            : payment
-        )
-      );
-      
-      toast({
-        title: 'Success',
-        description: 'Payment rejected successfully',
-      });
-    } catch (error) {
-      console.error('Error rejecting payment:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to reject payment',
-        variant: 'destructive',
-      });
-    }
-  };
+  // Placeholder for future admin functions
 
   // Filter data by top manager
   const filteredUsers = selectedTopManager === 'all'
@@ -351,83 +286,7 @@ export default function AdminDashboard() {
 
         {/* Manual Payments Tab */}
         <TabsContent value="manual-payments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Manual Payments</CardTitle>
-              <CardDescription>
-                Review and approve/reject manual payment submissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Payment Method</TableHead>
-                    <TableHead>Proof</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredManualPayments.length > 0 ? (
-                    filteredManualPayments.map((payment) => {
-                      const user = users.find(u => u.id === payment.userId);
-                      return (
-                        <TableRow key={payment.id}>
-                          <TableCell>{payment.id}</TableCell>
-                          <TableCell className="font-medium">{user?.username || 'Unknown'}</TableCell>
-                          <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                          <TableCell>{payment.paymentMethod}</TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm" asChild>
-                              <a href={payment.proofImageUrl} target="_blank" rel="noopener noreferrer">
-                                View
-                              </a>
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={getStatusColor(payment.status)}>
-                              {payment.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(payment.createdAt)}</TableCell>
-                          <TableCell>
-                            {payment.status === 'pending' && (
-                              <div className="flex space-x-2">
-                                <Button 
-                                  size="sm" 
-                                  onClick={() => handleApprovePayment(payment.id)}
-                                >
-                                  Approve
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => handleRejectPayment(payment.id)}
-                                >
-                                  Reject
-                                </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center">
-                        No manual payments found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <ManualPaymentReview />
         </TabsContent>
       </Tabs>
     </div>

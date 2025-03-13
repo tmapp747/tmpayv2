@@ -89,8 +89,10 @@ export interface IStorage {
   getManualPayment(id: number): Promise<ManualPayment | undefined>;
   getManualPaymentByReference(reference: string): Promise<ManualPayment | undefined>;
   updateManualPaymentStatus(id: number, status: string): Promise<ManualPayment>;
-  uploadManualPaymentReceipt(id: number, receiptUrl: string): Promise<ManualPayment>;
+  uploadManualPaymentReceipt(id: number, proofImageUrl: string): Promise<ManualPayment>;
   getActiveManualPaymentByUserId(userId: number): Promise<ManualPayment | undefined>;
+  updateManualPayment(id: number, updates: Partial<ManualPayment>): Promise<ManualPayment>;
+  getAllManualPayments(): Map<number, ManualPayment>;
 }
 
 // In-memory storage implementation
