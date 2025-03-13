@@ -15,7 +15,7 @@ import {
   authSchema,
   allowedTopManagersSchema
 } from "@shared/schema";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";

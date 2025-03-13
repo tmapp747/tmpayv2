@@ -18,6 +18,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(id: number, amount: number): Promise<User>;
   updateUserPendingBalance(id: number, amount: number): Promise<User>;
+  getAllUsers(): Map<number, User>;
   // Casino user operations
   updateUserCasinoDetails(id: number, casinoDetails: Partial<User>): Promise<User>;
   updateUserCasinoBalance(id: number, amount: number): Promise<User>;
@@ -166,6 +167,11 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  // Returns all users
+  getAllUsers(): Map<number, User> {
+    return this.users;
   }
 
   // Casino user operations
