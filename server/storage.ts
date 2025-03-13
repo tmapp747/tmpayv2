@@ -26,7 +26,7 @@ export interface IStorage {
   
   // Authentication operations
   getUserByAccessToken(token: string): Promise<User | undefined>;
-  updateUserAccessToken(id: number, token: string): Promise<User>;
+  updateUserAccessToken(id: number, token: string | null | undefined): Promise<User>;
   updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User>;
   updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
   setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;
@@ -217,13 +217,13 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async updateUserAccessToken(id: number, token: string): Promise<User> {
+  async updateUserAccessToken(id: number, token: string | null | undefined): Promise<User> {
     const user = await this.getUser(id);
     if (!user) throw new Error(`User with ID ${id} not found`);
     
     const updatedUser = { 
       ...user, 
-      accessToken: token,
+      accessToken: token || null, // Ensure null instead of undefined
       updatedAt: new Date() 
     };
     this.users.set(id, updatedUser);

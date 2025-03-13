@@ -231,6 +231,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Logout endpoint
+  app.post("/api/auth/logout", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      // Get the authenticated user
+      const user = (req as any).user;
+      
+      // Clear the user's access token by setting it to null
+      await storage.updateUserAccessToken(user.id, null);
+      
+      return res.json({
+        success: true,
+        message: "Logout successful"
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Server error during logout" 
+      });
+    }
+  });
+  
   // Authorization middleware
   async function authMiddleware(req: Request, res: Response, next: Function) {
     try {
@@ -276,6 +298,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Server error during authentication" 
       });
     }
+  }
+  
+  // Role-based authorization middleware
+  function roleAuthMiddleware(allowedRoles: string[]) {
+    return async (req: Request, res: Response, next: Function) => {
+      try {
+        // First apply the base auth middleware to get the user
+        authMiddleware(req, res, (err: any) => {
+          if (err) return next(err);
+          
+          // User is now available in req.user
+          const user = (req as any).user;
+          
+          // Check role - use casinoUserType as role
+          const userRole = user.casinoUserType || 'player'; // Default to player if no role specified
+          
+          if (!allowedRoles.includes(userRole)) {
+            return res.status(403).json({
+              success: false,
+              message: `Access denied. Required role: ${allowedRoles.join(' or ')}`
+            });
+          }
+          
+          // User has an allowed role, proceed
+          next();
+        });
+      } catch (error) {
+        console.error("Role authorization error:", error);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Server error during role authorization" 
+        });
+      }
+    };
   }
 
   // User info and balance
@@ -751,15 +807,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
-        // Transfer the funds to the casino using the user's access token
+        // Transfer the funds to the casino
         const transferResult = await casino747Api.transferFunds(
           validatedData.amount,
           validatedData.casinoClientId,
           validatedData.casinoUsername,
           validatedData.currency,
           validatedData.casinoUsername, // From the same user (e-wallet to casino)
-          `Deposit from e-wallet - ${transactionReference}`,
-          authenticatedUser.accessToken // Pass the user's access token for authorization
+          `Deposit from e-wallet - ${transactionReference}`
         );
         
         // Update transaction record
