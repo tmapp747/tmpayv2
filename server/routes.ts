@@ -630,6 +630,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Multi-currency endpoints
+  app.get("/api/currencies", authMiddleware, (req: Request, res: Response) => {
+    res.status(200).json({
+      success: true,
+      currencies: supportedCurrencies
+    });
+  });
+  
+  app.get("/api/user/currency-balances", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = (req as any).user;
+      
+      if (!user) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+      
+      // Initialize result object with all supported currencies
+      const balances: Record<string, string> = {};
+      
+      // Get balances for all currencies
+      for (const currency of supportedCurrencies) {
+        balances[currency] = await storage.getUserCurrencyBalance(user.id, currency as Currency);
+      }
+      
+      res.status(200).json({
+        success: true,
+        balances,
+        preferredCurrency: user.preferredCurrency || 'PHP'
+      });
+    } catch (error) {
+      console.error("Error fetching currency balances:", error);
+      res.status(500).json({ success: false, message: "Server error fetching balances" });
+    }
+  });
+  
+  app.post("/api/user/preferred-currency", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { currency } = updatePreferredCurrencySchema.parse(req.body);
+      const user = (req as any).user;
+      
+      if (!user) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+      
+      // Validate currency
+      if (!supportedCurrencies.includes(currency)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid currency. Supported currencies are: ${supportedCurrencies.join(', ')}` 
+        });
+      }
+      
+      // Update preferred currency
+      const updatedUser = await storage.updatePreferredCurrency(user.id, currency as Currency);
+      
+      res.status(200).json({
+        success: true,
+        preferredCurrency: updatedUser.preferredCurrency,
+        message: `Preferred currency updated to ${currency}`
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      
+      console.error("Error updating preferred currency:", error);
+      res.status(500).json({ success: false, message: "Server error updating preferred currency" });
+    }
+  });
+  
+  app.post("/api/currency/exchange", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { fromCurrency, toCurrency, amount } = exchangeCurrencySchema.parse(req.body);
+      const user = (req as any).user;
+      
+      if (!user) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+      
+      // Validate currencies
+      if (!supportedCurrencies.includes(fromCurrency) || !supportedCurrencies.includes(toCurrency)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid currency. Supported currencies are: ${supportedCurrencies.join(', ')}` 
+        });
+      }
+      
+      // Check balance
+      const currentBalance = await storage.getUserCurrencyBalance(user.id, fromCurrency as Currency);
+      if (parseFloat(currentBalance) < amount) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Insufficient ${fromCurrency} balance. Available: ${currentBalance}` 
+        });
+      }
+      
+      try {
+        // Exchange currency
+        const updatedUser = await storage.exchangeCurrency(
+          user.id, 
+          fromCurrency as Currency, 
+          toCurrency as Currency, 
+          amount
+        );
+        
+        // Create a transaction record
+        const transaction = await storage.createTransaction({
+          userId: user.id,
+          type: 'exchange',
+          method: 'currency_exchange',
+          amount: amount.toString(),
+          status: 'completed',
+          currency: fromCurrency,
+          metadata: {
+            fromCurrency,
+            toCurrency,
+            exchangeRate: "Market rate" // In a real system, you'd store the actual rate used
+          }
+        });
+        
+        // Get updated balances
+        const fromBalance = await storage.getUserCurrencyBalance(user.id, fromCurrency as Currency);
+        const toBalance = await storage.getUserCurrencyBalance(user.id, toCurrency as Currency);
+        
+        res.status(200).json({
+          success: true,
+          transaction,
+          balances: {
+            [fromCurrency]: fromBalance,
+            [toCurrency]: toBalance
+          },
+          message: `Successfully exchanged ${amount} ${fromCurrency} to ${toCurrency}`
+        });
+      } catch (error) {
+        console.error("Error exchanging currency:", error);
+        res.status(400).json({ 
+          success: false, 
+          message: error instanceof Error ? error.message : "Exchange failed" 
+        });
+      }
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      
+      console.error("Currency exchange error:", error);
+      res.status(500).json({ success: false, message: "Server error during currency exchange" });
+    }
+  });
+  
   // Transaction history
   app.get("/api/transactions", authMiddleware, async (req: Request, res: Response) => {
     try {
@@ -1131,12 +1289,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Check if user has enough balance
-      const userBalance = parseFloat(authenticatedUser.balance.toString());
-      if (userBalance < validatedData.amount) {
+      // Check if user has enough balance in the specified currency
+      const currency = validatedData.currency;
+      const userBalance = await storage.getUserCurrencyBalance(authenticatedUser.id, currency as Currency);
+      
+      if (parseFloat(userBalance) < validatedData.amount) {
         return res.status(400).json({ 
           success: false, 
-          message: "Insufficient funds" 
+          message: `Insufficient ${currency} funds. Available: ${userBalance}` 
         });
       }
       
@@ -1156,6 +1316,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       try {
+        // Get auth token from cache or storage (using our enhanced getAuthToken method)
+        console.log(`Initiating casino deposit for ${validatedData.casinoUsername} with amount ${validatedData.amount} ${validatedData.currency}`);
+        
         // Transfer the funds to the casino
         const transferResult = await casino747Api.transferFunds(
           validatedData.amount,
@@ -1173,11 +1336,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transferResult.transactionId
         );
         
-        // Deduct from user's e-wallet balance
-        const updatedUser = await storage.updateUserBalance(authenticatedUser.id, -validatedData.amount);
+        // Deduct from user's currency balance
+        const updatedUser = await storage.updateUserCurrencyBalance(
+          authenticatedUser.id, 
+          currency as Currency,
+          -validatedData.amount
+        );
         
         // Update user's casino balance
         await storage.updateUserCasinoBalance(authenticatedUser.id, validatedData.amount);
+        
+        // Get updated currency balance
+        const newBalance = await storage.getUserCurrencyBalance(authenticatedUser.id, currency as Currency);
         
         return res.json({
           success: true,
@@ -1187,7 +1357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status: "completed",
             casinoReference: transferResult.transactionId
           },
-          newBalance: updatedUser.balance,
+          newBalance,
+          currencyUsed: currency,
           newCasinoBalance: transferResult.newBalance
         });
       } catch (casinoError) {
