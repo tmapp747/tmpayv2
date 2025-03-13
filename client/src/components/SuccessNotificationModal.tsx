@@ -1,7 +1,9 @@
-import { CheckCircle } from "lucide-react";
-import { useLocation } from "wouter";
-import { formatCurrency } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { CheckCircle2, Copy } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface SuccessNotificationModalProps {
   isOpen: boolean;
@@ -11,68 +13,82 @@ interface SuccessNotificationModalProps {
   transactionId: string;
 }
 
-const SuccessNotificationModal = ({ 
-  isOpen, 
-  onClose, 
-  amount, 
+const SuccessNotificationModal = ({
+  isOpen,
+  onClose,
+  amount,
   newBalance,
-  transactionId 
+  transactionId,
 }: SuccessNotificationModalProps) => {
-  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
   
-  if (!isOpen) return null;
-  
-  const handleContinueToCasino = () => {
-    // This would navigate to the casino page or open the casino in a new window
-    window.open("https://747casino.com", "_blank");
-    onClose();
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(transactionId);
+    setCopied(true);
+    
+    toast({
+      title: "Copied",
+      description: "Transaction ID copied to clipboard",
+    });
+    
+    setTimeout(() => setCopied(false), 2000);
   };
-
+  
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-primary w-full max-w-md mx-4 rounded-xl overflow-hidden shadow-2xl border border-secondary/30">
-        <div className="p-5">
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 mx-auto bg-accent/20 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="text-accent text-3xl h-10 w-10" />
-            </div>
-            <h3 className="text-xl font-bold text-white">Payment Successful!</h3>
-            <p className="text-gray-300 mt-2">Your balance has been updated successfully.</p>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Transaction Successful</DialogTitle>
+          <DialogDescription>
+            Your transaction has been completed successfully
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="flex flex-col items-center justify-center p-6 space-y-6">
+          <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+            <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
           </div>
           
-          <div className="bg-dark/30 rounded-lg p-4 mb-6">
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-300">Amount Added:</span>
-              <span className="text-white font-bold">{formatCurrency(amount)}</span>
+          <div className="text-center space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Amount</p>
+              <p className="text-2xl font-bold">₱{formatCurrency(amount)}</p>
             </div>
-            <div className="flex justify-between mb-2">
-              <span className="text-gray-300">Transaction ID:</span>
-              <span className="text-white">{transactionId}</span>
+            
+            <div>
+              <p className="text-sm text-muted-foreground">New Balance</p>
+              <p className="text-xl font-semibold">₱{formatCurrency(newBalance)}</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-300">New Balance:</span>
-              <span className="text-white font-bold">{formatCurrency(newBalance)}</span>
+            
+            <div className="pt-2">
+              <p className="text-sm text-muted-foreground mb-1">Transaction ID</p>
+              <div className="flex items-center justify-center">
+                <code className="bg-muted px-2 py-1 rounded text-sm mr-2 truncate max-w-[180px]">
+                  {transactionId}
+                </code>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={copyToClipboard}
+                  className="h-6 w-6"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex space-x-4">
-            <Button 
-              variant="outline"
-              className="flex-1 bg-dark hover:bg-dark/70 text-white py-3 rounded-lg"
-              onClick={() => { navigate("/history"); onClose(); }}
-            >
-              View Receipt
-            </Button>
-            <Button 
-              className="flex-1 bg-secondary hover:bg-secondary/90 text-white font-medium py-3 rounded-lg"
-              onClick={handleContinueToCasino}
-            >
-              Continue to Casino
-            </Button>
           </div>
         </div>
-      </div>
-    </div>
+        
+        <div className="flex justify-end">
+          <Button onClick={onClose}>
+            Continue
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

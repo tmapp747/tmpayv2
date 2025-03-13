@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Loader, CheckIcon, AlertCircle } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import { paymentsApi } from "@/lib/api";
-import { PAYMENT_STATUS } from "@/lib/constants";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface PaymentProcessingModalProps {
   isOpen: boolean;
@@ -12,147 +14,176 @@ interface PaymentProcessingModalProps {
   reference: string;
 }
 
-const PaymentProcessingModal = ({ 
-  isOpen, 
-  onClose, 
-  amount, 
-  reference 
+const PaymentProcessingModal = ({
+  isOpen,
+  onClose,
+  amount,
+  reference,
 }: PaymentProcessingModalProps) => {
-  const [status, setStatus] = useState<string>("processing");
-  const [progress, setProgress] = useState<number>(66); // 1/3 = initiated, 2/3 = processing, 3/3 = completed
-  const [statusMessage, setStatusMessage] = useState<string>("Please wait while we verify your payment with DirectPay.");
-  
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
-  // Mutation for checking payment status
-  const checkPaymentStatusMutation = useMutation({
-    mutationFn: (referenceId: string) => paymentsApi.checkPaymentStatus(referenceId),
-    onSuccess: (data) => {
+  const [status, setStatus] = useState<"processing" | "success" | "failed">("processing");
+  const [progress, setProgress] = useState(0);
+  const [message, setMessage] = useState<string>("");
+  const [newBalance, setNewBalance] = useState<string | number>(0);
+  const [isPolling, setIsPolling] = useState(true);
+  
+  // Check payment status
+  const checkPaymentStatus = async () => {
+    try {
+      const response = await fetch(`/api/payments/status/${reference}`);
+      const data = await response.json();
+      
       if (data.success) {
-        if (data.status === PAYMENT_STATUS.COMPLETED) {
-          setStatus("completed");
-          setProgress(100);
-          setStatusMessage("Payment has been successfully processed!");
-        } else if (data.status === PAYMENT_STATUS.FAILED) {
+        if (data.status === "completed") {
+          setStatus("success");
+          setMessage("Your payment has been processed successfully!");
+          setIsPolling(false);
+          setNewBalance(data.newBalance || 0);
+          
+          // Refresh user data
+          queryClient.invalidateQueries({ queryKey: ["/api/user/info"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+          
+          toast({
+            title: "Payment Successful",
+            description: `₱${formatCurrency(amount)} has been added to your account`,
+          });
+        } else if (data.status === "failed") {
           setStatus("failed");
-          setProgress(66);
-          setStatusMessage("Payment has failed. Please try again.");
-        } else {
-          // Still processing
-          setStatusMessage("Still waiting for payment confirmation...");
+          setMessage("Your payment could not be processed. Please try again.");
+          setIsPolling(false);
+          
+          toast({
+            title: "Payment Failed",
+            description: "Your payment could not be processed",
+            variant: "destructive",
+          });
+        } else if (data.status === "expired") {
+          setStatus("failed");
+          setMessage("Your payment session has expired. Please try again.");
+          setIsPolling(false);
+          
+          toast({
+            title: "Payment Expired",
+            description: "Your payment session has expired",
+            variant: "destructive",
+          });
         }
       }
-    },
-    onError: (error: any) => {
+    } catch (error) {
       console.error("Error checking payment status:", error);
-      setStatusMessage("Error checking status. Please wait...");
     }
-  });
+  };
   
-  // Check status when modal opens or reference changes
+  // Progress animation
   useEffect(() => {
-    if (isOpen && reference) {
-      const interval = setInterval(() => {
-        checkPaymentStatusMutation.mutate(reference);
-      }, 5000);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isOpen, reference]);
+    if (status !== "processing") return;
+    
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 95) {
+          clearInterval(interval);
+          return 95;
+        }
+        return prev + 5;
+      });
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [status]);
   
-  if (!isOpen) return null;
-
+  // Polling for payment status
+  useEffect(() => {
+    if (!isPolling || !isOpen) return;
+    
+    const poll = setInterval(checkPaymentStatus, 5000);
+    checkPaymentStatus(); // Check immediately
+    
+    return () => clearInterval(poll);
+  }, [isPolling, isOpen, reference]);
+  
+  // Reset state when closed
+  useEffect(() => {
+    if (!isOpen) {
+      setStatus("processing");
+      setProgress(0);
+      setMessage("");
+      setIsPolling(true);
+    }
+  }, [isOpen]);
+  
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div className="bg-primary w-full max-w-md mx-4 rounded-xl overflow-hidden shadow-2xl border border-secondary/30">
-        <div className="p-5">
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 mx-auto bg-secondary/20 rounded-full flex items-center justify-center mb-4">
-              {status === "completed" ? (
-                <CheckIcon className="text-secondary text-3xl h-10 w-10" />
-              ) : status === "failed" ? (
-                <AlertCircle className="text-red-500 text-3xl h-10 w-10" />
-              ) : (
-                <Loader className="text-secondary text-3xl h-8 w-8 animate-spin" />
-              )}
-            </div>
-            <h3 className="text-xl font-bold text-white">
-              {status === "completed" 
-                ? "Payment Successful!" 
-                : status === "failed" 
-                  ? "Payment Failed" 
-                  : "Processing Payment..."}
-            </h3>
-            <p className="text-gray-300 mt-2">{statusMessage}</p>
-          </div>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {status === "processing" && "Processing Payment"}
+            {status === "success" && "Payment Successful"}
+            {status === "failed" && "Payment Failed"}
+          </DialogTitle>
+          <DialogDescription>
+            {status === "processing" && "Please wait while we process your payment..."}
+            {status === "success" && "Your payment has been processed successfully!"}
+            {status === "failed" && message}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="flex flex-col items-center justify-center p-6 space-y-6">
+          {status === "processing" && (
+            <>
+              <Loader2 className="h-16 w-16 text-primary animate-spin" />
+              <div className="w-full space-y-2">
+                <Progress value={progress} className="h-2" />
+                <p className="text-sm text-center text-muted-foreground">Processing your payment of ₱{formatCurrency(amount)}</p>
+              </div>
+            </>
+          )}
           
-          <div className="space-y-4">
-            <div className="bg-dark/30 rounded-lg p-4">
-              <div className="flex justify-between mb-1">
-                <span className="text-gray-300 text-sm">Payment Reference:</span>
-                <span className="text-white font-medium text-sm" id="paymentRef">{reference || "Generating..."}</span>
+          {status === "success" && (
+            <>
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold">Payment Complete</h3>
+                <p className="text-sm text-muted-foreground">
+                  ₱{formatCurrency(amount)} has been added to your account
+                </p>
+                <p className="text-sm font-medium">
+                  New Balance: ₱{formatCurrency(newBalance)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reference: {reference}
+                </p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-300 text-sm">Amount:</span>
-                <span className="text-white font-medium text-sm" id="paymentAmount">₱ {amount.toFixed(2)}</span>
-              </div>
-            </div>
-            
-            <div className="bg-dark/30 rounded-lg p-4">
-              <h4 className="text-white text-sm font-medium mb-3">Payment Status</h4>
-              <div className="relative">
-                {/* Progress Bar */}
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-dark">
-                  <div 
-                    className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${status === "failed" ? "bg-red-500" : "bg-secondary"}`}
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                
-                {/* Steps */}
-                <div className="flex justify-between text-xs text-gray-300">
-                  <div className="text-center">
-                    <div className="w-6 h-6 mx-auto bg-secondary rounded-full flex items-center justify-center mb-1">
-                      <CheckIcon className="text-white text-xs h-3 w-3" />
-                    </div>
-                    <div>Initiated</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-6 h-6 mx-auto bg-secondary rounded-full flex items-center justify-center mb-1">
-                      <CheckIcon className="text-white text-xs h-3 w-3" />
-                    </div>
-                    <div>Processing</div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center mb-1 
-                      ${status === "completed" ? "bg-secondary" : status === "failed" ? "bg-red-500" : "bg-gray-600"}`}
-                    >
-                      {status === "completed" ? (
-                        <CheckIcon className="text-white text-xs h-3 w-3" />
-                      ) : status === "failed" ? (
-                        <AlertCircle className="text-white text-xs h-3 w-3" />
-                      ) : (
-                        <Loader className="text-gray-400 text-xs h-3 w-3 animate-spin" />
-                      )}
-                    </div>
-                    <div>Completed</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+              <Button onClick={onClose} className="mt-4">
+                Continue
+              </Button>
+            </>
+          )}
           
-          <div className="mt-6 flex justify-center">
-            <button 
-              className="px-4 py-2 bg-dark hover:bg-dark/70 text-white rounded-lg text-sm"
-              onClick={onClose}
-            >
-              Close
-            </button>
-          </div>
+          {status === "failed" && (
+            <>
+              <XCircle className="h-16 w-16 text-red-500" />
+              <div className="text-center space-y-2">
+                <h3 className="text-lg font-semibold">Payment Failed</h3>
+                <p className="text-sm text-muted-foreground">
+                  {message || "There was an issue processing your payment"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Reference: {reference}
+                </p>
+              </div>
+              <Button onClick={onClose} variant="outline" className="mt-4">
+                Try Again
+              </Button>
+            </>
+          )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

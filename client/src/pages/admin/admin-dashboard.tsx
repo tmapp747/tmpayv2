@@ -38,6 +38,13 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTopManager, setSelectedTopManager] = useState<string | 'all'>('all');
   const [topManagers, setTopManagers] = useState<string[]>([]);
+  
+  // Helper function to safely set top managers array
+  const safeSetTopManagers = (managers: unknown[]): void => {
+    // Ensure all items are strings
+    const safeManagers = managers.filter((item): item is string => typeof item === 'string');
+    setTopManagers(safeManagers);
+  };
 
   // Fetch admin data
   useEffect(() => {
@@ -56,8 +63,8 @@ export default function AdminDashboard() {
           .filter((user: User) => user.topManager)
           .map((user: User) => user.topManager as string);
         
-        // Deduplicate the list
-        const uniqueManagers = Array.from(new Set(managersList));
+        // Deduplicate the list and ensure string[] type
+        const uniqueManagers = Array.from(new Set(managersList)) as string[];
         setTopManagers(uniqueManagers);
 
         // Fetch transactions
