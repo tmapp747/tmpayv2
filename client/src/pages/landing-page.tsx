@@ -31,16 +31,8 @@ export default function LandingPage() {
           />
         </div>
         
-        {/* Payment/E-wallet background image with very high transparency */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
-          <div className="absolute inset-0 opacity-3 dark:opacity-5">
-            <img 
-              src="/images/wallet-payment-bg.png" 
-              alt="E-Wallet Payment Background" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
+        {/* Clean solid background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-100 dark:from-gray-900 dark:to-gray-950"></div>
       </div>
       
       {/* Header - fully responsive with mobile adjustments */}

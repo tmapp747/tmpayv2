@@ -24,27 +24,27 @@ export function CasinoElements3D() {
       diceElements.forEach((die, index) => {
         const htmlDie = die as HTMLElement;
         
-        // Slow rotation - one full rotation every ~1 minute
-        const rotateValue = (elapsedTime * (4 + index)) % 360;
+        // Very slow rotation - one full rotation every ~2 minutes
+        const rotateValue = (elapsedTime * (2.5 + index * 0.5)) % 360;
         
-        // Restricted horizontal movement within header width
-        // Limited vertical movement to stay within header height
-        const maxMoveX = headerWidth * 0.4; // 40% of header width
-        const maxMoveY = headerHeight * 0.4; // 40% of header height
+        // Extremely restricted horizontal movement within header width
+        // Very limited vertical movement to stay within header height
+        const maxMoveX = headerWidth * 0.25; // 25% of header width
+        const maxMoveY = headerHeight * 0.25; // 25% of header height
         
-        // Calculate movement within the header boundaries
-        const offsetX = Math.sin(elapsedTime * 0.2 + index * 0.5) * maxMoveX;
-        const offsetY = Math.cos(elapsedTime * 0.15 + index * 0.7) * maxMoveY;
+        // Calculate movement within the header boundaries with very slow movement
+        const offsetX = Math.sin(elapsedTime * 0.1 + index * 0.5) * maxMoveX;
+        const offsetY = Math.cos(elapsedTime * 0.08 + index * 0.3) * maxMoveY;
         
         // Keep the dice within the header bounds (from center point)
         const centerX = headerWidth / 2;
         const centerY = headerHeight / 2;
         
         // Add a subtle scale variation based on header size
-        // Scale dice smaller on smaller screens
-        const diceBaseSize = Math.min(headerHeight * 0.5, 20); // Size based on header height, max 20px
+        // Scale dice smaller on smaller screens with less variation
+        const diceBaseSize = Math.min(headerHeight * 0.4, 16); // Size based on header height, max 16px
         const scaleBase = diceBaseSize / 20; // Normalize based on the max size
-        const scaleVariation = Math.sin(elapsedTime * 0.1) * 0.05;
+        const scaleVariation = Math.sin(elapsedTime * 0.05) * 0.03; // Less variation
         const scaleValue = scaleBase + scaleVariation;
         
         htmlDie.style.transform = `translate(${offsetX}px, ${offsetY}px) rotate(${rotateValue}deg) scale(${scaleValue})`;
@@ -66,7 +66,7 @@ export function CasinoElements3D() {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-full pointer-events-none overflow-hidden opacity-50 z-10"
+      className="relative w-full h-full pointer-events-none overflow-hidden opacity-30 z-10"
     >
       {/* Two dice in the header only - sized proportionally */}
       <div 

@@ -226,16 +226,8 @@ export default function AuthPage() {
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] flex items-center justify-center relative overflow-hidden">
       {/* Background image with casino-themed elements */}
       <div className="absolute inset-0 z-0">
-        {/* Payment/E-wallet background image with very high transparency */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
-          <div className="absolute inset-0 opacity-3 dark:opacity-5">
-            <img 
-              src="/images/wallet-payment-bg.png" 
-              alt="E-Wallet Payment Background" 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
+        {/* Clean solid background with gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-100 dark:from-gray-900 dark:to-gray-950"></div>
       </div>
       
       {/* Header - with back button */}
