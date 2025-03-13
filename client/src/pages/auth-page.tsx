@@ -257,11 +257,11 @@ export default function AuthPage() {
       
       {/* Auth Container - centered in the page */}
       <div className="w-full max-w-md mx-auto px-4 py-16 sm:py-20">
-        {/* Auth Card - responsive width and padding */}
-        <Card className="w-full thick-shadow border-0">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/10 dark:to-gray-900 rounded-t-lg p-4 sm:p-6">
+        {/* Auth Card with Glassmorphism */}
+        <Card className="w-full glass-auth-card border border-white/20 dark:border-white/10 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-blue-50/80 to-white/70 dark:from-blue-950/30 dark:to-gray-900/60 rounded-t-lg p-4 sm:p-6 border-b border-white/30 dark:border-white/5">
             <div className="flex justify-center mb-2">
-              <img src={casinoLogo} alt="747 Casino Logo" className="w-14 h-14 sm:w-16 sm:h-16" />
+              <img src={casinoLogo} alt="747 Casino Logo" className="w-14 h-14 sm:w-16 sm:h-16 drop-shadow-md" />
             </div>
             <CardTitle className="text-center text-lg sm:text-xl text-gray-900 dark:text-white">
               Account Access
@@ -298,7 +298,7 @@ export default function AuthPage() {
               </TabsList>
             </div>
             
-            <CardContent className="p-3 sm:p-4 md:p-6">
+            <CardContent className="p-3 sm:p-4 md:p-6 bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm">
               <TabsContent value="verification">
                 <div className="space-y-3 sm:space-y-4">
                   <Form {...verificationForm}>
@@ -309,14 +309,14 @@ export default function AuthPage() {
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
                             <FormLabel className="flex items-center text-sm sm:text-base">
-                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600 dark:text-blue-400" />
                               Username
                             </FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="Enter your 747 Casino username" 
                                 {...field} 
-                                className="h-9 sm:h-10 border-gray-300 dark:border-gray-700 focus:ring-blue-500 text-sm sm:text-base"
+                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base"
                               />
                             </FormControl>
                             <FormMessage className="text-red-500 text-xs sm:text-sm" />
@@ -381,7 +381,7 @@ export default function AuthPage() {
               <TabsContent value="login">
                 <div className="space-y-3 sm:space-y-4">
                   {verifiedUsername && (
-                    <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/50 mb-3 sm:mb-4">
+                    <Alert className="bg-blue-50/80 dark:bg-blue-900/30 border-blue-100/50 dark:border-blue-800/30 mb-3 sm:mb-4 backdrop-blur-sm glass-alert">
                       <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600 dark:text-blue-400" />
                       <AlertDescription className="text-blue-800 dark:text-blue-300 text-xs sm:text-sm">
                         Username verified successfully. You can now login or create a new account.
@@ -427,7 +427,7 @@ export default function AuthPage() {
                                 type="password" 
                                 placeholder="Enter your password" 
                                 {...field}
-                                className="h-9 sm:h-10 border-gray-300 dark:border-gray-700 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -495,7 +495,7 @@ export default function AuthPage() {
               <TabsContent value="register">
                 <div className="space-y-3 sm:space-y-4">
                   {casinoVerificationData && (
-                    <Alert className="bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-800/50 mb-3 sm:mb-4">
+                    <Alert className="bg-green-50/80 dark:bg-green-900/30 border-green-100/50 dark:border-green-800/30 mb-3 sm:mb-4 backdrop-blur-sm glass-alert">
                       <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-green-600 dark:text-green-400" />
                       <AlertDescription className="text-green-800 dark:text-green-300 text-xs sm:text-sm">
                         Your casino account details have been verified and will be linked to your new e-wallet account.
@@ -541,7 +541,7 @@ export default function AuthPage() {
                                 type="password" 
                                 placeholder="Create a secure password" 
                                 {...field}
-                                className="h-9 sm:h-10 border-gray-300 dark:border-gray-700 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -563,7 +563,7 @@ export default function AuthPage() {
                                 type="email"
                                 placeholder="Enter your email address" 
                                 {...field}
-                                className="h-9 sm:h-10 border-gray-300 dark:border-gray-700 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
                               />
                             </FormControl>
                             <FormDescription className="text-xs text-gray-500">
@@ -576,7 +576,7 @@ export default function AuthPage() {
                       
                       {/* Casino Account Details */}
                       {casinoVerificationData && (
-                        <div className="mt-3 sm:mt-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="mt-3 sm:mt-4 p-3 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm glass-card-info rounded-lg border border-white/30 dark:border-white/5">
                           <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Casino Account Details</h4>
                           <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                             {casinoVerificationData.userType && (
@@ -635,7 +635,7 @@ export default function AuthPage() {
               </TabsContent>
             </CardContent>
             
-            <CardFooter className="flex flex-col items-center p-4 sm:p-6 pb-6">
+            <CardFooter className="flex flex-col items-center p-4 sm:p-6 pb-6 bg-white/60 dark:bg-gray-900/50 backdrop-blur-sm border-t border-white/20 dark:border-white/5 rounded-b-lg">
               {verifiedUsername && (
                 <>
                   {activeTab === "login" && (
@@ -643,7 +643,7 @@ export default function AuthPage() {
                       Don't have an account?{" "}
                       <button
                         onClick={() => setActiveTab("register")}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
                       >
                         Register here
                       </button>
@@ -655,18 +655,18 @@ export default function AuthPage() {
                       Already have an account?{" "}
                       <button
                         onClick={() => setActiveTab("login")}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
                       >
                         Log in instead
                       </button>
                     </p>
                   )}
                   
-                  <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200/30 dark:border-gray-700/30">
                     <Button
                       onClick={goBackToVerification}
                       variant="outline"
-                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700"
+                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-700/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-700/30"
                     >
                       Verify Different Username
                     </Button>
