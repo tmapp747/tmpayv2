@@ -11,12 +11,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Check, X, Info } from "lucide-react";
+import { Loader2, Check, X, Info, CreditCard, Wallet, ArrowRight, Shield, TrendingUp, Layers, User, UserPlus, LockKeyhole } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-// Let's use a simple emoji instead since the logo is not directly accessible
-const logo = "💼";
+// Import casino logo
+import casinoLogo from "../assets/Logo teammarc.png";
 
 // Types for the casino API verification response
 interface CasinoVerificationResponse {
@@ -190,14 +190,63 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-gradient-to-b from-background to-muted/30">
+      
+      {/* Hero Section - Only visible on desktop */}
+      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-primary/90 to-primary/70 text-white p-8">
+        <div className="flex flex-col justify-center max-w-lg mx-auto space-y-8 animate-slideRight">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold tracking-tight">Team MARC Casino E-Wallet</h1>
+            <p className="text-lg opacity-90">The exclusive financial platform for Team MARC casino players and agents.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg border border-white/20 shadow-xl">
+              <div className="flex items-center mb-3">
+                <Wallet className="h-6 w-6 mr-2" />
+                <h3 className="font-semibold">Instant Deposits</h3>
+              </div>
+              <p className="text-sm opacity-90">Fund your casino account instantly with multiple payment options.</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg border border-white/20 shadow-xl">
+              <div className="flex items-center mb-3">
+                <Shield className="h-6 w-6 mr-2" />
+                <h3 className="font-semibold">Secure Transactions</h3>
+              </div>
+              <p className="text-sm opacity-90">State-of-the-art encryption to protect all your financial operations.</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg border border-white/20 shadow-xl">
+              <div className="flex items-center mb-3">
+                <TrendingUp className="h-6 w-6 mr-2" />
+                <h3 className="font-semibold">Real-time Updates</h3>
+              </div>
+              <p className="text-sm opacity-90">See your balance and transaction history updated in real-time.</p>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-lg border border-white/20 shadow-xl">
+              <div className="flex items-center mb-3">
+                <Layers className="h-6 w-6 mr-2" />
+                <h3 className="font-semibold">Hierarchy Management</h3>
+              </div>
+              <p className="text-sm opacity-90">Special features for agents to manage their players efficiently.</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center mt-6 bg-white/10 backdrop-blur-sm p-4 rounded-lg border border-white/20">
+            <p className="text-sm opacity-90">Authorized for players and agents under Team MARC's top managers: <strong>Marcthepogi</strong>, <strong>bossmarc747</strong>, and <strong>teammarc</strong>.</p>
+          </div>
+        </div>
+      </div>
+      
       {/* Form Section */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-8 animate-slideUp">
           <div className="flex flex-col items-center text-center">
-            <div className="text-4xl mb-4">{logo}</div>
-            <h1 className="text-2xl font-bold">747 Casino E-Wallet</h1>
-            <p className="text-muted-foreground">Manage your casino payments seamlessly</p>
+            <img src={casinoLogo} alt="747 Casino Logo" className="w-28 h-28 mb-4 animate-float" />
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">747 Casino E-Wallet</h1>
+            <p className="text-muted-foreground mt-2">Manage your casino payments seamlessly</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
