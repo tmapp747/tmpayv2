@@ -1069,6 +1069,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check if the user already has an active manual payment
+      const existingPayment = await storage.getActiveManualPaymentByUserId(user.id);
+      
+      if (existingPayment) {
+        // Update the existing manual payment with new details
+        await storage.updateManualPaymentStatus(existingPayment.id, 'pending');
+        
+        // Update the existing transaction
+        const updatedTransaction = await storage.getTransaction(existingPayment.transactionId);
+        
+        if (updatedTransaction) {
+          await storage.updateTransactionStatus(updatedTransaction.id, 'pending');
+          
+          // Upload the new receipt
+          const updatedPayment = await storage.uploadManualPaymentReceipt(
+            existingPayment.id,
+            req.body.proofImageUrl
+          );
+          
+          return res.json({
+            success: true,
+            manualPayment: updatedPayment,
+            transaction: updatedTransaction,
+            message: "Existing payment updated with new proof"
+          });
+        }
+      }
+      
       // Create a new transaction for this payment
       const transaction = await storage.createTransaction({
         userId: user.id,
@@ -1086,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transactionId: transaction.id,
         amount: amount.toString(),
         paymentMethod,
-        notes: notes || '',
+        notes: notes || null,
         proofImageUrl: req.body.proofImageUrl,
         reference,
         status: 'pending'
@@ -1416,6 +1444,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ 
         success: false, 
         message: "Server error while fetching users" 
+      });
+    }
+  });
+  
+  // Admin endpoint to approve or reject manual payments
+  app.post("/api/admin/manual-payment/:id/status", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status, adminNotes } = req.body;
+      const admin = (req as any).user;
+      
+      if (!id || !status) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment ID and status are required"
+        });
+      }
+      
+      if (status !== 'approved' && status !== 'rejected') {
+        return res.status(400).json({
+          success: false,
+          message: "Status must be either 'approved' or 'rejected'"
+        });
+      }
+      
+      // Get the manual payment
+      const payment = await storage.getManualPayment(parseInt(id));
+      
+      if (!payment) {
+        return res.status(404).json({
+          success: false,
+          message: "Manual payment not found"
+        });
+      }
+      
+      // Update the payment status
+      const updatedPayment = await storage.updateManualPaymentStatus(payment.id, status);
+      
+      // Update admin ID and notes
+      await storage.updateManualPayment(payment.id, {
+        adminId: admin.id,
+        adminNotes: adminNotes || null
+      });
+      
+      // If payment is approved, update the transaction and user balance
+      if (status === 'approved') {
+        // Update transaction status
+        const transaction = await storage.getTransaction(payment.transactionId);
+        if (transaction) {
+          await storage.updateTransactionStatus(transaction.id, 'completed');
+          
+          // Update user's balance with the transaction amount
+          const user = await storage.getUser(payment.userId);
+          if (user) {
+            const currency = transaction.currency || 'PHP';
+            const amount = parseFloat(payment.amount.toString());
+            await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+            
+            // Call 747 Casino API to complete the topup if needed
+            await casino747CompleteTopup(
+              user.casinoId,
+              amount,
+              transaction.paymentReference || ""
+            );
+          }
+        }
+      }
+      
+      return res.json({
+        success: true,
+        payment: updatedPayment,
+        message: `Manual payment ${status}`
+      });
+    } catch (error) {
+      console.error("Update manual payment status error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error updating manual payment status: " + (error instanceof Error ? error.message : String(error))
+      });
+    }
+  });
+  
+  // Admin endpoint to list all manual payments
+  app.get("/api/admin/manual-payments", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      // Get all manual payments
+      const allManualPayments = Array.from(storage.getAllManualPayments().values());
+      
+      // Sort by created date (newest first)
+      allManualPayments.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      return res.json({
+        success: true,
+        payments: allManualPayments,
+        count: allManualPayments.length
+      });
+    } catch (error) {
+      console.error("Get manual payments error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error retrieving manual payments"
       });
     }
   });

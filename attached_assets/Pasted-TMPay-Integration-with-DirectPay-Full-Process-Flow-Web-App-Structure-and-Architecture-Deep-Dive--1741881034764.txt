@@ -1,0 +1,205 @@
+TMPay Integration with DirectPay: Full Process Flow, Web App Structure, and Architecture Deep Dive
+
+⸻
+
+1. Overview of TMPay and DirectPay Integration
+
+TMPay is a transaction manager that automates deposit and withdrawal requests for agents and players within a casino network. The integration with DirectPay allows TMPay to process payments securely using a gateway.
+
+🔹 Key Goals of Integration:
+
+✔ Automated Payment Processing → Use DirectPay for seamless deposits & withdrawals.
+✔ Secure Transactions → Use encryption and authentication between TMPay & DirectPay.
+✔ Real-time Transaction Updates → Synchronize TMPay’s approval system with DirectPay.
+✔ Scalability & Flexibility → Handle multiple payment gateways and future expansions.
+
+⸻
+
+2. High-Level System Architecture
+
+TMPay and DirectPay integration follows a modular microservices architecture:
+
++--------------------------------------------------+
+|                  TMPay Web App                   |
+| +----------------------------------------------+ |
+| |           User Management Module            | |
+| |  - Signup/Login (Player & Agent)            | |
+| |  - Role Verification (Agent/Player)         | |
+| +----------------------------------------------+ |
+| |        Transaction Processing Module        | |
+| |  - Deposit & Withdrawal Requests            | |
+| |  - Approval Workflow (Admin)                | |
+| |  - Real-time Transaction Updates            | |
+| +----------------------------------------------+ |
+| |      DirectPay Payment Integration          | |
+| |  - API Calls for Payment Processing         | |
+| |  - Callback Handling for Status Updates     | |
+| +----------------------------------------------+ |
+| |       Casino Platform Integration           | |
+| |  - Chips Transfer (Deposit/Withdraw)        | |
+| |  - Fraud Detection & User Hierarchy Checks  | |
+| +----------------------------------------------+ |
++--------------------------------------------------+
+
+                            ⬇ API Communication ⬇
+
++--------------------------------------------------+
+|                  DirectPay API                  |
+| +----------------------------------------------+ |
+| |           Payment Gateway Layer             | |
+| |  - Invoice Creation (Deposit)               | |
+| |  - Payment Processing (Withdrawal)          | |
+| |  - Payment Verification & Settlement        | |
+| +----------------------------------------------+ |
+| |       Transaction Monitoring System         | |
+| |  - Webhooks for Real-time Updates           | |
+| |  - Reconciliation & Fraud Prevention        | |
+| +----------------------------------------------+ |
+| |         User Account & Wallets              | |
+| |  - Agent/Player Wallet Management           | |
+| |  - Bank & eWallet Integration               | |
+| +----------------------------------------------+ |
++--------------------------------------------------+
+
+
+
+⸻
+
+3. Process Flow: TMPay & DirectPay Transaction Journey
+
+🔹 Deposit Process (User Adding Funds via DirectPay)
+	1.	User Initiates Deposit
+	•	Player/Agent selects deposit amount and payment method.
+	•	TMPay generates an invoice request using POST/{token}/IssueInvoice.
+	2.	DirectPay Processes Payment
+	•	TMPay sends the request to DirectPay API.
+	•	DirectPay creates a payment link or QR code.
+	3.	User Completes Payment
+	•	User is redirected to DirectPay to complete the transaction.
+	•	DirectPay validates payment and sends a success response.
+	4.	TMPay Credits Casino Wallet
+	•	TMPay calls POST/{token}/RedeemInvoice to credit the user’s casino account.
+	5.	Real-time Notifications
+	•	TMPay updates the user dashboard with a confirmation message.
+
+⸻
+
+🔹 Withdrawal Process (User Cashing Out via DirectPay)
+	1.	User Requests Withdrawal
+	•	Player/Agent submits a withdrawal request in TMPay.
+	•	TMPay validates the request against balance & user role.
+	2.	Admin Approval (If Required)
+	•	Admin reviews and approves the request in TMPay.
+	•	TMPay calls POST/{token}/PayInvoice to initiate payment.
+	3.	DirectPay Processes Withdrawal
+	•	Funds are transferred via DirectPay to the user’s selected method.
+	•	A callback API updates TMPay with the transaction status.
+	4.	User Receives Funds
+	•	TMPay marks the transaction as Completed.
+	•	User gets a notification of the successful withdrawal.
+
+⸻
+
+4. Deep Dive into TMPay Workflow
+
+🔹 User Registration & Role Management
+	•	Users can sign up as Players or Agents.
+	•	TMPay verifies roles using a hierarchy API.
+
+✔ API Used: GET/{token}/GetStandBy
+✔ Security Check: Users validated before enabling transactions.
+
+⸻
+
+🔹 Transaction Processing & Approval
+	1.	Deposit Requests
+	•	Player/Agent submits a deposit request.
+	•	TMPay creates an invoice and forwards it to DirectPay.
+	2.	Withdrawal Requests
+	•	Player/Agent requests a cash-out.
+	•	Admin approves and TMPay triggers DirectPay payout.
+
+✔ API Used: POST/{token}/IssueInvoice, POST/{token}/RedeemInvoice
+
+⸻
+
+🔹 DirectPay API Integration
+	•	Real-time Transaction Updates
+	•	TMPay listens to webhook callbacks from DirectPay.
+	•	Updates transaction status automatically.
+	•	Fraud Prevention
+	•	TMPay verifies every transaction against the casino hierarchy.
+	•	Ensures agents can’t withdraw for unauthorized players.
+
+✔ API Used: POST/{token}/InvoiceInfo, POST/{token}/UserInfo
+
+⸻
+
+🔹 Admin Dashboard Features
+	•	View all transactions (pending, approved, rejected).
+	•	Manually approve/reject withdrawals.
+	•	Monitor rebates and commissions from casino platform.
+
+✔ API Used: POST/{token}/GetStatement
+
+⸻
+
+5. TMPay Web App Structure
+
+TMPay is a web-based platform built with:
+	•	Frontend → Next.js (Vercel V0)
+	•	Backend → Laravel + PHP API
+	•	Database → MySQL/PostgreSQL
+	•	Authentication → JWT & OAuth
+	•	Payment Gateway → DirectPay API
+
+🔹 Frontend Components
+	•	Dashboard → Displays user balances & transactions.
+	•	Deposit/Withdraw Forms → Users submit requests.
+	•	Notifications → Real-time alerts on transaction status.
+
+🔹 Backend Modules
+	•	User Management → Handles role-based access.
+	•	Payment Processing → DirectPay API calls.
+	•	Casino Integration → Chips deposit/withdraw.
+
+✔ API Used: POST/{token}/GetUpdates, POST/{token}/Approve/Update/{token}
+
+⸻
+
+6. Security & Compliance
+
+TMPay ensures transaction security by:
+✔ Token-Based Authentication
+✔ OTP & Two-Factor Authentication (2FA)
+✔ Fraud Prevention via API Role Checks
+✔ Logging & Audit Trails for Admins
+
+✔ API Used: POST/{token}/SetUserInfo, POST/{token}/SetCallbackApi
+
+⸻
+
+7. Next Steps & Deployment Plan
+
+🔹 Immediate Action Items
+
+1️⃣ Test Full Deposit & Withdrawal Flow with DirectPay
+2️⃣ Finalize API Security & Webhook Handling
+3️⃣ Optimize Admin Dashboard for Real-time Updates
+4️⃣ Launch Beta Testing with Limited Users
+
+🔹 Future Enhancements
+
+✅ AI-powered Fraud Detection → Analyze transaction patterns.
+✅ Multi-Currency Support → Allow transactions in PHP, USDT, and more.
+✅ Auto-Reconciliation with Casino Platform → Reduce manual tracking.
+
+⸻
+
+Conclusion
+
+This integration between TMPay and DirectPay ensures secure, automated, and scalable transaction processing for casino agents and players. By using real-time API communication, TMPay can automate fund transfers, prevent fraud, and enhance user experience.
+
+Want a Prototype?
+
+Let me know if you need code samples for API integration or dashboard enhancements! 🚀
