@@ -37,7 +37,12 @@ export default function LandingPage() {
           <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
           <span className="font-medium text-base sm:text-lg text-blue-600 dark:text-blue-400">747 Casino E-Wallet</span>
         </div>
-        <div className="z-10">
+        <div className="z-10 flex items-center space-x-2">
+          <Link href="/admin/auth">
+            <Button size="sm" variant="ghost" className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/80 dark:hover:bg-gray-800/80">
+              Admin
+            </Button>
+          </Link>
           <Link href="/auth">
             <Button size="sm" variant="outline" className="glass-card text-xs sm:text-sm border-blue-200/50 dark:border-blue-800/50 shadow-sm hover:shadow-md transition-all duration-300">
               Sign In
