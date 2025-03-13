@@ -52,58 +52,58 @@ export function CasinoElements3D() {
   return (
     <div 
       ref={containerRef}
-      className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-15 -z-10"
+      className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-40 z-10"
     >
       {/* Dice positioned in less intrusive locations with slow transitions */}
       <div 
-        className="dice absolute left-[5%] top-[10%] w-10 h-10 bg-white/70 rounded-md border border-gray-300/40 shadow-md transition-transform duration-5000"
+        className="dice absolute left-[5%] top-[10%] w-16 h-16 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
       >
         {/* Dots for number 2 */}
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute top-2 left-2"></div>
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute bottom-2 right-2"></div>
+        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-3 left-3"></div>
+        <div className="w-3 h-3 bg-black/90 rounded-full absolute bottom-3 right-3"></div>
       </div>
       
       <div 
-        className="dice absolute right-[10%] top-[40%] w-8 h-8 bg-white/70 rounded-md border border-gray-300/40 shadow-md transition-transform duration-5000"
+        className="dice absolute right-[10%] top-[40%] w-14 h-14 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
       >
         {/* Dots for number 6 */}
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-1.5 left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-1.5 right-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-[calc(50%-3px)] left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-[calc(50%-3px)] right-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute bottom-1.5 left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute bottom-1.5 right-1.5"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 left-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 right-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-[calc(50%-5px)] left-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-[calc(50%-5px)] right-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 left-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
       </div>
       
       <div 
-        className="dice absolute left-[75%] bottom-[20%] w-12 h-12 bg-white/70 rounded-md border border-gray-300/40 shadow-md transition-transform duration-5000"
+        className="dice absolute left-[75%] bottom-[20%] w-20 h-20 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
       >
         {/* Dots for number 5 */}
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute top-2 left-2"></div>
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute top-2 right-2"></div>
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute top-[calc(50%-4px)] left-[calc(50%-4px)]"></div>
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute bottom-2 left-2"></div>
-        <div className="w-2 h-2 bg-black/60 rounded-full absolute bottom-2 right-2"></div>
+        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-3 left-3"></div>
+        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-3 right-3"></div>
+        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-[calc(50%-7px)] left-[calc(50%-7px)]"></div>
+        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute bottom-3 left-3"></div>
+        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute bottom-3 right-3"></div>
       </div>
       
       <div 
-        className="dice absolute right-[70%] bottom-[65%] w-7 h-7 bg-white/70 rounded-md border border-gray-300/40 shadow-md transition-transform duration-5000"
+        className="dice absolute right-[70%] bottom-[65%] w-12 h-12 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
       >
         {/* Dots for number 4 */}
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-1.5 left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-1.5 right-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute bottom-1.5 left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute bottom-1.5 right-1.5"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 left-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 right-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 left-2"></div>
+        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
       </div>
       
       {/* Add an extra die in a different area */}
       <div 
-        className="dice absolute left-[40%] top-[75%] w-9 h-9 bg-white/70 rounded-md border border-gray-300/40 shadow-md transition-transform duration-5000"
+        className="dice absolute left-[40%] top-[75%] w-18 h-18 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
       >
         {/* Dots for number 3 */}
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-1.5 left-1.5"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute top-[calc(50%-3px)] left-[calc(50%-3px)]"></div>
-        <div className="w-1.5 h-1.5 bg-black/60 rounded-full absolute bottom-1.5 right-1.5"></div>
+        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-2 left-2"></div>
+        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-[calc(50%-6px)] left-[calc(50%-6px)]"></div>
+        <div className="w-3 h-3 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
       </div>
     </div>
   );

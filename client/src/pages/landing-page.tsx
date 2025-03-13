@@ -21,12 +21,24 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] relative overflow-hidden">
       {/* Background image with casino-themed elements */}
-      <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20">
-        <img 
-          src={casinoBg} 
-          alt="Casino Background" 
-          className="w-full h-full object-cover"
-        />
+      <div className="absolute inset-0 z-0">
+        {/* SVG pattern background with low opacity */}
+        <div className="absolute inset-0 opacity-5 dark:opacity-10">
+          <img 
+            src={casinoBg} 
+            alt="Casino Pattern" 
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {/* Real casino background image with low opacity */}
+        <div className="absolute inset-0 opacity-15 dark:opacity-25">
+          <img 
+            src="/images/casino-background.jpg" 
+            alt="Casino Background" 
+            className="w-full h-full object-cover"
+          />
+        </div>
       </div>
       
       {/* Floating 3D elements */}
