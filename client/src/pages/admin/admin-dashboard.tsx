@@ -35,7 +35,6 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [manualPayments, setManualPayments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTopManager, setSelectedTopManager] = useState<string | 'all'>('all');
   const [topManagers, setTopManagers] = useState<string[]>([]);
@@ -76,13 +75,7 @@ export default function AdminDashboard() {
         const transactionsData = await transactionsResponse.json();
         setTransactions(transactionsData.transactions);
 
-        // Fetch manual payments
-        const manualPaymentsResponse = await fetch('/api/admin/manual-payments');
-        if (!manualPaymentsResponse.ok) {
-          throw new Error('Failed to fetch manual payments');
-        }
-        const manualPaymentsData = await manualPaymentsResponse.json();
-        setManualPayments(manualPaymentsData.manualPayments);
+        // Manual payments are now handled by the ManualPaymentReview component
 
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -115,13 +108,6 @@ export default function AdminDashboard() {
     ? transactions
     : transactions.filter(tx => {
         const user = users.find(u => u.id === tx.userId);
-        return user?.topManager === selectedTopManager;
-      });
-
-  const filteredManualPayments = selectedTopManager === 'all'
-    ? manualPayments
-    : manualPayments.filter(payment => {
-        const user = users.find(u => u.id === payment.userId);
         return user?.topManager === selectedTopManager;
       });
 
@@ -177,7 +163,7 @@ export default function AdminDashboard() {
             Transactions ({filteredTransactions.length})
           </TabsTrigger>
           <TabsTrigger value="manual-payments">
-            Manual Payments ({filteredManualPayments.length})
+            Manual Payments
           </TabsTrigger>
         </TabsList>
 
