@@ -57,12 +57,12 @@ const BalanceCard = () => {
         <div className="relative flex items-end space-x-2 mb-4">
           <h1 className="text-4xl font-bold text-white tracking-tight" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
             {isLoading ? (
-              <div className="animate-pulse">Loading...</div>
+              <div className="animate-shimmer rounded h-10 w-36"></div>
             ) : (
-              <div className="animate-fadeIn">{formatCurrency(data?.user?.balance || 0)}</div>
+              <div className="animate-slideUp">{formatCurrency(data?.user?.balance || 0)}</div>
             )}
           </h1>
-          <span className="text-accent mb-1 text-sm bg-accent/10 px-2 py-1 rounded-full animate-pulse">
+          <span className="text-accent mb-1 text-sm bg-accent/10 px-2 py-1 rounded-full animate-float">
             <ArrowUp className="h-3 w-3 inline mr-1" /> +₱850.00
           </span>
         </div>
@@ -91,9 +91,9 @@ const BalanceCard = () => {
             <span className="text-gray-400 block mb-1">Available for Play</span>
             <span className="text-white font-medium text-lg">
               {isLoading ? (
-                <div className="h-6 w-24 bg-gray-700 animate-pulse rounded"></div>
+                <div className="h-6 w-24 animate-shimmer rounded"></div>
               ) : (
-                formatCurrency(data?.user?.balance || 0)
+                <span className="animate-slideRight">{formatCurrency(data?.user?.balance || 0)}</span>
               )}
             </span>
           </div>
@@ -101,9 +101,9 @@ const BalanceCard = () => {
             <span className="text-gray-400 block mb-1">Pending Deposits</span>
             <span className="text-white font-medium text-lg">
               {isLoading ? (
-                <div className="h-6 w-24 bg-gray-700 animate-pulse rounded"></div>
+                <div className="h-6 w-24 animate-shimmer rounded"></div>
               ) : (
-                formatCurrency(data?.user?.pendingBalance || 0)
+                <span className="animate-slideLeft">{formatCurrency(data?.user?.pendingBalance || 0)}</span>
               )}
             </span>
           </div>
