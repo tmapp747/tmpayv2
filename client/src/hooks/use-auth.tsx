@@ -54,6 +54,20 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
+  // Initialize user from localStorage if available
+  const initialUserData = (() => {
+    try {
+      const storedData = localStorage.getItem('userData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        return parsedData;
+      }
+    } catch (e) {
+      console.error("Error parsing userData from localStorage:", e);
+    }
+    return null;
+  })();
+  
   const {
     data: userData,
     error,
@@ -63,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
+    initialData: initialUserData,
   });
 
   const user = userData?.user || null;
@@ -104,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
       
+      // Save user data to localStorage for token persistence
+      localStorage.setItem('userData', JSON.stringify({ user: data.user }));
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created and you're now logged in!",
@@ -127,6 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user/info"], { user: null });
+      
+      // Clear user data from localStorage
+      localStorage.removeItem('userData');
       
       toast({
         title: "Logged out",
