@@ -9,9 +9,15 @@ import {
   type QrPayment,
   type InsertQrPayment
 } from "@shared/schema";
+import session from "express-session";
+import createMemoryStore from "memorystore";
+
+const MemoryStore = createMemoryStore(session);
 
 // Storage interface for all database operations
 export interface IStorage {
+  // Session store
+  sessionStore: session.Store;
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -61,6 +67,8 @@ export class MemStorage implements IStorage {
   private transactionIdCounter: number;
   private qrPaymentIdCounter: number;
 
+  sessionStore: session.Store;
+
   constructor() {
     this.users = new Map();
     this.transactions = new Map();
@@ -69,6 +77,11 @@ export class MemStorage implements IStorage {
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
+
+    // Initialize the session store
+    this.sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
   }
 
   // User operations
