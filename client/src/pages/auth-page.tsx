@@ -34,11 +34,11 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
 
   // Redirect if already logged in
   if (user) {
-    setLocation("/");
+    navigate("/");
     return null;
   }
 
