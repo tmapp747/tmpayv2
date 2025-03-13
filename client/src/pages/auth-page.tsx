@@ -225,7 +225,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] flex items-center justify-center relative overflow-hidden">
       {/* Add 3D Casino Elements in the background */}
-      <div className="opacity-30 dark:opacity-20">
+      <div className="opacity-20 dark:opacity-10">
         <CasinoElements3D />
       </div>
       {/* Header - with back button */}
