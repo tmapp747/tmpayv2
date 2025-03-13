@@ -12,6 +12,7 @@ import LandingPage from "@/pages/landing-page";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import VideoIntro from "@/components/VideoIntro";
 
 function Router() {
   return (
@@ -47,6 +48,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <VideoIntro />
         <Router />
         <Toaster />
       </AuthProvider>
