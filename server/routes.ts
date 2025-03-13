@@ -1018,8 +1018,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   transaction.paymentReference || ""
                 );
                 
-                // Update user's balance
-                await storage.updateUserBalance(user.id, amount);
+                // Update user's balance using the currency from the transaction
+                const currency = transaction.currency || 'PHP'; // Default to PHP for GCash transactions
+                await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
                 
                 console.log(`Payment completed via status check: ${referenceId}, amount: ${amount}`);
               }
@@ -1093,8 +1094,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction.paymentReference || ""
       );
       
-      // Update user's balance
-      const updatedUser = await storage.updateUserBalance(user.id, amount);
+      // Update user's balance with the transaction currency (default to PHP for GCash)
+      const currency = transaction.currency || 'PHP';
+      await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+      
+      // Get the updated currency balance
+      const newBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
       
       return res.json({
         success: true,
@@ -1104,7 +1109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: "completed",
           transactionId
         },
-        newBalance: updatedUser.balance
+        newBalance,
+        currencyUsed: currency
       });
     } catch (error) {
       console.error("Simulate payment completion error:", error);
@@ -1446,6 +1452,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update user's casino balance
         await storage.updateUserCasinoBalance(user.id, -validatedData.amount);
         
+        // Credit the withdrawn amount to the user's currency balance
+        const currency = validatedData.currency || 'USD';
+        await storage.updateUserCurrencyBalance(user.id, currency as Currency, validatedData.amount);
+        
+        // Get updated currency balance
+        const newBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
+        
         return res.json({
           success: true,
           message: "Withdrawal from casino completed successfully",
@@ -1453,7 +1466,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...transaction,
             status: "completed",
             casinoReference: withdrawResult.transactionId
-          }
+          },
+          newBalance,
+          currencyUsed: currency
         });
       } catch (casinoError) {
         console.error("Error withdrawing from casino:", casinoError);
@@ -1541,6 +1556,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update sender's casino balance
         await storage.updateUserCasinoBalance(fromUser.id, -validatedData.amount);
         
+        // Get the casino balance after transfer
+        const newCasinoBalance = fromUser.casinoBalance 
+          ? (parseFloat(fromUser.casinoBalance.toString()) - validatedData.amount).toString()
+          : '0';
+        
+        const currency = validatedData.currency || 'USD';
+        
         return res.json({
           success: true,
           message: "Casino transfer completed successfully",
@@ -1548,7 +1570,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...transaction,
             status: "completed",
             casinoReference: transferResult.transactionId
-          }
+          },
+          newCasinoBalance,
+          currencyUsed: currency
         });
       } catch (casinoError) {
         console.error("Error processing casino transfer:", casinoError);
@@ -1744,13 +1768,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             transaction.paymentReference || ""
           );
           
-          // Update user's balance
-          await storage.updateUserBalance(user.id, paymentAmount);
+          // Update user's balance in PHP (default for GCash payments)
+          // In a production system, this currency would be stored with the transaction
+          const currency = transaction.currency || 'PHP';
+          await storage.updateUserCurrencyBalance(user.id, currency as Currency, paymentAmount);
+          
+          // Get the updated currency balance
+          const updatedBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
           
           console.log("Payment completed successfully via webhook:", {
             reference: paymentReference,
             userId: user.id,
             amount: paymentAmount,
+            currency,
+            newBalance: updatedBalance,
             casinoResult
           });
         } catch (casinoError) {

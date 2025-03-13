@@ -1,0 +1,634 @@
+APIs
+GET/{token}/SetStandBy
+GET/{token}/GetStandBy
+POST/{token}/GetCirculatingCoins
+Parameters
+Cancel
+Name Description
+token
+*string($uuid)(path)
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetCirculatingCoins' \
+-H 'accept: text/plain' \
+-d ''
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetCirculatingCoins
+Server response
+Code Details
+200 Response bodyDownload
+{
+"coins": [
+{
+"balance": 0.00973417,
+"currency": 1
+},
+{
+"balance": 7600.45558021,
+"currency": 5
+},
+{
+"balance": 55534228.52065455,
+"currency": 11
+}
+Paygram tested api 1],
+"type": 16,
+"success": true
+}
+Response headers
+content-length: 155 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:20:51 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+200
+No links
+{
+"message": "string"
+"type": 0,
+"success": true
+}
+,
+POST/{token}/GetStatement
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetStatement' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -9475754,
+"userCliId": "tmloader"
+,
+"fromUtc": "2023-10-03T08:21:58.449Z"
+,
+"toExcludingUtc": "2023-10-04T08:21:58.449Z"
+,
+"startIdx": 0,
+Paygram tested api 2"resultsPerPage": 25,
+"goForward": true
+}'
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetStatement
+Server response
+Code Details
+Response bodyDownload
+200
+{
+"statementEntries": [],
+"results": 0,
+"nextPageAvailable": false,
+"type": 21,
+"success": true
+}
+Response headers
+content-length: 86 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:45:28 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+}
+Code Description Links
+200
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+No links
+POST/{token}/GetExchangeRates
+POST/{token}/GetUpdates
+Parameters
+CancelReset
+Paygram tested api 3Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetUpdates' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -9756202837,
+"userCliId": "tmuser"
+}'
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/GetUpdates
+Server response
+Code Details
+Response bodyDownload
+200
+{
+"updates": [],
+"type": 17,
+"success": true
+}
+Response headers
+content-length: 39 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:25:12 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+200 SuccessMedia
+No links
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+Paygram tested api 4{
+"message": "string"
+"type": 0,
+"success": true
+}
+,
+POST/{token}/MarkUpdatesError
+POST/{token}/TransferCredit
+POST/{token}/RedeemInvoice
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/3ceb007d-4422-450b-8835-8ff135a6a854/RedeemInvoice' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -7993847474,
+"userCliId": "wakay"
+,
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+}'
+Request URL
+https://api.pay-gram.org/3ceb007d-4422-450b-8835-8ff135a6a854/RedeemInvoice
+Server response
+Code Details
+200 Response bodyDownload
+{
+"message": "Invalid Token"
+"type": 0,
+"success": false
+,
+}
+Response headers
+Paygram tested api 5content-length: 52 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:43:52 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls
+Accept
+header.
+•
+Example Value
+•
+Schema
+200
+No links
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+}
+POST/{token}/IssueInvoice
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/IssueInvoice' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -64829383,
+"userCliId": "tmloader"
+,
+"currencyCode": 11,
+"amount": 100,
+"callbackData": "https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+"merchantType": 3
+,
+}'
+Request URL
+Paygram tested api 6https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/IssueInvoice
+Server response
+content-length: 452 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:34:00 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Code Details
+200
+Response bodyDownload
+{
+"payUrl": null,
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+,
+"status": 4,
+"lastEventUtc": "2023-10-04T08:34:00.3087599Z"
+,
+"createdUtc": "2023-10-04T08:34:00.3087598Z"
+,
+"amount": 100,
+"expectedFee": 0,
+"callbackData":
+"https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+"currencyCode": 11,
+"fromUser": null,
+"toUser": "tmloader"
+,
+"originatingUser": null,
+"isPaid": false,
+"isRedeemed": false,
+"invoiceType": 0,
+"type": 14,
+"success": true
+}
+Response headers
+,
+Responses
+}
+Code Description Links
+200
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls
+Accept
+header.
+•
+Example Value
+•
+Schema
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+No links
+Paygram tested api 7POST/{token}/CreateRedEnvelope
+POST/{token}/RedeemRedEnvelope
+POST/{token}/PayInvoice
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/PayInvoice' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -7402949,
+"userCliId": "tmloader"
+,
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+}'
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/PayInvoice
+Server response
+Code Details
+200 Response bodyDownload
+{
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+,
+"status": 2,
+"lastEventUtc": "2023-10-04T08:41:48.4840544"
+,
+"createdUtc": "2023-10-04T08:34:00.3059678"
+,
+"amount": 100,
+"expectedFee": 0,
+"callbackData":
+"https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+"currencyCode": 11,
+"fromUser": "tmloader"
+,
+"toUser": "tmloader"
+,
+"originatingUser": "tmloader"
+"isPaid": true,
+"isRedeemed": true,
+,
+,
+Paygram tested api 8"invoiceType": 3,
+"type": 6,
+"success": true
+}
+Response headers
+content-length: 452 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:41:48 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+200
+No links
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+}
+POST/{token}/InvoiceInfo
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/InvoiceInfo' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -73939339,
+"userCliId": "tmloader"
+,
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+}'
+Paygram tested api 9Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/InvoiceInfo
+Server response
+Code Details
+Response bodyDownload
+200
+{
+"invoiceCode": "3ceb007d-4422-450b-8835-8ff135a6a854"
+,
+"status": 4,
+"lastEventUtc": "2023-10-04T08:34:00.3059679"
+,
+"createdUtc": "2023-10-04T08:34:00.3059678"
+,
+"amount": 100,
+"expectedFee": 0,
+"callbackData":
+"https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+"currencyCode": 11,
+"fromUser": null,
+"toUser": "tmloader"
+,
+,
+"originatingUser": "tmloader"
+"isPaid": false,
+"isRedeemed": false,
+"invoiceType": 3,
+"type": 6,
+"success": true
+,
+}
+Response headers
+content-length: 448 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:38:16 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+200 SuccessMedia
+No links
+typetext/plainapplication/jsontext/jsonControls
+Accept
+header.
+•
+Example Value
+•
+Schema
+{
+"message": "string"
+"type": 0,
+,
+Paygram tested api 10"success": true
+}
+POST/{token}/UpdateWithdraw
+POST/{token}/TopUp
+POST/{token}/ClientInfo
+Parameters
+Cancel
+Name Description
+token
+*string($uuid)(path)
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/ClientInfo' \
+-H 'accept: text/plain' \
+-d ''
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/ClientInfo
+Server response
+Code Details
+Response bodyDownload
+200
+{
+"callbackApi":
+"type": 3,
+"success": true
+"https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+,
+}
+Response headers
+content-length: 115 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:26:09 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+Paygram tested api 11SuccessMedia
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+200
+No links
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+}
+POST/{token}/SetCallbackApi
+POST/{token}/UserInfo
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/UserInfo' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -637383,
+"userCliId": "tmloader"
+}'
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/UserInfo
+Server response
+Code Details
+200 Response bodyDownload
+{
+"balances": [
+Paygram tested api 12{
+}
+],
+"balance": 100,
+"currency": 11
+"joinedOn": "2023-09-22T13:43:17.5366464"
+"userIdInClient": "tmloader"
+,
+,
+"uid": "ea58e3d3-68e6-4516-ab27-ea0ecbf7f3eb"
+,
+"callbackUrl": "https://marc747.com/api/DepositCallbackRequest/"
+"signSeed": "f23db665-019d-4514-b9d2-6e7d89ee51b0"
+,
+"type": 11,
+"success": true
+}
+,
+Response headers
+content-length: 306 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:27:09 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+}
+Code Description Links
+200
+SuccessMedia
+typetext/plainapplication/jsontext/jsonControls
+Accept
+header.
+•
+Example Value
+•
+Schema
+{
+"message": "string"
+"type": 0,
+"success": true
+,
+No links
+POST/{token}/SetUserInfo
+Parameters
+CancelReset
+Name Description
+token
+*string($uuid)(path)
+Request bodyapplication/json-patch+jsonapplication/jsontext/jsonapplication/*+json
+ExecuteClear
+Responses
+Curl
+Paygram tested api 13curl -X 'POST' \
+'https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/SetUserInfo' \
+-H 'accept: text/plain' \
+-H 'Content-Type: application/json-patch+json' \
+-d '{
+"requestId": -93748383,
+"userCliId": "wakay"
+,
+"callbackUrl": "https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+}'
+Request URL
+https://api.pay-gram.org/355c3d34-0a30-4de9-8a16-da1b38567c75/SetUserInfo
+Server response
+Code Details
+Response bodyDownload
+200
+{
+"balances": [],
+"joinedOn": "2023-10-04T08:29:46.8110235Z"
+,
+"userIdInClient": "wakay"
+,
+"uid": "da3682ba-f7c3-4a28-a477-ac537cbaa978"
+,
+"callbackUrl":
+"https://marc747.com/api/DepositCallbackRequest/PayGramDepCallBackReqAsync"
+"signSeed": "91d1d984-a632-4aa1-b6f6-a8f89b8d0ded"
+,
+"type": 11,
+"success": true
+,
+}
+Response headers
+content-length: 292 content-type: application/json; charset=utf-8 date:
+Wed,04 Oct 2023 08:29:46 GMT server: Microsoft-IIS/10.0 x-powered-by:
+ASP.NET
+Responses
+Code Description Links
+200 SuccessMedia
+No links
+typetext/plainapplication/jsontext/jsonControls Accept header.
+•
+Example Value
+•
+Schema
+{
+"message": "string"
+,
+Paygram tested api 14"type": 0,
+"success": true
+}
+POST/{token}/Withdraw
+POST/{token}/CreateClient
+POST/{token}/Swap
+POST/{token}/UserCallback
+POST/{token}/GetP2PGroups
+POST/{token}/SetP2PGroup
+POST/{token}/GetBusinesses
+POST/{token}/SetBusiness
+POST/{token}/SimplexGetQuote
+Approve
+POST/Approve/Update/{token}
+Cryptapi
+GET/Cryptapi/{callbackData}
+Logo
+Paygram tested api 

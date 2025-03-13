@@ -2,8 +2,8 @@ import { pgTable, text, serial, integer, timestamp, boolean, numeric, json } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Currency definition
-export const supportedCurrencies = ['PHP', 'USD', 'EUR', 'CNY', 'JPY', 'KRW', 'USDT'];
+// Currency definition - only supporting PHP (fiat), PHPT and USDT (crypto)
+export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
 
 // User schema
 export const users = pgTable("users", {
@@ -86,7 +86,29 @@ export const qrPayments = pgTable("qr_payments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Telegram PayBot Payment schema
+export const telegramPayments = pgTable("telegram_payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  transactionId: integer("transaction_id").notNull(),
+  payUrl: text("pay_url").notNull(),       // URL provided by Telegram PayBot
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").default("PHPT").notNull(), // Default to PHPT for Telegram payments
+  expiresAt: timestamp("expires_at").notNull(),
+  telegramReference: text("telegram_reference"),
+  invoiceId: text("invoice_id"),
+  status: text("status").notNull().default("pending"), // 'pending', 'completed', 'expired', 'failed'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTelegramPaymentSchema = createInsertSchema(telegramPayments).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -196,7 +218,20 @@ export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type QrPayment = typeof qrPayments.$inferSelect;
 export type InsertQrPayment = z.infer<typeof insertQrPaymentSchema>;
 
+export type TelegramPayment = typeof telegramPayments.$inferSelect;
+export type InsertTelegramPayment = z.infer<typeof insertTelegramPaymentSchema>;
+
+// Add schema for Telegram payment requests
+export const generateTelegramPaymentSchema = z.object({
+  userId: z.number(),
+  username: z.string(),
+  amount: z.number().min(10).max(1000000),
+  casinoId: z.string(),
+  currency: z.string().default("PHPT")
+});
+
 export type GenerateQrCodeRequest = z.infer<typeof generateQrCodeSchema>;
+export type GenerateTelegramPaymentRequest = z.infer<typeof generateTelegramPaymentSchema>;
 export type VerifyPaymentRequest = z.infer<typeof verifyPaymentSchema>;
 export type UpdateBalanceRequest = z.infer<typeof updateBalanceSchema>;
 
