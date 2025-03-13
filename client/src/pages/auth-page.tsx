@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Check, X } from "lucide-react";
@@ -277,7 +277,12 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your 747 casino username" {...field} />
+                              <Input 
+                                placeholder="Enter your 747 casino username" 
+                                {...field} 
+                                disabled
+                                className="bg-muted/50"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -308,20 +313,23 @@ export default function AuthPage() {
                               <Button 
                                 type="button" 
                                 variant={field.value === "player" ? "default" : "outline"}
-                                onClick={() => loginForm.setValue("userType", "player")}
-                                className="flex-1"
+                                disabled
+                                className={`flex-1 ${field.value !== "player" ? "opacity-50" : ""}`}
                               >
                                 Player
                               </Button>
                               <Button 
                                 type="button" 
                                 variant={field.value === "agent" ? "default" : "outline"}
-                                onClick={() => loginForm.setValue("userType", "agent")}
-                                className="flex-1"
+                                disabled
+                                className={`flex-1 ${field.value !== "agent" ? "opacity-50" : ""}`}
                               >
                                 Agent
                               </Button>
                             </div>
+                            <FormDescription className="text-center">
+                              {field.value === "player" ? "Player Account" : "Agent Account"}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -387,7 +395,12 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Username</FormLabel>
                             <FormControl>
-                              <Input placeholder="Your existing 747 casino username" {...field} />
+                              <Input 
+                                placeholder="Your existing 747 casino username" 
+                                {...field} 
+                                disabled
+                                className="bg-muted/50"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -432,20 +445,23 @@ export default function AuthPage() {
                               <Button 
                                 type="button" 
                                 variant={field.value === "player" ? "default" : "outline"}
-                                onClick={() => registerForm.setValue("userType", "player")}
-                                className="flex-1"
+                                disabled
+                                className={`flex-1 ${field.value !== "player" ? "opacity-50" : ""}`}
                               >
                                 Player
                               </Button>
                               <Button 
                                 type="button" 
                                 variant={field.value === "agent" ? "default" : "outline"}
-                                onClick={() => registerForm.setValue("userType", "agent")}
-                                className="flex-1"
+                                disabled
+                                className={`flex-1 ${field.value !== "agent" ? "opacity-50" : ""}`}
                               >
                                 Agent
                               </Button>
                             </div>
+                            <FormDescription className="text-center">
+                              {field.value === "player" ? "Player Account" : "Agent Account"}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
