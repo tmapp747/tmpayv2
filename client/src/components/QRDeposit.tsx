@@ -247,7 +247,10 @@ const QRDeposit = () => {
           <div className="flex flex-col lg:flex-row">
             <div className="w-full lg:w-1/2 p-4">
               <p className="text-gray-300 mb-4">
-                Scan this QR code with your GCash app to make a deposit to your 747 casino wallet.
+                {activeQrPayment && activeQrPayment.qrCodeData.includes('<iframe') 
+                  ? "Complete your GCash payment using the form below to deposit funds to your 747 casino wallet."
+                  : "Scan this QR code with your GCash app to make a deposit to your 747 casino wallet."
+                }
               </p>
               
               <div className="bg-white p-3 rounded-lg mx-auto max-w-xs qr-scanner">
@@ -257,10 +260,15 @@ const QRDeposit = () => {
                 <div className="flex justify-center">
                   {activeQrPayment ? (
                     activeQrPayment.qrCodeData.includes('<iframe') ? (
-                      <div 
-                        className="w-44 h-44"
-                        dangerouslySetInnerHTML={{ __html: activeQrPayment.qrCodeData }}
-                      />
+                      <div className="payment-iframe-container w-full h-72 overflow-hidden">
+                        <div 
+                          className="w-full h-full"
+                          dangerouslySetInnerHTML={{ __html: activeQrPayment.qrCodeData }}
+                        />
+                        <div className="text-center text-dark text-xs mt-2 bg-accent/10 p-1 rounded">
+                          <span className="font-medium">Complete payment in the window above</span>
+                        </div>
+                      </div>
                     ) : (
                       <img 
                         src={activeQrPayment.qrCodeData} 
@@ -363,6 +371,8 @@ const QRDeposit = () => {
                       <Loader2 className="animate-spin h-5 w-5 inline-block mr-2" />
                       {isCheckingStatus ? (
                         <span>Checking payment status...</span>
+                      ) : activeQrPayment?.qrCodeData.includes('<iframe') ? (
+                        <span>Complete the payment form to continue</span>
                       ) : (
                         <span>Scan QR code with GCash app to complete payment</span>
                       )}
