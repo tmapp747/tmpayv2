@@ -19,6 +19,11 @@ export const users = pgTable("users", {
   immediateManager: text("immediate_manager"),
   casinoUserType: text("casino_user_type"),
   casinoBalance: numeric("casino_balance", { precision: 10, scale: 2 }).default("0"),
+  // Auth and hierarchy fields
+  accessToken: text("access_token"), // Each user has a unique token for transfers
+  isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
+  hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
+  allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -136,6 +141,19 @@ export const casinoGetUserDetailsSchema = z.object({
   username: z.string()
 });
 
+// Authentication schemas
+export const loginSchema = z.object({
+  username: z.string(),
+  password: z.string()
+});
+
+export const authSchema = z.object({
+  token: z.string(),
+  username: z.string()
+});
+
+export const allowedTopManagersSchema = z.array(z.string()).min(1);
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -155,3 +173,8 @@ export type CasinoDepositRequest = z.infer<typeof casinoDepositSchema>;
 export type CasinoWithdrawRequest = z.infer<typeof casinoWithdrawSchema>;
 export type CasinoTransferRequest = z.infer<typeof casinoTransferSchema>;
 export type CasinoGetUserDetailsRequest = z.infer<typeof casinoGetUserDetailsSchema>;
+
+// Auth types
+export type LoginRequest = z.infer<typeof loginSchema>;
+export type AuthRequest = z.infer<typeof authSchema>;
+export type AllowedTopManagers = z.infer<typeof allowedTopManagersSchema>;

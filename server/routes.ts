@@ -10,10 +10,13 @@ import {
   casinoDepositSchema,
   casinoWithdrawSchema,
   casinoTransferSchema,
-  casinoGetUserDetailsSchema
+  casinoGetUserDetailsSchema,
+  loginSchema,
+  authSchema,
+  allowedTopManagersSchema
 } from "@shared/schema";
 import { ZodError } from "zod";
-import { randomUUID } from "crypto";
+import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
 

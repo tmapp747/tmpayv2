@@ -24,6 +24,14 @@ export interface IStorage {
   getUserByCasinoUsername(casinoUsername: string): Promise<User | undefined>;
   getUserByCasinoClientId(casinoClientId: number): Promise<User | undefined>;
   
+  // Authentication operations
+  getUserByAccessToken(token: string): Promise<User | undefined>;
+  updateUserAccessToken(id: number, token: string): Promise<User>;
+  updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User>;
+  updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
+  setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;
+  isUserAuthorized(username: string): Promise<boolean>;
+  
   // Transaction operations
   getTransaction(id: number): Promise<Transaction | undefined>;
   getTransactionsByUserId(userId: number): Promise<Transaction[]>;
@@ -200,6 +208,92 @@ export class MemStorage implements IStorage {
     return Array.from(this.users.values()).find(
       (user) => user.casinoClientId === casinoClientId
     );
+  }
+
+  // Authentication operations
+  async getUserByAccessToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.accessToken === token
+    );
+  }
+
+  async updateUserAccessToken(id: number, token: string): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      accessToken: token,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      isAuthorized,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Determine hierarchy level based on userType
+    let hierarchyLevel = 0;
+    if (userType === 'player') hierarchyLevel = 0;
+    else if (userType === 'agent') hierarchyLevel = 1;
+    else if (userType === 'manager') hierarchyLevel = 2;
+    else if (userType === 'topManager') hierarchyLevel = 3;
+    
+    const updatedUser = { 
+      ...user, 
+      topManager,
+      immediateManager,
+      casinoUserType: userType,
+      hierarchyLevel,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      allowedTopManagers,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async isUserAuthorized(username: string): Promise<boolean> {
+    const user = await this.getUserByUsername(username);
+    if (!user) return false;
+    
+    // If user has explicit authorization, check that first
+    if (user.isAuthorized !== undefined && user.isAuthorized === true) {
+      return true;
+    }
+    
+    // Check if user is under an allowed top manager
+    if (user.topManager && user.allowedTopManagers && user.allowedTopManagers.includes(user.topManager)) {
+      return true;
+    }
+    
+    return false;
   }
 
   // Transaction operations
