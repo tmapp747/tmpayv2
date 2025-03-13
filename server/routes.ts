@@ -68,12 +68,6 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     // Since we're in production, we don't want to use fallbacks. Instead, throw an error
     // that will be handled by the calling code.
     throw new Error('Failed to generate payment form with DirectPay API');
-    
-    return {
-      qrCodeData,
-      directPayReference,
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000)
-    };
   }
 }
 
