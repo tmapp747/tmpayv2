@@ -45,7 +45,8 @@ import {
   User,
   LockKeyhole,
   AtSign,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from "lucide-react";
 
 // Casino logo
