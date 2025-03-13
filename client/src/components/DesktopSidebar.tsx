@@ -7,20 +7,18 @@ import {
   Activity, 
   Settings, 
   LogOut,
-  User
+  User,
+  Loader2
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { userApi } from "@/lib/api";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 const DesktopSidebar = () => {
   const [location] = useLocation();
-  
-  const { data: userData } = useQuery({
-    queryKey: ['/api/user/info'],
-    staleTime: 60000
-  });
-  
-  const user = userData?.user;
+  const { user, logoutMutation } = useAuth();
+  const { toast } = useToast();
   
   const navLinks = [
     { path: "/", icon: Home, label: "Home" },
@@ -91,8 +89,17 @@ const DesktopSidebar = () => {
               {user?.isVip ? "VIP Member" : "Member"}
             </p>
           </div>
-          <button className="ml-auto text-gray-300 hover:text-white">
-            <LogOut className="h-5 w-5" />
+          <button 
+            onClick={() => logoutMutation.mutate()} 
+            disabled={logoutMutation.isPending}
+            className="ml-auto text-gray-300 hover:text-white p-2 rounded-full hover:bg-primary/30 transition-colors"
+            title="Logout"
+          >
+            {logoutMutation.isPending ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <LogOut className="h-5 w-5" />
+            )}
           </button>
         </div>
       </div>
