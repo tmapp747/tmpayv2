@@ -415,6 +415,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User registration endpoint
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
+      console.log("[REGISTER] Registration attempt with data:", JSON.stringify(req.body, null, 2));
+      
       // Create a register schema based on the user schema with minimal required fields
       const registerSchema = z.object({
         username: z.string().min(3),
@@ -425,10 +427,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate registration data
       const { username, password, email, userType } = registerSchema.parse(req.body);
+      console.log("[REGISTER] Valid registration data for username:", username);
       
       // Check if user already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
+        console.log("[REGISTER] User already exists:", username);
         return res.status(400).json({ 
           success: false, 
           message: "Username already exists" 
@@ -437,11 +441,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Determine if this is an agent or player based on form selection
       const isAgent = userType === 'agent';
+      console.log("[REGISTER] User registering as:", isAgent ? "agent" : "player");
       
       // First verify if the username is allowed (in the correct hierarchy)
       const eligibilityCheck = await isUsernameAllowed(username, isAgent);
+      console.log("[REGISTER] Eligibility check result:", JSON.stringify(eligibilityCheck, null, 2));
       
       if (!eligibilityCheck.allowed) {
+        console.log("[REGISTER] User not eligible for registration:", username);
         return res.status(403).json({
           success: false,
           message: eligibilityCheck.message || "User is not eligible for registration"
@@ -451,49 +458,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // User is verified and eligible
       const topManager = eligibilityCheck.topManager || "";
       const immediateManager = eligibilityCheck.immediateManager || "";
+      console.log("[REGISTER] Top manager:", topManager, "Immediate manager:", immediateManager);
       
-      // Get client ID 
-      const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
-      const casinoClientId = hierarchyData.user.clientId;
-      
-      // Create new user in our system
-      const newUser = await storage.createUser({
-        username,
-        password, // In production, this would be hashed
-        email: email || null,
-        casinoId: `747-${casinoClientId}`,
-        balance: "0.00",
-        pendingBalance: "0.00",
-        isVip: false,
-        casinoUsername: username,
-        casinoClientId: casinoClientId,
-        topManager: topManager,
-        immediateManager: immediateManager,
-        casinoUserType: isAgent ? 'agent' : 'player',
-        isAuthorized: true // Pre-authorized since we checked the hierarchy
-      });
-      
-      // Set allowed top managers
-      const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
-      await storage.setUserAllowedTopManagers(newUser.id, ALLOWED_TOP_MANAGERS);
-      
-      // Generate access token
-      const accessToken = generateAccessToken();
-      await storage.updateUserAccessToken(newUser.id, accessToken);
-      
-      // Return success with user details (minus password)
-      const { password: _, ...userWithoutPassword } = newUser;
-      
-      return res.status(201).json({
-        success: true,
-        message: "Registration successful",
-        user: {
-          ...userWithoutPassword,
-          accessToken
-        }
-      });
+      try {
+        // Get client ID 
+        console.log("[REGISTER] Getting user hierarchy for:", username);
+        const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
+        console.log("[REGISTER] Got hierarchy data:", JSON.stringify(hierarchyData, null, 2));
+        const casinoClientId = hierarchyData.user.clientId;
+        
+        // Create new user in our system
+        console.log("[REGISTER] Creating user in storage...");
+        const newUser = await storage.createUser({
+          username,
+          password, // In production, this would be hashed
+          email: email || null,
+          casinoId: `747-${casinoClientId}`,
+          balance: "0.00",
+          pendingBalance: "0.00",
+          isVip: false,
+          casinoUsername: username,
+          casinoClientId: casinoClientId,
+          topManager: topManager,
+          immediateManager: immediateManager,
+          casinoUserType: isAgent ? 'agent' : 'player',
+          isAuthorized: true // Pre-authorized since we checked the hierarchy
+        });
+        console.log("[REGISTER] User created with ID:", newUser.id);
+        
+        // Set allowed top managers
+        const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+        await storage.setUserAllowedTopManagers(newUser.id, ALLOWED_TOP_MANAGERS);
+        console.log("[REGISTER] Set allowed top managers for user");
+        
+        // Generate access token
+        const accessToken = generateAccessToken();
+        await storage.updateUserAccessToken(newUser.id, accessToken);
+        console.log("[REGISTER] Access token generated and saved");
+        
+        // Verify user was saved - get all users from storage
+        const allUsers = storage.getAllUsers();
+        console.log("[REGISTER] All users in storage after registration:", 
+          Array.from(allUsers.values()).map(u => ({id: u.id, username: u.username})));
+        
+        // Return success with user details (minus password)
+        const { password: _, ...userWithoutPassword } = newUser;
+        
+        return res.status(201).json({
+          success: true,
+          message: "Registration successful",
+          user: {
+            ...userWithoutPassword,
+            accessToken
+          }
+        });
+      } catch (apiError) {
+        console.error("[REGISTER] API Error during casino operations:", apiError);
+        return res.status(400).json({ 
+          success: false, 
+          message: "Could not verify casino account or hierarchy. Make sure username exists in 747 Casino.",
+          details: apiError instanceof Error ? apiError.message : String(apiError)
+        });
+      }
     } catch (error) {
-      console.error("Registration error:", error);
+      console.error("[REGISTER] Registration error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ 
           success: false, 
@@ -503,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if it's an API error
-      if (error.message && error.message.includes("casino")) {
+      if (error instanceof Error && error.message && error.message.includes("casino")) {
         return res.status(400).json({ 
           success: false, 
           message: "Could not verify casino account or hierarchy. Make sure username exists in 747 Casino." 
@@ -512,7 +540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(500).json({ 
         success: false, 
-        message: "Server error during registration" 
+        message: "Server error during registration",
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -734,6 +763,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ 
         success: false,
         message: "Server error while generating QR code" 
+      });
+    }
+  });
+  
+  // For testing - get all users in database
+  app.get("/api/debug/users", async (req: Request, res: Response) => {
+    try {
+      const allUsers = storage.getAllUsers();
+      const usersList = Array.from(allUsers.values()).map(u => {
+        const { password, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      
+      return res.json({
+        success: true,
+        users: usersList,
+        count: usersList.length
+      });
+    } catch (error) {
+      console.error("Debug users error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error retrieving users"
       });
     }
   });

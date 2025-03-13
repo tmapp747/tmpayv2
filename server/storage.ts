@@ -69,54 +69,6 @@ export class MemStorage implements IStorage {
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
-    
-    // Add some initial test data
-    this.createUser({
-      username: "colorway",
-      password: "cassinoroyale@ngInaM0!2@",
-      email: "colorway@example.com",
-      casinoId: "747-player-123",
-      balance: "5000.00",
-      pendingBalance: "0.00",
-      isVip: true,
-      casinoUsername: "colorway",
-      casinoClientId: 24601,
-      casinoUserType: "player",
-      casinoBalance: "7500.00",
-      topManager: "alpha1",
-      immediateManager: "beta7"
-    });
-    
-    // Add some sample transactions
-    setTimeout(() => {
-      const user = this.users.get(1);
-      if (user) {
-        // Add casino deposit transaction
-        this.createTransaction({
-          userId: 1,
-          type: "casino_deposit",
-          method: "casino_transfer",
-          amount: "1000.00",
-          status: "completed",
-          casinoClientId: 24601,
-          casinoUsername: "colorway",
-          casinoReference: "747DEP12345",
-          uniqueId: "DP" + Date.now().toString(),
-          currency: "USD"
-        });
-        
-        // Add GCash QR deposit transaction
-        this.createTransaction({
-          userId: 1,
-          type: "deposit",
-          method: "gcash_qr",
-          amount: "500.00",
-          status: "completed",
-          paymentReference: "GCQR-" + Date.now().toString(),
-          transactionId: "TR-" + Date.now().toString()
-        });
-      }
-    }, 100);
   }
 
   // User operations

@@ -10,12 +10,23 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Check, X } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Check, X, Info } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 // Let's use a simple emoji instead since the logo is not directly accessible
 const logo = "💼";
+
+// Types for the casino API verification response
+interface CasinoVerificationResponse {
+  success: boolean;
+  message: string;
+  topManager?: string;
+  immediateManager?: string;
+  userType?: string;
+  clientId?: number;
+}
 
 // Username verification schema
 const usernameVerificationSchema = z.object({
@@ -30,12 +41,16 @@ const loginSchema = z.object({
   userType: z.enum(["player", "agent"]).default("player")
 });
 
-// Registration form schema
+// Registration form schema with casino info
 const registerSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
   email: z.string().email({ message: "Please enter a valid email" }).optional(),
-  userType: z.enum(["player", "agent"]).default("player")
+  userType: z.enum(["player", "agent"]).default("player"),
+  // Read-only casino information fields (not actually sent in the request, but displayed)
+  topManager: z.string().optional(),
+  immediateManager: z.string().optional(),
+  casinoUserType: z.string().optional()
 });
 
 type UsernameVerificationFormValues = z.infer<typeof usernameVerificationSchema>;
@@ -46,6 +61,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("verification");
   const [verifiedUsername, setVerifiedUsername] = useState<string>("");
   const [verifiedUserType, setVerifiedUserType] = useState<"player" | "agent">("player");
+  const [casinoVerificationData, setCasinoVerificationData] = useState<CasinoVerificationResponse | null>(null);
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
@@ -76,12 +92,15 @@ export default function AuthPage() {
       const res = await apiRequest("POST", API_ENDPOINTS.AUTH.VERIFY_USERNAME, data);
       const responseData = await res.json();
       if (!res.ok) throw new Error(responseData.message || "Username verification failed");
-      return responseData;
+      return responseData as CasinoVerificationResponse;
     },
     onSuccess: (data) => {
       // Store the verified username and type
       setVerifiedUsername(verificationForm.getValues("username"));
       setVerifiedUserType(verificationForm.getValues("userType") as "player" | "agent");
+      
+      // Store the full casino verification data
+      setCasinoVerificationData(data);
       
       // Show success message
       toast({
