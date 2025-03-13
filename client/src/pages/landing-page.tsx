@@ -31,25 +31,22 @@ export default function LandingPage() {
           />
         </div>
         
-        {/* Real casino background image with low opacity */}
-        <div className="absolute inset-0 opacity-15 dark:opacity-25">
-          <img 
-            src="/images/casino-background.jpg" 
-            alt="Casino Background" 
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Simple gradient background instead of image */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950"></div>
       </div>
       
-      {/* Floating 3D elements */}
-      {showFloatingElements && <CasinoElements3D />}
       {/* Header - fully responsive with mobile adjustments */}
-      <header className="w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center px-3 sm:px-4 md:px-8 justify-between">
-        <div className="flex items-center space-x-2">
+      <header className="relative w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center px-3 sm:px-4 md:px-8 justify-between">
+        {/* Dice confined to header area only */}
+        <div className="absolute inset-0 overflow-hidden">
+          {showFloatingElements && <CasinoElements3D />}
+        </div>
+        
+        <div className="flex items-center space-x-2 z-10">
           <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
           <span className="font-medium text-base sm:text-lg text-blue-600">747 Casino E-Wallet</span>
         </div>
-        <div>
+        <div className="z-10">
           <Link href="/auth">
             <Button size="sm" variant="outline" className="text-xs sm:text-sm">
               Sign In

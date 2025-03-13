@@ -226,29 +226,24 @@ export default function AuthPage() {
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#121212] flex items-center justify-center relative overflow-hidden">
       {/* Background image with casino-themed elements */}
       <div className="absolute inset-0 z-0">
-        {/* Real casino background image with low opacity */}
-        <div className="absolute inset-0 opacity-15 dark:opacity-25">
-          <img 
-            src="/images/casino-background.jpg" 
-            alt="Casino Background" 
-            className="w-full h-full object-cover"
-          />
-        </div>
+        {/* Simple gradient background instead of image */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950"></div>
       </div>
       
-      {/* Add 3D Casino Elements in the background */}
-      <div className="relative z-10">
-        <CasinoElements3D />
-      </div>
       {/* Header - with back button */}
-      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-10">
-        <Link href="/">
+      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-10 relative">
+        {/* Dice confined to header area only */}
+        <div className="absolute inset-0 overflow-hidden">
+          <CasinoElements3D />
+        </div>
+        
+        <Link href="/" className="z-10">
           <div className="flex items-center space-x-2 cursor-pointer">
             <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
             <span className="font-medium text-base sm:text-lg text-blue-600">747 Casino E-Wallet</span>
           </div>
         </Link>
-        <Link href="/">
+        <Link href="/" className="z-10">
           <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
             Back to Home
           </Button>

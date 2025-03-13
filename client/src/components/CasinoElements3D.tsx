@@ -1,35 +1,49 @@
 import React, { useEffect, useRef } from 'react';
 
 /**
- * Casino elements with only dice that rotate slowly and roam around the page in the background
+ * Casino elements with only dice that rotate slowly and roam around the header
  */
 export function CasinoElements3D() {
   const containerRef = useRef<HTMLDivElement>(null);
-
+  
   useEffect(() => {
     let animationFrameId: number;
-    let startTime = Date.now();
+    const diceElements = containerRef.current?.querySelectorAll('.dice');
+    
+    if (!diceElements || diceElements.length === 0) return;
+    
+    const startTime = Date.now();
     
     const animateDice = () => {
-      if (!containerRef.current) return;
+      const elapsedTime = (Date.now() - startTime) / 1000; // Convert to seconds
       
-      const currentTime = Date.now();
-      const elapsedTime = (currentTime - startTime) / 1000; // time in seconds
-      const dice = containerRef.current.querySelectorAll('.dice');
+      // Get the header dimensions for movement constraints
+      const headerHeight = containerRef.current?.clientHeight || 56; // Default to 56px (14rem) if not set
+      const headerWidth = containerRef.current?.clientWidth || window.innerWidth;
       
-      dice.forEach((die, index) => {
+      diceElements.forEach((die, index) => {
         const htmlDie = die as HTMLElement;
         
-        // Very slow rotation - one full rotation every ~2 minutes
-        const rotateValue = (elapsedTime * (3 + index)) % 360;
+        // Slow rotation - one full rotation every ~1 minute
+        const rotateValue = (elapsedTime * (4 + index)) % 360;
         
-        // Slow horizontal and vertical movement based on sine and cosine for a gentle roaming effect
-        // Each die follows a different path based on its index
-        const offsetX = Math.sin(elapsedTime * 0.2 + index * 0.5) * 5;
-        const offsetY = Math.cos(elapsedTime * 0.15 + index * 0.7) * 5;
+        // Restricted horizontal movement within header width
+        // Limited vertical movement to stay within header height
+        const maxMoveX = headerWidth * 0.4; // 40% of header width
+        const maxMoveY = headerHeight * 0.4; // 40% of header height
         
-        // Add a subtle scale variation
-        const scaleBase = 0.95 + (index * 0.02);
+        // Calculate movement within the header boundaries
+        const offsetX = Math.sin(elapsedTime * 0.2 + index * 0.5) * maxMoveX;
+        const offsetY = Math.cos(elapsedTime * 0.15 + index * 0.7) * maxMoveY;
+        
+        // Keep the dice within the header bounds (from center point)
+        const centerX = headerWidth / 2;
+        const centerY = headerHeight / 2;
+        
+        // Add a subtle scale variation based on header size
+        // Scale dice smaller on smaller screens
+        const diceBaseSize = Math.min(headerHeight * 0.5, 20); // Size based on header height, max 20px
+        const scaleBase = diceBaseSize / 20; // Normalize based on the max size
         const scaleVariation = Math.sin(elapsedTime * 0.1) * 0.05;
         const scaleValue = scaleBase + scaleVariation;
         
@@ -52,58 +66,26 @@ export function CasinoElements3D() {
   return (
     <div 
       ref={containerRef}
-      className="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-40 z-10"
+      className="relative w-full h-full pointer-events-none overflow-hidden opacity-50 z-10"
     >
-      {/* Dice positioned in less intrusive locations with slow transitions */}
+      {/* Two dice in the header only - sized proportionally */}
       <div 
-        className="dice absolute left-[5%] top-[10%] w-16 h-16 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
+        className="dice absolute left-[30%] top-[25%] w-4 h-4 sm:w-6 sm:h-6 bg-white/90 rounded-md border border-gray-300/70 shadow-sm transition-transform duration-5000"
       >
         {/* Dots for number 2 */}
-        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-3 left-3"></div>
-        <div className="w-3 h-3 bg-black/90 rounded-full absolute bottom-3 right-3"></div>
+        <div className="w-[3px] h-[3px] sm:w-1.5 sm:h-1.5 bg-black/90 rounded-full absolute top-[3px] left-[3px] sm:top-1 sm:left-1"></div>
+        <div className="w-[3px] h-[3px] sm:w-1.5 sm:h-1.5 bg-black/90 rounded-full absolute bottom-[3px] right-[3px] sm:bottom-1 sm:right-1"></div>
       </div>
       
       <div 
-        className="dice absolute right-[10%] top-[40%] w-14 h-14 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
-      >
-        {/* Dots for number 6 */}
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 left-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 right-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-[calc(50%-5px)] left-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-[calc(50%-5px)] right-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 left-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
-      </div>
-      
-      <div 
-        className="dice absolute left-[75%] bottom-[20%] w-20 h-20 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
+        className="dice absolute right-[20%] top-[40%] w-5 h-5 sm:w-7 sm:h-7 bg-white/90 rounded-md border border-gray-300/70 shadow-sm transition-transform duration-5000"
       >
         {/* Dots for number 5 */}
-        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-3 left-3"></div>
-        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-3 right-3"></div>
-        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute top-[calc(50%-7px)] left-[calc(50%-7px)]"></div>
-        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute bottom-3 left-3"></div>
-        <div className="w-3.5 h-3.5 bg-black/90 rounded-full absolute bottom-3 right-3"></div>
-      </div>
-      
-      <div 
-        className="dice absolute right-[70%] bottom-[65%] w-12 h-12 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
-      >
-        {/* Dots for number 4 */}
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 left-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute top-2 right-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 left-2"></div>
-        <div className="w-2.5 h-2.5 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
-      </div>
-      
-      {/* Add an extra die in a different area */}
-      <div 
-        className="dice absolute left-[40%] top-[75%] w-18 h-18 bg-white/90 rounded-md border border-gray-300/70 shadow-lg transition-transform duration-5000"
-      >
-        {/* Dots for number 3 */}
-        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-2 left-2"></div>
-        <div className="w-3 h-3 bg-black/90 rounded-full absolute top-[calc(50%-6px)] left-[calc(50%-6px)]"></div>
-        <div className="w-3 h-3 bg-black/90 rounded-full absolute bottom-2 right-2"></div>
+        <div className="w-[2px] h-[2px] sm:w-1 sm:h-1 bg-black/90 rounded-full absolute top-[2px] left-[2px] sm:top-1 sm:left-1"></div>
+        <div className="w-[2px] h-[2px] sm:w-1 sm:h-1 bg-black/90 rounded-full absolute top-[2px] right-[2px] sm:top-1 sm:right-1"></div>
+        <div className="w-[2px] h-[2px] sm:w-1 sm:h-1 bg-black/90 rounded-full absolute top-[calc(50%-1px)] left-[calc(50%-1px)] sm:top-[calc(50%-2px)] sm:left-[calc(50%-2px)]"></div>
+        <div className="w-[2px] h-[2px] sm:w-1 sm:h-1 bg-black/90 rounded-full absolute bottom-[2px] left-[2px] sm:bottom-1 sm:left-1"></div>
+        <div className="w-[2px] h-[2px] sm:w-1 sm:h-1 bg-black/90 rounded-full absolute bottom-[2px] right-[2px] sm:bottom-1 sm:right-1"></div>
       </div>
     </div>
   );
