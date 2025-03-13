@@ -260,13 +260,16 @@ const QRDeposit = () => {
                 <div className="flex justify-center">
                   {activeQrPayment ? (
                     activeQrPayment.qrCodeData.includes('<iframe') ? (
-                      <div className="payment-iframe-container w-full h-72 overflow-hidden">
+                      <div className="payment-iframe-container w-full overflow-hidden">
+                        <div className="text-center text-dark text-xs mb-2 bg-accent/20 p-2 rounded">
+                          <span className="font-medium">💳 Fill out the payment form below</span>
+                        </div>
                         <div 
-                          className="w-full h-full"
+                          className="w-full h-[400px]" 
                           dangerouslySetInnerHTML={{ __html: activeQrPayment.qrCodeData }}
                         />
-                        <div className="text-center text-dark text-xs mt-2 bg-accent/10 p-1 rounded">
-                          <span className="font-medium">Complete payment in the window above</span>
+                        <div className="text-center text-dark text-xs mt-2 bg-secondary/10 p-2 rounded">
+                          <span className="font-medium">✅ Your balance will be updated automatically after payment</span>
                         </div>
                       </div>
                     ) : (

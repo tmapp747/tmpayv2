@@ -29,7 +29,7 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     const webhook = `${baseUrl}/api/webhook/directpay/payment`;
     const redirectUrl = `${baseUrl}/payment/success?ref=${reference}`;
     
-    console.log(`Generating DirectPay QR code with the following parameters:`);
+    console.log(`Generating DirectPay payment form/QR with the following parameters:`);
     console.log(`- Amount: ${amount}`);
     console.log(`- Reference: ${reference}`);
     console.log(`- Webhook: ${webhook}`);
@@ -49,21 +49,21 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     let qrCodeData;
     let directPayReference;
     
-    if (result.paymentLink) {
-      // Standard response
+    if (result.iframe) {
+      // Iframe response format (preferred for better user experience)
+      qrCodeData = result.iframe;
+      directPayReference = result.id || reference;
+      console.log(`Using iframe from API response for embedded payment form`);
+    } else if (result.paymentLink) {
+      // Standard response with payment link
       qrCodeData = result.paymentLink;
       directPayReference = result.reference || reference;
       console.log(`Using paymentLink from API response: ${qrCodeData}`);
     } else if (result.qrCodeUrl) {
-      // Alternative response format
+      // Alternative response format with QR code URL
       qrCodeData = result.qrCodeUrl;
       directPayReference = result.transactionId || reference;
       console.log(`Using qrCodeUrl from API response: ${qrCodeData}`);
-    } else if (result.iframe) {
-      // Iframe response format
-      qrCodeData = result.iframe;
-      directPayReference = result.id || reference;
-      console.log(`Using iframe from API response: ${qrCodeData}`);
     } else {
       // If we can't find a standard format, log the entire response and throw an error
       console.error('Unexpected DirectPay API response format:', result);
@@ -73,8 +73,9 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     // Calculate expiry time (30 minutes from now)
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     
-    // Log successful QR code generation
-    console.log(`Successfully generated QR code with DirectPay reference: ${directPayReference}`);
+    // Log successful payment form/QR code generation
+    const paymentType = result.iframe ? 'iframe payment form' : 'QR code';
+    console.log(`Successfully generated ${paymentType} with DirectPay reference: ${directPayReference}`);
     
     return {
       qrCodeData,
@@ -82,11 +83,11 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
       expiresAt
     };
   } catch (error) {
-    console.error('Error generating QR code with DirectPay API:', error);
+    console.error('Error generating payment form/QR code with DirectPay API:', error);
     
     // Since we're now using the real API, we'll still provide a fallback for development
     // but make it clear this is a fallback mechanism
-    console.log(`[FALLBACK] DirectPay: Generating mock QR code for ${amount} with reference ${reference}`);
+    console.log(`[FALLBACK] DirectPay: Generating mock payment form/QR code for ${amount} with reference ${reference}`);
     
     const directPayReference = `DP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     
@@ -229,8 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Determine user type (agent or player)
-      const userType = hierarchyData.user.isAgent ? 'agent' : 'player';
+      // Determine user type based on the param passed to this function
+      // Since we don't have a direct isAgent property on the user object from API
+      const userType = isAgent ? 'agent' : 'player';
       
       return {
         allowed: true,
