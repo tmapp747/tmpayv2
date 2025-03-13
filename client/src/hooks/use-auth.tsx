@@ -77,6 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
       
+      // Save user data to localStorage for token persistence
+      localStorage.setItem('userData', JSON.stringify({ user: data.user }));
+      
       toast({
         title: "Login successful",
         description: "Welcome back to 747 Casino E-Wallet!",

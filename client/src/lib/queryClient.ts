@@ -16,6 +16,19 @@ export async function apiRequest(
     "Content-Type": "application/json"
   };
   
+  // Get the access token from userData in localStorage if it exists
+  const userData = localStorage.getItem('userData');
+  if (userData) {
+    try {
+      const parsedUserData = JSON.parse(userData);
+      if (parsedUserData?.user?.accessToken) {
+        headers["Authorization"] = `Bearer ${parsedUserData.user.accessToken}`;
+      }
+    } catch (e) {
+      console.error("Error parsing userData from localStorage:", e);
+    }
+  }
+  
   const res = await fetch(url, {
     method,
     headers,
@@ -34,6 +47,19 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const headers: Record<string, string> = {};
+    
+    // Get the access token from userData in localStorage if it exists
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const parsedUserData = JSON.parse(userData);
+        if (parsedUserData?.user?.accessToken) {
+          headers["Authorization"] = `Bearer ${parsedUserData.user.accessToken}`;
+        }
+      } catch (e) {
+        console.error("Error parsing userData from localStorage:", e);
+      }
+    }
     
     const res = await fetch(queryKey[0] as string, {
       headers,
