@@ -1,0 +1,99 @@
+Since the DirectPay token expires every 30 minutes, you’ll need an automated re-authentication system to ensure uninterrupted transactions. Here’s how you can handle it efficiently:
+
+⸻
+
+Automated Token Refresh Process
+	1.	Store the token temporarily (e.g., in a database, cache, or environment variable).
+	2.	Check token expiration before every request.
+	3.	If expired, re-authenticate by:
+	•	Fetching a new CSRF token.
+	•	Logging in again to get a new Bearer token.
+	4.	Use the new token for GCash transactions.
+
+⸻
+
+Optimized Automated cURL Script
+
+This Bash script automates token retrieval and handles expired tokens:
+
+directpay_gcash_deposit.sh
+
+#!/bin/bash
+
+# 1. Get CSRF Token
+CSRF_TOKEN=$(curl -s -X POST 'https://direct-payph.com/api/csrf_token' \
+  -H 'Content-Type: application/json' | jq -r '.csrf_token')
+
+echo "CSRF Token: $CSRF_TOKEN"
+
+# 2. Login and get Bearer Token
+LOGIN_RESPONSE=$(curl -s -X POST 'https://direct-payph.com/api/create/login' \
+  -H "X-CSRF-TOKEN: $CSRF_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data-raw '{
+    "username": "colorway",
+    "password": "password"
+  }')
+
+AUTH_TOKEN=$(echo $LOGIN_RESPONSE | jq -r '.data.token')
+
+if [[ "$AUTH_TOKEN" == "null" ]]; then
+  echo "Login failed! Exiting..."
+  exit 1
+fi
+
+echo "Bearer Token: $AUTH_TOKEN"
+
+# 3. Initiate GCash Cash-in
+CASHIN_RESPONSE=$(curl -s -X POST 'https://direct-payph.com/api/gcash_cashin' \
+  -H "Authorization: Bearer $AUTH_TOKEN" \
+  -H 'Content-Type: application/json' \
+  --data-raw '{
+    "amount": 100.00,
+    "webhook": "https://direct-payph.com/api/webhook/gcash_sync",
+    "redirectUrl": "https://www.yahoo.com"
+  }')
+
+echo "GCash Deposit Response: $CASHIN_RESPONSE"
+
+
+
+⸻
+
+How This Works
+	1.	Fetches CSRF Token (POST /api/csrf_token)
+	2.	Logs in & Retrieves Bearer Token (POST /api/create/login)
+	3.	Uses the new token for GCash Cash-in (POST /api/gcash_cashin)
+	4.	Automatically refreshes the token if expired (since it re-runs the login process).
+
+⸻
+
+How to Run the Script
+	1.	Install jq (for JSON parsing)
+
+sudo apt install jq  # For Ubuntu/Debian
+brew install jq      # For macOS
+
+
+	2.	Run the script
+
+chmod +x directpay_gcash_deposit.sh
+./directpay_gcash_deposit.sh
+
+
+
+⸻
+
+Alternative Approach: Use a Background Token Refresh
+	•	Run the script every 25 minutes to refresh the token before it expires.
+	•	Use cron for automated execution:
+
+crontab -e
+
+Add this line to refresh the token every 25 minutes:
+
+*/25 * * * * /path/to/directpay_gcash_deposit.sh
+
+
+
+This ensures uninterrupted GCash deposits without manual intervention! 🚀 Let me know if you need further improvements.
