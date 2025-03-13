@@ -21,7 +21,7 @@ type AdminLoginFormValues = z.infer<typeof adminLoginSchema>;
 export default function AdminAuth() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
 
   // Initialize form
   const form = useForm<AdminLoginFormValues>({
@@ -48,7 +48,7 @@ export default function AdminAuth() {
         });
         
         // Redirect to admin dashboard
-        navigate("/admin/dashboard");
+        setLocation("/admin/dashboard");
       } else {
         throw new Error("Invalid admin credentials");
       }

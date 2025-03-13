@@ -26,12 +26,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 
 // Admin dashboard component
 export default function AdminDashboard() {
   const { toast } = useToast();
-  const [, navigate] = useNavigate();
+  const [, setLocation] = useLocation();
   const [users, setUsers] = useState<User[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [manualPayments, setManualPayments] = useState<any[]>([]);
@@ -52,10 +52,13 @@ export default function AdminDashboard() {
         setUsers(usersData.users);
 
         // Extract unique top managers
-        const managers = [...new Set(usersData.users
+        const managersList = usersData.users
           .filter((user: User) => user.topManager)
-          .map((user: User) => user.topManager))];
-        setTopManagers(managers as string[]);
+          .map((user: User) => user.topManager as string);
+        
+        // Deduplicate the list
+        const uniqueManagers = Array.from(new Set(managersList));
+        setTopManagers(uniqueManagers);
 
         // Fetch transactions
         const transactionsResponse = await fetch('/api/admin/transactions');
@@ -83,7 +86,7 @@ export default function AdminDashboard() {
         
         // If unauthorized, redirect to admin login
         if (error instanceof Error && error.message.includes('401')) {
-          navigate('/admin/auth');
+          setLocation('/admin/auth');
         }
       } finally {
         setIsLoading(false);
@@ -91,7 +94,7 @@ export default function AdminDashboard() {
     };
 
     fetchAdminData();
-  }, [toast, navigate]);
+  }, [toast, setLocation]);
 
   // Handle manual payment approval
   const handleApprovePayment = async (paymentId: number) => {
@@ -198,7 +201,7 @@ export default function AdminDashboard() {
           onClick={() => {
             // Log out admin
             fetch('/api/admin/logout', { method: 'POST' })
-              .then(() => navigate('/admin/auth'))
+              .then(() => setLocation('/admin/auth'))
               .catch(error => console.error('Logout error:', error));
           }}
         >

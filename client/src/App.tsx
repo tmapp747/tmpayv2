@@ -12,6 +12,9 @@ import LandingPage from "@/pages/landing-page";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { ProtectedAdminRoute } from "@/lib/protected-admin-route";
+import AdminAuth from "@/pages/admin/admin-auth";
+import AdminDashboard from "@/pages/admin/admin-dashboard";
 import VideoIntro from "@/components/VideoIntro";
 
 function Router() {
@@ -39,6 +42,9 @@ function Router() {
           <Profile />
         </Layout>
       )} />
+      {/* Admin routes */}
+      <Route path="/admin/auth" component={AdminAuth} />
+      <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
