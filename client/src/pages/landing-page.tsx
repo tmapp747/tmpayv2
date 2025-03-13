@@ -62,9 +62,9 @@ export default function LandingPage() {
             <Link href="/auth">
               <Button 
                 size="lg" 
-                className="casino-button pulse-button text-sm sm:text-base bg-blue-600 hover:bg-blue-700 shadow-lg transform transition-all duration-300"
+                className="casino-button text-sm sm:text-base bg-blue-600 hover:bg-blue-700 shadow-lg"
               >
-                Get Started <ArrowRight className="ml-2 h-4 w-4 animate-bounce-subtle" />
+                Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             <div className="floating coin hidden md:block absolute -right-12 top-0 w-10 h-10 bg-yellow-400 rounded-full border-4 border-yellow-500">
