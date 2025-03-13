@@ -149,12 +149,26 @@ export default function AuthPage() {
   // Update forms when verified details change
   useEffect(() => {
     if (verifiedUsername) {
+      // Set common values for both forms
       loginForm.setValue("username", verifiedUsername);
       loginForm.setValue("userType", verifiedUserType);
       registerForm.setValue("username", verifiedUsername);
       registerForm.setValue("userType", verifiedUserType);
+      
+      // If casino data is available, populate the registration form
+      if (casinoVerificationData) {
+        if (casinoVerificationData.topManager) {
+          registerForm.setValue("topManager", casinoVerificationData.topManager);
+        }
+        if (casinoVerificationData.immediateManager) {
+          registerForm.setValue("immediateManager", casinoVerificationData.immediateManager);
+        }
+        if (casinoVerificationData.userType) {
+          registerForm.setValue("casinoUserType", casinoVerificationData.userType);
+        }
+      }
     }
-  }, [verifiedUsername, verifiedUserType, loginForm, registerForm]);
+  }, [verifiedUsername, verifiedUserType, casinoVerificationData, loginForm, registerForm]);
 
   const onLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data);
@@ -405,6 +419,14 @@ export default function AuthPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {casinoVerificationData && (
+                    <Alert className="mb-4 bg-primary/10 border-primary/50">
+                      <Check className="h-4 w-4 mr-2 text-primary" />
+                      <AlertDescription>
+                        Your casino account details have been verified and will be linked to your new e-wallet account.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <FormField
@@ -485,6 +507,89 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      
+                      {casinoVerificationData && (
+                        <div className="mt-6 p-4 bg-muted/30 rounded-md border border-border/50">
+                          <h3 className="text-sm font-medium flex items-center mb-2">
+                            <Info className="h-4 w-4 mr-1" />
+                            747 Casino Account Information
+                          </h3>
+                          
+                          <div className="space-y-3">
+                            {casinoVerificationData.topManager && (
+                              <FormField
+                                control={registerForm.control}
+                                name="topManager"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                      <FormLabel className="text-xs">Top Manager</FormLabel>
+                                      <FormDescription className="text-xs m-0">Verified</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Input 
+                                        {...field} 
+                                        className="h-8 text-sm bg-muted/50" 
+                                        disabled 
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                            
+                            {casinoVerificationData.immediateManager && (
+                              <FormField
+                                control={registerForm.control}
+                                name="immediateManager"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                      <FormLabel className="text-xs">Immediate Manager</FormLabel>
+                                      <FormDescription className="text-xs m-0">Verified</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Input 
+                                        {...field} 
+                                        className="h-8 text-sm bg-muted/50" 
+                                        disabled 
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                            
+                            {casinoVerificationData.userType && (
+                              <FormField
+                                control={registerForm.control}
+                                name="casinoUserType"
+                                render={({ field }) => (
+                                  <FormItem className="space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                      <FormLabel className="text-xs">Casino User Type</FormLabel>
+                                      <FormDescription className="text-xs m-0">Verified</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Input 
+                                        {...field} 
+                                        className="h-8 text-sm bg-muted/50" 
+                                        disabled 
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
+                            )}
+                            
+                            {casinoVerificationData.clientId && (
+                              <div className="text-xs text-muted-foreground mt-2">
+                                <span className="font-medium">Client ID:</span> {casinoVerificationData.clientId}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <Button type="submit" className="w-full mt-6" disabled={registerMutation.isPending}>
                         {registerMutation.isPending ? (
