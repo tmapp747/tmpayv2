@@ -360,7 +360,7 @@ export default function AuthPage() {
                       </Button>
                       
                       {verifyUsernameMutation.isError && (
-                        <div className="text-red-500 text-xs sm:text-sm mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-900/30">
+                        <div className="text-red-400 text-xs sm:text-sm mt-2 p-2 bg-red-900/20 rounded border border-red-900/30">
                           {verifyUsernameMutation.error?.message || "Verification failed. Please check your username."}
                         </div>
                       )}
@@ -387,8 +387,8 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <User className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Username
                             </FormLabel>
                             <FormControl>
@@ -396,7 +396,7 @@ export default function AuthPage() {
                                 placeholder="Enter your 747 casino username" 
                                 {...field} 
                                 disabled
-                                className="h-9 sm:h-10 glass-input bg-gray-50/70 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 text-sm sm:text-base"
+                                className="h-9 sm:h-10 bg-dark-light text-gray-400 border-gray-700 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -409,8 +409,8 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <LockKeyhole className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <LockKeyhole className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Password
                             </FormLabel>
                             <FormControl>
@@ -418,7 +418,7 @@ export default function AuthPage() {
                                 type="password" 
                                 placeholder="Enter your password" 
                                 {...field}
-                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 bg-dark-light text-white border-gray-700 focus:border-lime-500/50 focus:ring-0 text-sm" 
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -431,13 +431,13 @@ export default function AuthPage() {
                         name="userType"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="text-sm sm:text-base">Account Type</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Account Type</FormLabel>
                             <div className="flex space-x-3 sm:space-x-4">
                               <Button 
                                 type="button" 
                                 variant={field.value === "player" ? "default" : "outline"}
                                 disabled
-                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "player" ? "bg-blue-600" : "opacity-50"}`}
+                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "player" ? "bg-lime-500 text-black" : "bg-dark-light text-gray-400 border-gray-700"}`}
                               >
                                 Player
                               </Button>
@@ -445,12 +445,12 @@ export default function AuthPage() {
                                 type="button" 
                                 variant={field.value === "agent" ? "default" : "outline"}
                                 disabled
-                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "agent" ? "bg-green-600" : "opacity-50"}`}
+                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "agent" ? "bg-lime-500 text-black" : "bg-dark-light text-gray-400 border-gray-700"}`}
                               >
                                 Agent
                               </Button>
                             </div>
-                            <FormDescription className="text-center text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            <FormDescription className="text-center text-xs sm:text-sm text-gray-400">
                               {field.value === "player" ? "Player Account" : "Agent Account"}
                             </FormDescription>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -474,7 +474,7 @@ export default function AuthPage() {
                       </Button>
                       
                       {loginMutation.isError && (
-                        <div className="text-red-500 text-xs sm:text-sm mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-900/30">
+                        <div className="text-red-400 text-xs sm:text-sm mt-2 p-2 bg-red-900/20 rounded border border-red-900/30">
                           {loginMutation.error?.message || "Login failed. Please check your credentials."}
                         </div>
                       )}
@@ -501,8 +501,8 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <User className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Username
                             </FormLabel>
                             <FormControl>
@@ -510,7 +510,7 @@ export default function AuthPage() {
                                 placeholder="Your existing 747 casino username" 
                                 {...field} 
                                 disabled
-                                className="h-9 sm:h-10 glass-input bg-gray-50/70 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/50 text-sm sm:text-base"
+                                className="h-9 sm:h-10 bg-dark-light text-gray-400 border-gray-700 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -523,8 +523,8 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <LockKeyhole className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <LockKeyhole className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Password
                             </FormLabel>
                             <FormControl>
@@ -532,7 +532,7 @@ export default function AuthPage() {
                                 type="password" 
                                 placeholder="Create a secure password" 
                                 {...field}
-                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 bg-dark-light text-white border-gray-700 focus:border-lime-500/50 focus:ring-0 text-sm" 
                               />
                             </FormControl>
                             <FormMessage className="text-xs sm:text-sm" />
@@ -616,7 +616,7 @@ export default function AuthPage() {
                       </Button>
                       
                       {registerMutation.isError && (
-                        <div className="text-red-500 text-xs sm:text-sm mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-900/30">
+                        <div className="text-red-400 text-xs sm:text-sm mt-2 p-2 bg-red-900/20 rounded border border-red-900/30">
                           {registerMutation.error?.message || "Registration failed. Please try again."}
                         </div>
                       )}
