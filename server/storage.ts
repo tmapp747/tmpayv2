@@ -376,10 +376,13 @@ export class MemStorage implements IStorage {
     const user = await this.getUser(id);
     if (!user) throw new Error(`User with ID ${id} not found`);
     
+    // Ensure we always have a valid Date object (not null)
+    const safeExpiryDate = expiryDate instanceof Date ? expiryDate : new Date();
+    
     const updatedUser = { 
       ...user, 
       casinoAuthToken: token,
-      casinoAuthTokenExpiry: expiryDate,
+      casinoAuthTokenExpiry: safeExpiryDate,
       updatedAt: new Date() 
     };
     this.users.set(id, updatedUser);
