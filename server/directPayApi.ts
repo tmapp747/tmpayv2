@@ -218,10 +218,18 @@ class DirectPayApi {
       });
 
       console.log('GCash payment response:', response.data);
-
+      console.log('Response type:', typeof response.data);
+      console.log('Response has link property:', 'link' in response.data);
+      console.log('Response has status property:', 'status' in response.data);
+      
       // Check and extract data from different possible response structures
       let payUrl = null;
       let reference = null;
+      
+      // Ensure we have data to work with
+      if (!response.data) {
+        throw new Error('Empty response from DirectPay API');
+      }
       
       // Look for payment URL in all possible formats
       if (response.data.pay_url) {

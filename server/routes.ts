@@ -1201,6 +1201,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Test endpoint for DirectPay GCash QR code generation
+  app.get("/api/debug/direct-pay-gcash", async (req: Request, res: Response) => {
+    try {
+      const amount = 100; // Test with minimum amount
+      const webhookUrl = `${req.protocol}://${req.get('host')}/api/webhook/directpay/payment`;
+      const redirectUrl = `${req.protocol}://${req.get('host')}/payment/complete`;
+      
+      console.log('Webhook URL:', webhookUrl);
+      console.log('Redirect URL:', redirectUrl);
+      
+      const result = await directPayApi.generateGCashQR(amount, webhookUrl, redirectUrl);
+      res.json({
+        success: true,
+        result
+      });
+    } catch (error) {
+      console.error("Error generating DirectPay QR:", error);
+      res.status(500).json({ 
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   // Endpoint to create manual payment with receipt
   app.post("/api/payments/manual/create", authMiddleware, async (req: Request, res: Response) => {
