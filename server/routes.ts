@@ -185,21 +185,30 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       throw new Error(`User with casino ID ${casinoId} not found or has no casino username`);
     }
     
+    // Generate a unique nonce (using timestamp + random number)
+    const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    
+    // Create a detailed comment with nonce and DirectPay reference
+    const comment = `An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${nonce}. TMPay Web App Transaction.`;
+    
     // Complete the topup using the Casino747 API's transfer funds function
     // This will directly credit the user's casino account
     const transferResult = await casino747Api.transferFunds(
       amount,
       parseInt(casinoId),
       user.casinoUsername,
-      "USD",
+      "PHP", // Use PHP currency for GCash deposits
       "system", // System transfer initiated by e-wallet
-      `Deposit via e-wallet ref: ${reference}`
+      comment
     );
+    
+    console.log(`Casino747: Transfer completed successfully for ${user.casinoUsername} (${casinoId}) with nonce ${nonce}`);
     
     return {
       success: true,
       newBalance: transferResult.newBalance || amount,
-      transactionId: transferResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`
+      transactionId: transferResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`,
+      nonce: nonce
     };
   } catch (error) {
     console.error('Error completing topup with Casino747 API:', error);
@@ -207,10 +216,13 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
     // Fallback for development/testing
     console.log(`[FALLBACK] Casino747: Simulating completed topup for ${casinoId} with amount ${amount}`);
     
+    const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    
     return {
       success: true,
       newBalance: amount,
-      transactionId: `TXN${Math.floor(Math.random() * 10000000)}`
+      transactionId: `TXN${Math.floor(Math.random() * 10000000)}`,
+      nonce: nonce
     };
   }
 }
@@ -2390,10 +2402,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Call 747 Casino API to complete the topup
         const paymentAmount = parseFloat(qrPayment.amount.toString());
         try {
+          console.log(`Attempting to credit ${paymentAmount} PHP to casino account for user ${user.casinoUsername} (ID: ${user.casinoId})`);
+          
           const casinoResult = await casino747CompleteTopup(
             user.casinoId,
             paymentAmount,
-            transaction.paymentReference || ""
+            transaction.paymentReference || paymentReference || txId
           );
           
           // Update user's balance in PHP (default for GCash payments)
@@ -2404,18 +2418,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get the updated currency balance
           const updatedBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
           
+          // Update the transaction with the unique nonce for reconciliation
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "completed",
+            txId,
+            { nonce: casinoResult.nonce }
+          );
+          
           console.log("Payment completed successfully via webhook:", {
             reference: paymentReference,
             userId: user.id,
+            username: user.username,
+            casinoUsername: user.casinoUsername,
+            casinoId: user.casinoId,
             amount: paymentAmount,
             currency,
             newBalance: updatedBalance,
-            casinoResult
+            nonce: casinoResult.nonce,
+            casinoTransactionId: casinoResult.transactionId,
+            directPayTransactionId: txId
           });
         } catch (casinoError) {
           console.error("Error completing casino topup:", casinoError);
+          
+          // Log detailed error for troubleshooting
+          console.error({
+            error: casinoError instanceof Error ? casinoError.message : String(casinoError),
+            user: user.username,
+            casinoUsername: user.casinoUsername,
+            casinoId: user.casinoId,
+            amount: paymentAmount,
+            reference: paymentReference
+          });
+          
           // We still mark the payment as completed but log the casino error
           // A manual reconciliation may be needed
+          
+          // Add error information to the transaction for reconciliation
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "completed",
+            txId,
+            { casinoError: casinoError instanceof Error ? casinoError.message : String(casinoError) }
+          );
         }
       } else if (
         paymentStatus.toLowerCase() === 'failed' || 
