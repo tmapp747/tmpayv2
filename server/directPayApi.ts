@@ -30,10 +30,17 @@ class DirectPayApi {
     try {
       console.log('Getting CSRF token from DirectPay...');
       
-      const response = await axios.get(`${this.baseUrl}/csrf_token`, {
+      // Construct the CSRF token endpoint URL
+      const csrfEndpoint = `${this.baseUrl}/auth/csrf`;
+      console.log('CSRF token endpoint:', csrfEndpoint);
+      
+      const response = await axios.get(csrfEndpoint, {
         httpsAgent,
-        withCredentials: true
+        withCredentials: true,
+        timeout: 10000 // 10 second timeout
       });
+      
+      console.log('CSRF token response:', response.data);
       
       if (response.headers['set-cookie']) {
         this.cookies = response.headers['set-cookie'];
@@ -46,14 +53,24 @@ class DirectPayApi {
         }
       }
       
-      if (!response.data.token) {
+      // Check for token in different possible response formats
+      let token = null;
+      if (response.data.token) {
+        token = response.data.token;
+      } else if (response.data.csrf_token) {
+        token = response.data.csrf_token;
+      } else if (response.data.data && response.data.data.token) {
+        token = response.data.data.token;
+      }
+      
+      if (!token) {
         throw new Error('No CSRF token received from DirectPay API');
       }
       
-      this.csrfToken = response.data.token;
+      this.csrfToken = token;
       console.log('Successfully received CSRF token:', this.csrfToken);
       
-      return response.data.token;
+      return token;
     } catch (error) {
       console.error('DirectPay CSRF token error:', error);
       throw new Error('Failed to get CSRF token from DirectPay API');
@@ -83,7 +100,10 @@ class DirectPayApi {
           const csrfToken = await this.getCsrfToken();
           
           // Then login with username and password
-          const response = await axios.post(`${this.baseUrl}/create/login`, {
+          const loginEndpoint = `${this.baseUrl}/auth/login`;
+          console.log('Login endpoint:', loginEndpoint);
+          
+          const response = await axios.post(loginEndpoint, {
             username: this.username,
             password: this.password
           }, {
@@ -160,10 +180,14 @@ class DirectPayApi {
         redirectUrl
       });
 
-      const response = await axios.post(`${this.baseUrl}/gcash_cashin`, {
+      const gcashEndpoint = `${this.baseUrl}/payments/gcash`;
+      console.log('GCash payment endpoint:', gcashEndpoint);
+      
+      const response = await axios.post(gcashEndpoint, {
         amount: parseFloat(amount.toFixed(2)),
-        webhook: webhookUrl,
-        redirectUrl: redirectUrl
+        webhook_url: webhookUrl,
+        redirect_url: redirectUrl,
+        description: "Casino deposit"
       }, {
         httpsAgent,
         headers: {
@@ -177,24 +201,48 @@ class DirectPayApi {
 
       console.log('GCash payment response:', response.data);
 
-      // Check if we have the expected data
-      if (!response.data.payUrl) {
+      // Check and extract data from different possible response structures
+      let payUrl = null;
+      let reference = null;
+      
+      if (response.data.pay_url) {
+        payUrl = response.data.pay_url;
+      } else if (response.data.payUrl) {
+        payUrl = response.data.payUrl;
+      } else if (response.data.data && response.data.data.pay_url) {
+        payUrl = response.data.data.pay_url;
+      } else if (response.data.data && response.data.data.payUrl) {
+        payUrl = response.data.data.payUrl;
+      }
+      
+      if (response.data.reference) {
+        reference = response.data.reference;
+      } else if (response.data.reference_id) {
+        reference = response.data.reference_id;
+      } else if (response.data.data && response.data.data.reference) {
+        reference = response.data.data.reference;
+      } else if (response.data.data && response.data.data.reference_id) {
+        reference = response.data.data.reference_id;
+      } else {
+        // Generate a fallback reference ID
+        reference = `dp_${Date.now()}`;
+      }
+      
+      // Verify we have the required data
+      if (!payUrl) {
         throw new Error('No payment URL received from DirectPay API');
       }
 
-      // Create a reference ID from the response or generate one
-      const reference = response.data.reference || String(Date.now());
-      
       // Set expiry to 30 minutes from now
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
       // Generate QR code data from payUrl
-      const qrCodeData = response.data.payUrl;
+      const qrCodeData = payUrl;
 
       return {
         qrCodeData,
         reference,
-        payUrl: response.data.payUrl,
+        payUrl,
         expiresAt
       };
     } catch (error) {
@@ -213,7 +261,10 @@ class DirectPayApi {
     try {
       const token = await this.authenticate();
 
-      const response = await axios.get(`${this.baseUrl}/payment/status/${reference}`, {
+      const statusEndpoint = `${this.baseUrl}/payments/status/${reference}`;
+      console.log('Payment status endpoint:', statusEndpoint);
+      
+      const response = await axios.get(statusEndpoint, {
         httpsAgent,
         headers: {
           'Authorization': `Bearer ${token}`,
