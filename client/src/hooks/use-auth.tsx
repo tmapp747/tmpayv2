@@ -139,15 +139,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Logout failed");
-      return data;
+      // Handle cases where response might not be JSON
+      try {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Logout failed");
+        return data;
+      } catch (e) {
+        // If the response isn't JSON, we'll still consider it a success if status is 2xx
+        if (res.ok) return { success: true };
+        throw new Error("Logout failed");
+      }
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user/info"], { user: null });
       
       // Clear user data from localStorage
       localStorage.removeItem('userData');
+      
+      // Redirect to login page after logout
+      window.location.href = '/auth';
       
       toast({
         title: "Logged out",
@@ -160,6 +170,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
+      // Force logout on frontend even if API call fails
+      queryClient.setQueryData(["/api/user/info"], { user: null });
+      localStorage.removeItem('userData');
+      window.location.href = '/auth';
     },
   });
 

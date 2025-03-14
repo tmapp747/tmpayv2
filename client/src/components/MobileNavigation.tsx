@@ -19,7 +19,14 @@ const MobileNavigation = () => {
   ];
   
   const handleLogout = () => {
+    setShowLogoutConfirm(false);
     logoutMutation.mutate();
+    // Adding a fallback in case the mutation doesn't redirect
+    setTimeout(() => {
+      if (document.location.pathname !== '/auth') {
+        document.location.href = '/auth';
+      }
+    }, 2000);
   };
 
   return (
