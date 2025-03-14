@@ -223,52 +223,42 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center relative overflow-hidden pattern-overlay">
-      {/* Background with glassmorphism elements */}
+    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
+      {/* Simple dark gradient background */}
       <div className="absolute inset-0 z-0">
         {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-black"></div>
-        
-        {/* Glass shapes */}
-        <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-blue-400/10 dark:bg-blue-600/5 backdrop-blur-xl"></div>
-        <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-blue-300/10 dark:bg-blue-500/5 backdrop-blur-xl"></div>
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-xl bg-blue-200/10 dark:bg-blue-400/5 backdrop-blur-lg"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-black to-dark-DEFAULT"></div>
       </div>
       
-      {/* Glassmorphism Header - with back button */}
-      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-20">
-        {/* Dice confined to header area only */}
-        <div className="absolute inset-0 overflow-hidden">
-          <CasinoElements3D />
-        </div>
-        
+      {/* Simple minimal header */}
+      <header className="fixed top-0 w-full h-14 sm:h-16 bg-black border-b border-gray-800 shadow-sm flex items-center justify-between px-4 z-20">
         <Link href="/" className="z-10">
-          <div className="flex items-center space-x-2 cursor-pointer group">
-            <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8 drop-shadow-md transition-transform duration-300 group-hover:scale-110" />
-            <span className="font-medium text-base sm:text-lg text-blue-600 dark:text-blue-500 transition-colors group-hover:text-blue-500 dark:group-hover:text-blue-400">747 Casino E-Wallet</span>
+          <div className="flex items-center space-x-2">
+            <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
+            <span className="font-medium text-base sm:text-lg text-lime-400">747 Casino E-Wallet</span>
           </div>
         </Link>
         
         <Link href="/" className="z-10">
-          <Button variant="ghost" size="sm" className="text-xs sm:text-sm bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-700/50 backdrop-blur-sm">
-            Back to Home
+          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-lime-400">
+            Back
           </Button>
         </Link>
       </header>
       
       {/* Auth Container - centered in the page */}
       <div className="w-full max-w-md mx-auto px-4 py-16 sm:py-20">
-        {/* Auth Card with Glassmorphism */}
-        <Card className="w-full glass-auth-card border border-white/20 dark:border-white/10 backdrop-blur-sm">
-          <CardHeader className="bg-gradient-to-r from-blue-50/80 to-white/70 dark:from-blue-950/30 dark:to-gray-900/60 rounded-t-lg p-4 sm:p-6 border-b border-white/30 dark:border-white/5">
+        {/* Auth Card with Dark Theme */}
+        <Card className="w-full border border-gray-800 bg-dark-card shadow-lg">
+          <CardHeader className="bg-dark-DEFAULT rounded-t-lg p-4 sm:p-6 border-b border-gray-800">
             <div className="flex justify-center mb-2">
-              <img src={casinoLogo} alt="747 Casino Logo" className="w-14 h-14 sm:w-16 sm:h-16 drop-shadow-md" />
+              <img src={casinoLogo} alt="747 Casino Logo" className="w-14 h-14 sm:w-16 sm:h-16" />
             </div>
-            <CardTitle className="text-center text-lg sm:text-xl text-gray-900 dark:text-white">
+            <CardTitle className="text-center text-lg sm:text-xl text-white">
               Account Access
             </CardTitle>
-            <CardDescription className="text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
-              Manage your casino payments securely
+            <CardDescription className="text-center text-sm text-gray-300 font-medium">
+              Manage your casino payments <span className="text-lime-400">securely</span>
             </CardDescription>
           </CardHeader>
           
@@ -299,7 +289,7 @@ export default function AuthPage() {
               </TabsList>
             </div>
             
-            <CardContent className="p-3 sm:p-4 md:p-6 bg-white/70 dark:bg-gray-900/60 backdrop-blur-sm">
+            <CardContent className="p-3 sm:p-4 md:p-6 bg-dark-DEFAULT">
               <TabsContent value="verification">
                 <div className="space-y-3 sm:space-y-4">
                   <Form {...verificationForm}>
@@ -356,12 +346,12 @@ export default function AuthPage() {
                       
                       <Button 
                         type="submit" 
-                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
+                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-dark-darker text-lime-400 border border-lime-500/30 hover:bg-lime-500 hover:text-black text-sm shadow-lg" 
                         disabled={verifyUsernameMutation.isPending}
                       >
                         {verifyUsernameMutation.isPending ? (
                           <>
-                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
+                            <div className="animate-spin mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Verifying...
                           </>
                         ) : (
@@ -470,12 +460,12 @@ export default function AuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
+                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-dark-darker text-lime-400 border border-lime-500/30 hover:bg-lime-500 hover:text-black text-sm shadow-lg" 
                         disabled={loginMutation.isPending}
                       >
                         {loginMutation.isPending ? (
                           <>
-                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
+                            <div className="animate-spin mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Logging in...
                           </>
                         ) : (
@@ -612,12 +602,12 @@ export default function AuthPage() {
 
                       <Button 
                         type="submit" 
-                        className="casino-button w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-green-600 hover:bg-green-700 text-white shadow-lg text-xs sm:text-sm transform transition-all duration-300" 
+                        className="w-full h-9 sm:h-10 mt-4 sm:mt-6 bg-dark-darker text-lime-400 border border-lime-500/30 hover:bg-lime-500 hover:text-black text-sm shadow-lg" 
                         disabled={registerMutation.isPending}
                       >
                         {registerMutation.isPending ? (
                           <>
-                            <div className="casino-spinner mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
+                            <div className="animate-spin mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4"></div>
                             Creating Account...
                           </>
                         ) : (
@@ -636,15 +626,15 @@ export default function AuthPage() {
               </TabsContent>
             </CardContent>
             
-            <CardFooter className="flex flex-col items-center p-4 sm:p-6 pb-6 bg-white/60 dark:bg-gray-900/50 backdrop-blur-sm border-t border-white/20 dark:border-white/5 rounded-b-lg">
+            <CardFooter className="flex flex-col items-center p-4 sm:p-6 pb-6 bg-dark-light border-t border-gray-800 rounded-b-lg">
               {verifiedUsername && (
                 <>
                   {activeTab === "login" && (
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-400">
                       Don't have an account?{" "}
                       <button
                         onClick={() => setActiveTab("register")}
-                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
+                        className="text-lime-400 hover:text-lime-300 underline transition-colors"
                       >
                         Register here
                       </button>
@@ -652,11 +642,11 @@ export default function AuthPage() {
                   )}
                   
                   {activeTab === "register" && (
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-400">
                       Already have an account?{" "}
                       <button
                         onClick={() => setActiveTab("login")}
-                        className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
+                        className="text-lime-400 hover:text-lime-300 underline transition-colors"
                       >
                         Log in instead
                       </button>
