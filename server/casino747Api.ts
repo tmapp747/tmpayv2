@@ -244,46 +244,118 @@ export class Casino747Api {
     comment: string = "Transfer from e-wallet"
   ) {
     try {
-      // Make sure we have a valid auth token
+      // Make sure we have a valid auth token - this is a critical step
+      console.log(`🔑 [CASINO747] Getting auth token for user: ${fromUsername}`);
       const authToken = await this.getAuthToken(fromUsername);
       
-      console.log(`[CASINO747] Transfer attempt: Amount ${amount} ${currency} to ${toUsername} (ID: ${toClientId}) from ${fromUsername}`);
-      console.log(`[CASINO747] Transfer payload: ${JSON.stringify({
-        authToken: "***", // Hide token for security
-        platform: this.defaultPlatform,
-        amount,
-        toAgent: false,
-        currency,
-        clientId: toClientId,
-        username: toUsername,
-        comment
-      })}`);
+      if (!authToken) {
+        console.error(`❌ [CASINO747] Failed to get auth token for ${fromUsername}`);
+        throw new Error(`Failed to obtain auth token for ${fromUsername}`);
+      }
       
-      const response = await axios.post(`${this.baseUrl}/Default/Transfer`, {
-        authToken,
+      console.log(`✅ [CASINO747] Successfully obtained auth token for ${fromUsername}`);
+      
+      console.log(`💰 [CASINO747] Transfer attempt: Amount ${amount} ${currency} to ${toUsername} (ID: ${toClientId}) from ${fromUsername}`);
+      console.log(`📝 [CASINO747] Transfer payload:`, {
+        authToken: "***REDACTED***", // Hide token for security
         platform: this.defaultPlatform,
         amount,
         toAgent: false,
         currency,
         clientId: toClientId,
         username: toUsername,
-        comment
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        commentLength: comment.length
       });
       
-      console.log(`[CASINO747] Transfer response: ${JSON.stringify(response.data)}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error transferring funds:', error);
-      if (axios.isAxiosError(error) && error.response) {
-        console.error('Transfer API response error:', error.response.status, error.response.data);
-      } else if (axios.isAxiosError(error)) {
-        console.error('Transfer API request error:', error.message);
+      // Add timeout and retry logic for reliability
+      let attempts = 0;
+      const maxAttempts = 3;
+      let lastError = null;
+      
+      while (attempts < maxAttempts) {
+        try {
+          attempts++;
+          console.log(`🔄 [CASINO747] Transfer attempt ${attempts}/${maxAttempts}`);
+          
+          const response = await axios.post(`${this.baseUrl}/Default/Transfer`, {
+            authToken,
+            platform: this.defaultPlatform,
+            amount,
+            toAgent: false,
+            currency,
+            clientId: toClientId,
+            username: toUsername,
+            comment
+          }, {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            timeout: 15000 // 15 second timeout
+          });
+          
+          console.log(`✅ [CASINO747] Transfer response:`, response.data);
+          
+          // Check for specific error conditions in successful response
+          if (response.data && (response.data.error || !response.data.success)) {
+            console.error(`❌ [CASINO747] API returned error in response body:`, response.data);
+            throw new Error(response.data.error || 'API reported transfer failure');
+          }
+          
+          // Success - break out of retry loop
+          return {
+            ...response.data,
+            transactionId: response.data.transactionId || `TRF-${Date.now()}`,
+            newBalance: response.data.newBalance || null
+          };
+        } catch (attemptError) {
+          lastError = attemptError;
+          console.error(`❌ [CASINO747] Transfer attempt ${attempts} failed:`, attemptError);
+          
+          // Only retry on network errors or 5xx server errors
+          if (axios.isAxiosError(attemptError)) {
+            if (!attemptError.response || attemptError.response.status >= 500) {
+              console.log(`🔄 [CASINO747] Will retry transfer after delay...`);
+              await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds before retry
+              continue;
+            }
+          }
+          
+          // For 4xx errors or other issues, fail immediately
+          break;
+        }
       }
-      throw new Error('Failed to transfer funds using 747 Casino API');
+      
+      // If we get here, all attempts failed
+      console.error(`❌ [CASINO747] All ${maxAttempts} transfer attempts failed`);
+      throw lastError || new Error('Failed to transfer funds after multiple attempts');
+    } catch (error) {
+      console.error('❌ [CASINO747] Error transferring funds:', error);
+      
+      // Provide detailed error information
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.error('Transfer API response error:', {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data,
+            headers: error.response.headers
+          });
+        } else if (error.request) {
+          console.error('Transfer API request error (no response):', {
+            message: error.message,
+            config: error.config
+          });
+        } else {
+          console.error('Transfer API request setup error:', error.message);
+        }
+      }
+      
+      // Create a descriptive error message
+      const errorMessage = axios.isAxiosError(error) && error.response 
+        ? `Casino API error: ${error.response.status} - ${JSON.stringify(error.response.data)}`
+        : 'Failed to transfer funds using 747 Casino API';
+        
+      throw new Error(errorMessage);
     }
   }
 

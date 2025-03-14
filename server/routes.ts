@@ -176,12 +176,16 @@ async function paygramGeneratePayment(userId: string, amount: number, currency: 
 
 async function casino747CompleteTopup(casinoId: string, amount: number, reference: string) {
   try {
-    console.log(`Casino747: Completing topup for casino ID ${casinoId} with amount ${amount} and reference ${reference}`);
+    console.log(`🎰 Casino747: Completing topup for casino ID ${casinoId} with amount ${amount} and reference ${reference}`);
     
     // Find the user by casino ID
     const user = await storage.getUserByCasinoClientId(parseInt(casinoId));
+    console.log(`👤 Looking up user with casino client ID: ${casinoId}`, user ? 
+      { found: true, username: user.username, casinoUsername: user.casinoUsername } : 
+      { found: false });
     
     if (!user || !user.casinoUsername) {
+      console.error(`❌ User with casino ID ${casinoId} not found or has no casino username`);
       throw new Error(`User with casino ID ${casinoId} not found or has no casino username`);
     }
     
@@ -190,6 +194,16 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
     
     // Create a detailed comment with nonce and DirectPay reference
     const comment = `An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${nonce}. TMPay Web App Transaction.`;
+    
+    console.log(`📝 Preparing casino transfer with params:`, {
+      amount,
+      clientId: parseInt(casinoId),
+      username: user.casinoUsername,
+      currency: "PHP",
+      fromUser: "system",
+      commentLength: comment.length,
+      nonce
+    });
     
     // Complete the topup using the Casino747 API's transfer funds function
     // This will directly credit the user's casino account
@@ -202,7 +216,13 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       comment
     );
     
-    console.log(`Casino747: Transfer completed successfully for ${user.casinoUsername} (${casinoId}) with nonce ${nonce}`);
+    console.log(`✅ Casino747: Transfer completed successfully:`, {
+      user: user.casinoUsername,
+      clientId: casinoId,
+      amount,
+      nonce,
+      transferResult: JSON.stringify(transferResult)
+    });
     
     return {
       success: true,
@@ -211,7 +231,14 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       nonce: nonce
     };
   } catch (error) {
-    console.error('Error completing topup with Casino747 API:', error);
+    console.error('❌ Error completing topup with Casino747 API:', error);
+    console.error('Error details:', {
+      casinoId,
+      amount,
+      reference,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : 'No stack trace'
+    });
     
     // Fallback for development/testing
     console.log(`[FALLBACK] Casino747: Simulating completed topup for ${casinoId} with amount ${amount}`);
@@ -2440,7 +2467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // DirectPay webhook endpoint for payment notifications
   app.post("/api/webhook/directpay/payment", async (req: Request, res: Response) => {
     try {
-      console.log("DirectPay webhook received:", JSON.stringify(req.body));
+      console.log("✅ DirectPay webhook received:", JSON.stringify(req.body));
       
       // Extract payment details from the webhook payload
       // DirectPay might send different structured data, so we handle common formats
@@ -2450,11 +2477,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_reference
       } = req.body;
       
+      // Log all possible reference and status fields for debugging
+      console.log("DirectPay webhook field analysis:", {
+        possibleReferences: {
+          reference,
+          payment_reference,
+          ref: req.body.ref
+        },
+        possibleStatuses: {
+          status,
+          state,
+          payment_status
+        },
+        possibleTransactionIds: {
+          transactionId,
+          transaction_id
+        }
+      });
+      
       // Determine the actual reference value from possible fields
       const paymentReference = reference || payment_reference || req.body.ref;
       
       if (!paymentReference) {
-        console.warn("Payment reference is missing in webhook:", req.body);
+        console.warn("❌ Payment reference is missing in webhook:", req.body);
         return res.status(200).json({ 
           success: false, 
           message: "Payment reference is required, but webhook acknowledged" 
