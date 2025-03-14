@@ -247,6 +247,18 @@ export class Casino747Api {
       // Make sure we have a valid auth token
       const authToken = await this.getAuthToken(fromUsername);
       
+      console.log(`[CASINO747] Transfer attempt: Amount ${amount} ${currency} to ${toUsername} (ID: ${toClientId}) from ${fromUsername}`);
+      console.log(`[CASINO747] Transfer payload: ${JSON.stringify({
+        authToken: "***", // Hide token for security
+        platform: this.defaultPlatform,
+        amount,
+        toAgent: false,
+        currency,
+        clientId: toClientId,
+        username: toUsername,
+        comment
+      })}`);
+      
       const response = await axios.post(`${this.baseUrl}/Default/Transfer`, {
         authToken,
         platform: this.defaultPlatform,
@@ -262,9 +274,15 @@ export class Casino747Api {
         }
       });
       
+      console.log(`[CASINO747] Transfer response: ${JSON.stringify(response.data)}`);
       return response.data;
     } catch (error) {
       console.error('Error transferring funds:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('Transfer API response error:', error.response.status, error.response.data);
+      } else if (axios.isAxiosError(error)) {
+        console.error('Transfer API request error:', error.message);
+      }
       throw new Error('Failed to transfer funds using 747 Casino API');
     }
   }
