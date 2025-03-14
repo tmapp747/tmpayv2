@@ -18,7 +18,12 @@ class DirectPayApi {
   private password: string;
 
   constructor() {
-    this.baseUrl = process.env.DIRECTPAY_API_URL || 'https://direct-payph.com/api';
+    // Ensure the base URL is properly formatted without trailing slash
+    const apiUrl = process.env.DIRECTPAY_API_URL || 'https://direct-payph.com/api';
+    this.baseUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+    
+    console.log('DirectPay API Base URL:', this.baseUrl);
+    
     this.username = process.env.DIRECTPAY_USERNAME || 'colorway';
     this.password = process.env.DIRECTPAY_PASSWORD || 'cassinoroyale@ngInaM0!2@';
   }
@@ -122,11 +127,24 @@ class DirectPayApi {
             this.cookies = response.headers['set-cookie'];
           }
 
-          if (!response.data.access_token) {
+          console.log('Login response:', response.data);
+          
+          // Extract token from different possible response structures
+          let token = null;
+          if (response.data.access_token) {
+            token = response.data.access_token;
+          } else if (response.data.token) {
+            token = response.data.token;
+          } else if (response.data.data && response.data.data.access_token) {
+            token = response.data.data.access_token;
+          } else if (response.data.data && response.data.data.token) {
+            token = response.data.data.token;
+          }
+          
+          if (!token) {
             throw new Error('No token received from DirectPay API');
           }
 
-          const token: string = response.data.access_token;
           this.token = token;
 
           // Set token expiry to 25 minutes from now (token typically lasts 30 minutes)
@@ -205,24 +223,34 @@ class DirectPayApi {
       let payUrl = null;
       let reference = null;
       
+      // Look for payment URL in all possible formats
       if (response.data.pay_url) {
         payUrl = response.data.pay_url;
       } else if (response.data.payUrl) {
         payUrl = response.data.payUrl;
+      } else if (response.data.link) {
+        payUrl = response.data.link;
       } else if (response.data.data && response.data.data.pay_url) {
         payUrl = response.data.data.pay_url;
       } else if (response.data.data && response.data.data.payUrl) {
         payUrl = response.data.data.payUrl;
+      } else if (response.data.data && response.data.data.link) {
+        payUrl = response.data.data.link;
       }
       
+      // Look for reference in all possible formats
       if (response.data.reference) {
         reference = response.data.reference;
       } else if (response.data.reference_id) {
         reference = response.data.reference_id;
+      } else if (response.data.transactionId) {
+        reference = response.data.transactionId;
       } else if (response.data.data && response.data.data.reference) {
         reference = response.data.data.reference;
       } else if (response.data.data && response.data.data.reference_id) {
         reference = response.data.data.reference_id;
+      } else if (response.data.data && response.data.data.transactionId) {
+        reference = response.data.data.transactionId;
       } else {
         // Generate a fallback reference ID
         reference = `dp_${Date.now()}`;
