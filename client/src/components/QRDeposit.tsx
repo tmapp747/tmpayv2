@@ -80,6 +80,12 @@ const QRDeposit = () => {
       if (data.qrPayment) {
         setQrData(data.qrPayment.qrCodeData);
         setReferenceId(data.qrPayment.directPayReference);
+        
+        // Check if there's a payment URL in addition to QR code
+        if (data.qrPayment.payUrl) {
+          setPayUrl(data.qrPayment.payUrl);
+        }
+        
         setIsModalOpen(true);
 
         // Start polling for payment status
