@@ -4,66 +4,26 @@
 
 @layer base {
   :root {
-    /* Set background to pure black and foreground to white */
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
-
-    /* Card styling */
     --card: 0 0% 0%;
     --card-foreground: 0 0% 100%;
-
-    /* Popover styling */
     --popover: 0 0% 0%;
     --popover-foreground: 0 0% 100%;
-
-    /* Primary styling - yellow for special elements */
     --primary: 60 100% 50%;
     --primary-foreground: 0 0% 0%;
-
-    /* Secondary styling */
     --secondary: 0 0% 5%;
     --secondary-foreground: 0 0% 100%;
-
-    /* Muted styling */
     --muted: 0 0% 5%;
     --muted-foreground: 0 0% 100%;
-
-    /* Accent styling */
     --accent: 60 100% 50%;
     --accent-foreground: 0 0% 0%;
-
-    /* Destructive styling */
     --destructive: 0 100% 50%;
     --destructive-foreground: 0 0% 100%;
-
-    /* Border, input, and ring styling */
     --border: 0 0% 20%;
     --input: 0 0% 0%;
     --ring: 60 100% 50%;
-
-    /* Border radius */
     --radius: 0.5rem;
-  }
-
-  .dark {
-    /* Ensure dark mode variables match our theme */
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 60 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 5%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 5%;
-    --muted-foreground: 0 0% 100%;
-    --accent: 60 100% 50%;
-    --accent-foreground: 0 0% 0%;
-    --destructive: 0 100% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
   }
 }
 
@@ -71,16 +31,39 @@
   * {
     @apply border-border;
   }
-  
   body {
     @apply bg-background text-foreground;
     background-color: black !important;
   }
-  
-  /* Improve CSS variable targeting for all theme elements */
-  [data-theme], :root {
-    color-scheme: dark;
-  }
+}
+
+/* Force dark theme on components */
+.bg-white, .bg-gray-50, .bg-gray-100, 
+.bg-gray-200, .bg-gray-300 {
+  background-color: black !important;
+  color: white !important;
+}
+
+/* Form elements */
+input, select, textarea {
+  background-color: #1A1A1A !important;
+  color: white !important;
+  border-color: #333333 !important;
+}
+
+/* Cards and containers */
+.card, [class*="bg-card"] {
+  background-color: #1A1A1A !important;
+  color: white !important;
+}
+
+/* Dialog and popover fixes */
+[role="dialog"],
+[role="tooltip"],
+[role="menu"] {
+  background-color: #1A1A1A !important;
+  color: white !important;
+  border-color: #333333 !important;
 }
 
 /* Fix for specific shadcn components */
