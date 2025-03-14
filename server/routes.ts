@@ -375,9 +375,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if the password matches using the secure comparison function
       // This supports both hashed passwords and plain text (for development)
-      const passwordValid = user.password.includes('.') 
-        ? await comparePasswords(password, user.password)
-        : user.password === password;
+      console.log("Login attempt for user:", username);
+      console.log("Password format:", user.password.includes('.') ? "hashed" : "plaintext");
+      
+      let passwordValid;
+      if (user.password.includes('.')) {
+        console.log("Attempting to compare with hashed password");
+        passwordValid = await comparePasswords(password, user.password);
+        console.log("Password comparison result:", passwordValid);
+      } else {
+        console.log("Using plaintext comparison");
+        passwordValid = user.password === password;
+        console.log("Password comparison result:", passwordValid);
+      }
         
       if (!passwordValid) {
         return res.status(401).json({ 

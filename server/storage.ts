@@ -133,8 +133,8 @@ export class MemStorage implements IStorage {
     const testUser: User = {
       id: this.userIdCounter++,
       username: 'chubbyme',
-      // Pre-hashed password for 'password123' - in a real app we'd hash this properly
-      password: '7cc166e38f9f42c065c20a03e5a6270ef9699017b2d8ef0a4a43f0e40a447e2599acaa8d66b95b1b9e627fac608c7a0f07aad1cef438cc13fad1e633201a9f38.d2fc14851c37b3563a56b784902ed979',
+      // Using plaintext password for testing
+      password: 'password123',
       email: null,
       balance: '1000.00',
       pendingBalance: '0.00',
@@ -160,6 +160,37 @@ export class MemStorage implements IStorage {
     
     this.users.set(testUser.id, testUser);
     console.log('Added test user:', testUser.username);
+    
+    // Add another test user for deposit operations
+    const athan45User: User = {
+      id: this.userIdCounter++,
+      username: 'athan45',
+      password: 'player123',
+      email: null,
+      balance: '1000.00',
+      pendingBalance: '0.00',
+      balances: { PHP: '1000.00', PHPT: '500.00', USDT: '100.00' },
+      preferredCurrency: 'PHP',
+      isVip: false,
+      casinoId: '747-654321',
+      casinoUsername: 'athan45',
+      casinoClientId: 654321,
+      topManager: 'Marcthepogi',
+      immediateManager: 'manager1',
+      casinoUserType: 'player',
+      casinoBalance: '500.00',
+      isAuthorized: true,
+      allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
+      accessToken: null,
+      casinoAuthToken: null,
+      casinoAuthTokenExpiry: null,
+      hierarchyLevel: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.users.set(athan45User.id, athan45User);
+    console.log('Added test user:', athan45User.username);
   }
 
   // User operations
