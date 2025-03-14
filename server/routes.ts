@@ -39,7 +39,7 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     const webhook = `${baseUrl}/api/webhook/directpay/payment`;
     const redirectUrl = `${baseUrl}/payment/success?ref=${reference}`;
     
-    console.log(`Generating DirectPay payment form/QR with the following parameters:`);
+    console.log(`Generating DirectPay GCash payment with the following parameters:`);
     console.log(`- Amount: ${amount}`);
     console.log(`- Reference: ${reference}`);
     console.log(`- Webhook: ${webhook}`);
@@ -53,11 +53,11 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     // Try up to maxRetries times with exponential backoff
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        // Call the DirectPay API to generate a GCash QR code with iframe
+        // Call the DirectPay API to generate a GCash payment link
         result = await directPayApi.generateGCashQR(amount, webhook, redirectUrl);
         
         // If successful, break out of retry loop
-        if (result && (result.qrCodeData || result.payUrl)) {
+        if (result && result.payUrl) {
           console.log(`DirectPay API call successful on attempt ${attempt}`);
           break;
         }
@@ -86,27 +86,18 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     
     console.log('DirectPay API Response:', JSON.stringify(result, null, 2));
     
-    // The result contains the payment data (could be iframe HTML or QR code URL)
+    // Extract response data
     const qrCodeData = result.qrCodeData;
     const directPayReference = result.reference || reference;
+    const payUrl = result.payUrl;
+    const expiresAt = result.expiresAt || new Date(Date.now() + 30 * 60 * 1000);
     
-    // Calculate expiry time (30 minutes from now)
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    
-    // Determine payment type based on the content
-
-// Helper function to generate a unique transaction reference
-function generateTransactionReference(): string {
-  return `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-}
-
-    const isIframe = qrCodeData && qrCodeData.includes('<iframe');
-    const paymentType = isIframe ? 'iframe payment form' : 'QR code';
-    console.log(`Successfully generated ${paymentType} with DirectPay reference: ${directPayReference}`);
+    console.log(`Successfully generated payment link with DirectPay reference: ${directPayReference}`);
     
     return {
       qrCodeData,
       directPayReference,
+      payUrl,
       expiresAt
     };
   } catch (error) {
@@ -116,6 +107,11 @@ function generateTransactionReference(): string {
     // that will be handled by the calling code.
     throw new Error('Failed to generate payment form with DirectPay API');
   }
+}
+
+// Helper function to generate a unique transaction reference
+function generateTransactionReference(): string {
+  return `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
 
 async function casino747PrepareTopup(casinoId: string, amount: number, reference: string) {
@@ -1105,8 +1101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { initiatedAt: new Date().toISOString() }
       });
       
-      // Call DirectPay API to generate QR code
-      const { qrCodeData, directPayReference, expiresAt } = await directPayGenerateQRCode(
+      // Call DirectPay API to generate GCash payment link
+      const { qrCodeData, directPayReference, payUrl, expiresAt } = await directPayGenerateQRCode(
         amount,
         transactionReference,
         user.username
@@ -1134,6 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: amount.toString(),
         expiresAt,
         directPayReference,
+        payUrl,
         status: "pending"
       });
       
