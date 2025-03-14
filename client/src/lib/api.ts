@@ -1,4 +1,4 @@
-import { apiRequest } from "./queryClient";
+import { apiRequest } from "./api-client";
 import { API_ENDPOINTS } from "./constants";
 import type {
   LoginRequest,
