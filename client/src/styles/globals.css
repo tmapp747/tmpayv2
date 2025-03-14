@@ -26,11 +26,11 @@
 
     /* Muted styling */
     --muted: 0 0% 5%;
-    --muted-foreground: 0 0% 80%;
+    --muted-foreground: 0 0% 100%;
 
     /* Accent styling */
-    --accent: 0 0% 5%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 60 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
     /* Destructive styling */
     --destructive: 0 100% 50%;
@@ -39,10 +39,31 @@
     /* Border, input, and ring styling */
     --border: 0 0% 20%;
     --input: 0 0% 0%;
-    --ring: 0 0% 20%;
+    --ring: 60 100% 50%;
 
     /* Border radius */
     --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Ensure dark mode variables match our theme */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 60 100% 50%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 5%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 5%;
+    --muted-foreground: 0 0% 100%;
+    --accent: 60 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
   }
 }
 
@@ -50,36 +71,39 @@
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    background-color: black !important;
+  }
+  
+  /* Improve CSS variable targeting for all theme elements */
+  [data-theme], :root {
+    color-scheme: dark;
   }
 }
 
-/* Subtle styling for different UI elements */
-@layer base {
-  /* Main headings use yellow for emphasis */
-  h1, h2 {
-    color: hsl(60, 100%, 50%) !important;
-  }
-  
-  /* Secondary headings use white */
-  h3, h4, h5, h6 {
-    color: hsl(0, 0%, 100%) !important;
-  }
-  
-  /* Default text is white */
-  p, span, a, label, li {
-    color: hsl(0, 0%, 100%) !important;
-  }
-  
-  /* SVG icons in white */
-  svg, path, rect, circle {
-    fill: hsl(0, 0%, 100%) !important;
-    stroke: hsl(0, 0%, 100%) !important;
-  }
-  
-  /* Pure black background */
-  body, div, section, article, aside, nav, header, footer, main {
-    background-color: hsl(0, 0%, 0%) !important;
-  }
+/* Fix for specific shadcn components */
+[class*="radix-"], [id*="radix-"] {
+  background-color: black !important;
+  color: white !important;
+  border-color: #333333 !important;
+}
+
+/* Fix for dropdown menus and popovers */
+[role="menu"], [role="listbox"], [role="dialog"],
+[role="tooltip"], [role="combobox"] {
+  background-color: black !important;
+  color: white !important;
+  border-color: #333333 !important;
+}
+
+/* Fix for any floating elements that might appear outside the normal flow */
+div[style*="position: fixed"],
+div[style*="position: absolute"],
+div[style*="position:fixed"],
+div[style*="position:absolute"] {
+  background-color: black !important;
+  color: white !important;
+  border-color: #333333 !important;
 }
