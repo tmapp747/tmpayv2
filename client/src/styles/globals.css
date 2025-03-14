@@ -1,0 +1,15 @@
+
+:root {
+  --text-primary: 210 40% 98%;
+  --text-secondary: 217 33% 90%;
+  --text-muted: 215 20% 70%;
+  --card-muted-foreground: 215 20% 65%;
+}
+
+.dark {
+  --text-primary: 210 40% 98%;
+  --text-secondary: 217 33% 90%;
+  --text-muted: 215 20% 70%;
+  --card-muted-foreground: 215 20% 65%;
+}
+

@@ -38,7 +38,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTopManager, setSelectedTopManager] = useState<string | 'all'>('all');
   const [topManagers, setTopManagers] = useState<string[]>([]);
-  
+
   // Helper function to safely set top managers array
   const safeSetTopManagers = (managers: unknown[]): void => {
     // Ensure all items are strings
@@ -62,7 +62,7 @@ export default function AdminDashboard() {
         const managersList = usersData.users
           .filter((user: User) => user.topManager)
           .map((user: User) => user.topManager as string);
-        
+
         // Deduplicate the list and use safe setter
         const uniqueManagers = Array.from(new Set(managersList));
         safeSetTopManagers(uniqueManagers);
@@ -84,7 +84,7 @@ export default function AdminDashboard() {
           description: 'Failed to load admin data',
           variant: 'destructive',
         });
-        
+
         // If unauthorized, redirect to admin login
         if (error instanceof Error && error.message.includes('401')) {
           setLocation('/admin/auth');
