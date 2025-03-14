@@ -60,16 +60,16 @@
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-gray-900;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    @apply bg-gray-700 dark:bg-gray-800;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   }
 
   .panel {
-    @apply bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4;
+    @apply bg-gray-700 dark:bg-gray-800 rounded-xl border border-gray-600 dark:border-gray-700 p-4;
   }
 
   .input {
-    @apply bg-white dark:bg-gray-800;
+    @apply bg-gray-700 dark:bg-gray-800;
   }
 
   .alert {
@@ -77,13 +77,13 @@
   }
 
   .auth-card {
-    @apply bg-white dark:bg-gray-900;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07);
+    @apply bg-gray-700 dark:bg-gray-800;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   }
 
   .card-info {
-    @apply bg-white dark:bg-gray-900;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+    @apply bg-gray-700 dark:bg-gray-800;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
   .casino-button {
