@@ -9,6 +9,7 @@ import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
+import PaymentThankYou from "@/pages/payment-thank-you";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -42,6 +43,9 @@ function Router() {
           <Profile />
         </Layout>
       )} />
+      {/* Payment routes */}
+      <Route path="/payment/thank-you" component={PaymentThankYou} />
+      
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
       <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
