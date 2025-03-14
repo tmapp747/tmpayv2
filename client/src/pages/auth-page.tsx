@@ -545,8 +545,8 @@ export default function AuthPage() {
                         name="email"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <AtSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <AtSign className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Email (Optional)
                             </FormLabel>
                             <FormControl>
@@ -554,10 +554,10 @@ export default function AuthPage() {
                                 type="email"
                                 placeholder="Enter your email address" 
                                 {...field}
-                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base" 
+                                className="h-9 sm:h-10 bg-dark-light text-white border-gray-700 focus:border-lime-500/50 focus:ring-0 text-sm" 
                               />
                             </FormControl>
-                            <FormDescription className="text-xs text-gray-500">
+                            <FormDescription className="text-xs text-gray-400">
                               We'll use this to notify you about important transactions
                             </FormDescription>
                             <FormMessage className="text-xs sm:text-sm" />
