@@ -223,24 +223,18 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-      {/* Simple dark gradient background */}
-      <div className="absolute inset-0 z-0">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black to-dark-DEFAULT"></div>
-      </div>
-      
+    <div className="min-h-screen bg-black flex items-center justify-center">
       {/* Simple minimal header */}
       <header className="fixed top-0 w-full h-14 sm:h-16 bg-black border-b border-gray-800 shadow-sm flex items-center justify-between px-4 z-20">
-        <Link href="/" className="z-10">
+        <Link href="/">
           <div className="flex items-center space-x-2">
             <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
             <span className="font-medium text-base sm:text-lg text-lime-400">747 Casino E-Wallet</span>
           </div>
         </Link>
         
-        <Link href="/" className="z-10">
-          <Button variant="ghost" size="sm" className="text-gray-300 hover:text-lime-400">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="text-white hover:text-lime-400">
             Back
           </Button>
         </Link>
