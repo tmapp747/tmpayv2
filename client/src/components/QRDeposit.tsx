@@ -13,6 +13,7 @@ const QRDeposit = () => {
   const [amount, setAmount] = useState("");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
+  const [payUrl, setPayUrl] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [successData, setSuccessData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
