@@ -19,11 +19,11 @@ export default function LandingPage() {
   }, []);
   
   return (
-    <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
-      {/* Background image with casino-themed elements */}
+    <div className="min-h-screen bg-dark-DEFAULT relative overflow-hidden">
+      {/* Dark background with gradient overlay */}
       <div className="absolute inset-0 z-0">
-        {/* Clean solid background */}
-        <div className="absolute inset-0 bg-black"></div>
+        {/* Dark solid background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-dark-DEFAULT via-dark-navy to-black"></div>
       </div>
       
       {/* Header - fully responsive with mobile adjustments */}
@@ -72,13 +72,13 @@ export default function LandingPage() {
             <Link href="/auth">
               <Button 
                 size="lg" 
-                className="casino-button text-sm sm:text-base shadow-lg"
+                className="text-sm sm:text-base shadow-lg bg-dark-darker hover:bg-lime-500 hover:text-black text-lime-400 border border-lime-500/30 transition-all duration-300"
               >
                 Get Started <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
-            <div className="floating coin hidden md:block absolute -right-12 top-0 w-10 h-10 bg-yellow-400 rounded-full border-4 border-yellow-500 opacity-70">
-              <div className="text-center font-bold text-yellow-800">$</div>
+            <div className="floating coin hidden md:block absolute -right-12 top-0 w-10 h-10 bg-lime-400 rounded-full border-4 border-lime-500 opacity-80">
+              <div className="text-center font-bold text-black">$</div>
             </div>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function LandingPage() {
               <p className="text-white font-medium">
                 Instant deposits and quick withdrawals to and from your casino account
               </p>
-              <div className="floating dice hidden md:block absolute -right-5 -bottom-5 w-10 h-10 opacity-30">
+              <div className="floating dice hidden md:block absolute -right-5 -bottom-5 w-10 h-10 opacity-50">
                 <Dices className="h-8 w-8 text-lime-400" />
               </div>
             </div>
