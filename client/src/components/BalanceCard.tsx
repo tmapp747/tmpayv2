@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
-import { ArrowUp, Plus, ArrowRight, RefreshCw, Coins, Wallet, BadgeDollarSign } from "lucide-react";
+import { ArrowUp, Plus, ArrowRight, RefreshCw, Coins, Wallet, BadgeDollarSign, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { userApi } from "@/lib/api";
+import { userApi, casinoApi } from "@/lib/api";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import gsap from "gsap";
+import { User } from "@/lib/types";
 
 // Component for animated coins
 const AnimatedCoin = ({ 
@@ -120,9 +121,27 @@ const AnimatedBalanceChange = ({
 
 // Main BalanceCard component
 const BalanceCard = () => {
-  const { data, isLoading, refetch } = useQuery({
+  interface UserInfoResponse {
+    user: User;
+  }
+  
+  interface CasinoBalanceResponse {
+    success: boolean;
+    balance: number;
+    currency: string;
+    timestamp?: string;
+    realtime?: boolean;
+  }
+  
+  const { data, isLoading, refetch } = useQuery<UserInfoResponse>({
     queryKey: ['/api/user/info'],
   });
+  
+  // State for casino balance
+  const [casinoBalance, setCasinoBalance] = useState<number | null>(null);
+  const [isCasinoBalanceLoading, setIsCasinoBalanceLoading] = useState(false);
+  const [previousCasinoBalance, setPreviousCasinoBalance] = useState(0);
+  const [isCasinoBalanceUpdated, setIsCasinoBalanceUpdated] = useState(false);
   
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -132,13 +151,66 @@ const BalanceCard = () => {
   const [coins, setCoins] = useState<{ id: number; x: number; y: number; delay: number; isDeposit: boolean }[]>([]);
   const [nextCoinId, setNextCoinId] = useState(0);
   
+  // Fetch casino balance
+  const fetchCasinoBalance = async () => {
+    if (!data?.user?.casinoClientId || !data?.user?.casinoUsername) return;
+    
+    setIsCasinoBalanceLoading(true);
+    try {
+      const balanceResponse = await casinoApi.getRealTimeBalance({
+        casinoClientId: data.user.casinoClientId,
+        casinoUsername: data.user.casinoUsername
+      });
+      
+      if (balanceResponse.success && typeof balanceResponse.balance === 'number') {
+        // Store previous balance for animation
+        if (casinoBalance !== null) {
+          setPreviousCasinoBalance(casinoBalance);
+        }
+        
+        // Update balance
+        setCasinoBalance(balanceResponse.balance);
+        
+        // Show animation if this is an update (not first load)
+        if (casinoBalance !== null && casinoBalance !== balanceResponse.balance) {
+          setIsCasinoBalanceUpdated(true);
+          // Reset flag after animation
+          setTimeout(() => setIsCasinoBalanceUpdated(false), 3000);
+          
+          // Show coin animation if balance increased
+          if (balanceResponse.balance > casinoBalance) {
+            showCoinAnimation(true);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching casino balance:', error);
+    } finally {
+      setIsCasinoBalanceLoading(false);
+    }
+  };
+  
+  // Fetch casino balance on initial load and every 30 seconds
+  useEffect(() => {
+    if (data?.user?.casinoClientId && data?.user?.casinoUsername) {
+      fetchCasinoBalance();
+      
+      // Set up interval for real-time updates
+      const intervalId = setInterval(fetchCasinoBalance, 30000);
+      return () => clearInterval(intervalId);
+    }
+  }, [data?.user?.casinoClientId, data?.user?.casinoUsername]);
+
   // Track previous balance for animation
   useEffect(() => {
     if (!isLoading && data?.user?.balance !== undefined) {
+      const currentBalance = typeof data.user.balance === 'string' ? 
+        parseFloat(data.user.balance) : data.user.balance;
+      
       // Check if this is an actual update (not initial load)
-      if (previousBalance !== 0 && previousBalance !== data.user.balance) {
+      if (previousBalance !== 0 && previousBalance !== currentBalance) {
         setIsBalanceUpdated(true);
-        showCoinAnimation(previousBalance < data.user.balance);
+        showCoinAnimation(previousBalance < currentBalance);
         
         // Reset flag after animation
         const timer = setTimeout(() => {
@@ -148,7 +220,7 @@ const BalanceCard = () => {
         return () => clearTimeout(timer);
       }
       
-      setPreviousBalance(data.user.balance);
+      setPreviousBalance(currentBalance);
     }
   }, [data?.user?.balance, isLoading]);
   
@@ -273,14 +345,20 @@ const BalanceCard = () => {
     };
   }, []);
   
+  // Refresh all balances
   const handleRefresh = async () => {
     try {
-      const oldBalance = data?.user?.balance || 0;
+      // Refresh local wallet balance
       await refetch();
       
+      // Refresh casino balance if available
+      if (data?.user?.casinoClientId && data?.user?.casinoUsername) {
+        await fetchCasinoBalance();
+      }
+      
       toast({
-        title: "Balance refreshed",
-        description: "Your balance has been updated.",
+        title: "Balances refreshed",
+        description: "Your wallet and casino balances have been updated.",
       });
       
       // Animation will be triggered by the useEffect watching balance changes
@@ -288,7 +366,38 @@ const BalanceCard = () => {
       toast({
         variant: "destructive",
         title: "Error refreshing",
-        description: "There was an error refreshing your balance.",
+        description: "There was an error refreshing your balances.",
+      });
+    }
+  };
+  
+  // Send a message to support
+  const handleSendMessage = async () => {
+    if (!data?.user?.casinoUsername) {
+      toast({
+        variant: "destructive",
+        title: "Cannot send message",
+        description: "Your casino account is not properly linked.",
+      });
+      return;
+    }
+    
+    try {
+      await casinoApi.sendMessage({
+        username: data.user.casinoUsername,
+        subject: "Support Request",
+        message: "Hello, I need assistance with my account."
+      });
+      
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent to customer support.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Message failed",
+        description: "Failed to send message. Please try again later.",
       });
     }
   };
@@ -355,29 +464,25 @@ const BalanceCard = () => {
           />
           
           <AnimatePresence>
-            {isBalanceUpdated && data?.user?.balance > previousBalance && (
+            {isBalanceUpdated && data?.user && (
               <motion.span 
-                className="text-green-400 mb-1 text-sm bg-green-500/10 px-2 py-1 rounded-full"
+                className={`${previousBalance < parseFloat(String(data.user.balance)) ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'} mb-1 text-sm px-2 py-1 rounded-full`}
                 initial={{ opacity: 0, y: 10, scale: 0.8 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
               >
-                <ArrowUp className="h-3 w-3 inline mr-1" /> 
-                +{formatCurrency(data.user.balance - previousBalance)}
-              </motion.span>
-            )}
-            
-            {isBalanceUpdated && data?.user?.balance < previousBalance && (
-              <motion.span 
-                className="text-red-400 mb-1 text-sm bg-red-500/10 px-2 py-1 rounded-full"
-                initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ArrowUp className="h-3 w-3 inline mr-1 rotate-180" /> 
-                -{formatCurrency(previousBalance - data.user.balance)}
+                {previousBalance < parseFloat(String(data.user.balance)) ? (
+                  <>
+                    <ArrowUp className="h-3 w-3 inline mr-1" /> 
+                    +{formatCurrency(parseFloat(String(data.user.balance)) - previousBalance)}
+                  </>
+                ) : (
+                  <>
+                    <ArrowUp className="h-3 w-3 inline mr-1 rotate-180" /> 
+                    -{formatCurrency(previousBalance - parseFloat(String(data.user.balance)))}
+                  </>
+                )}
               </motion.span>
             )}
           </AnimatePresence>
@@ -407,7 +512,7 @@ const BalanceCard = () => {
       </div>
       
       <div className="bg-dark/50 backdrop-blur-sm p-5 border-t border-secondary/30">
-        <div className="flex flex-wrap md:flex-nowrap justify-between text-sm gap-4">
+        <div className="flex flex-wrap md:flex-nowrap justify-between text-sm gap-4 mb-4">
           <motion.div 
             className="bg-dark/30 rounded-lg p-3 flex-1 hover:bg-dark/50 transition-colors duration-200"
             whileHover={{ scale: 1.03, backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
@@ -448,6 +553,99 @@ const BalanceCard = () => {
             </span>
           </motion.div>
         </div>
+        
+        {/* Casino balance section */}
+        {data?.user?.casinoUsername && (
+          <div className="mt-2">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-md font-medium text-white flex items-center">
+                <Coins className="h-4 w-4 mr-2 text-yellow-400" /> Casino Balance
+              </h3>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-xs h-7 px-2 rounded-full hover:bg-secondary/20 text-secondary"
+                  onClick={handleSendMessage}
+                >
+                  <MessageCircle className="h-3.5 w-3.5 mr-1" />
+                  Message Support
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-xs h-7 px-2 rounded-full hover:bg-secondary/20 text-secondary"
+                  onClick={fetchCasinoBalance}
+                  disabled={isCasinoBalanceLoading}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isCasinoBalanceLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+            
+            <motion.div 
+              className="bg-dark/20 backdrop-blur-sm border border-secondary/10 rounded-lg p-3"
+              whileHover={{ scale: 1.02, backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="text-gray-400 text-sm block mb-1">
+                    Username: <span className="text-secondary font-medium">{data.user.casinoUsername}</span>
+                  </span>
+                  <span className="text-white font-bold text-lg flex items-end">
+                    {isCasinoBalanceLoading ? (
+                      <div className="h-7 w-28 animate-shimmer rounded"></div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, x: -5 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex items-center"
+                      >
+                        {formatCurrency(casinoBalance || 0)}
+                        
+                        {/* Balance change indicator */}
+                        <AnimatePresence>
+                          {isCasinoBalanceUpdated && previousCasinoBalance !== casinoBalance && (
+                            <motion.span 
+                              className={`ml-2 text-xs ${casinoBalance && previousCasinoBalance < casinoBalance ? 'text-green-400' : 'text-red-400'} font-medium`}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 10 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {casinoBalance && previousCasinoBalance < casinoBalance ? '↑' : '↓'}
+                              {casinoBalance && previousCasinoBalance !== casinoBalance && 
+                                formatCurrency(Math.abs(casinoBalance - previousCasinoBalance))}
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    )}
+                  </span>
+                </div>
+                
+                <div className="text-right">
+                  <span className="text-xs text-gray-400">Last Updated</span>
+                  <span className="text-xs text-gray-300 block">
+                    {isCasinoBalanceLoading ? (
+                      <div className="h-4 w-16 animate-shimmer rounded float-right"></div>
+                    ) : casinoBalance !== null ? (
+                      'Just now'
+                    ) : (
+                      'Never'
+                    )}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );
