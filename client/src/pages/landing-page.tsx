@@ -84,43 +84,43 @@ export default function LandingPage() {
         </div>
       </section>
       
-      {/* Features Section with Glassmorphism Cards */}
-      <section className="relative py-12 md:py-16 px-4 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-black pattern-overlay">
+      {/* Features Section with Dark Solid Background */}
+      <section className="relative py-12 md:py-16 px-4 bg-black border-y border-gray-800">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 text-yellow-400">
             Why Choose Our E-Wallet
           </h2>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="glass-card glass-card-shine p-6 rounded-xl shadow-lg border border-white/20 dark:border-white/5 transition-all duration-300">
-              <div className="w-12 h-12 rounded-full bg-blue-100/80 dark:bg-blue-900/30 flex items-center justify-center mb-4 animate-float backdrop-blur-sm">
-                <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-6 rounded-xl shadow-lg border border-gray-800 bg-black transition-all duration-300 hover:border-gray-700">
+              <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center mb-4 animate-float border border-gray-800">
+                <Shield className="h-6 w-6 text-yellow-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Secure Transactions</h3>
-              <p className="text-gray-700 dark:text-gray-300 font-medium">
+              <h3 className="text-xl font-semibold mb-2 text-yellow-400">Secure Transactions</h3>
+              <p className="text-white font-medium">
                 State-of-the-art encryption and security measures to protect your financial operations
               </p>
             </div>
             
-            <div className="glass-card glass-card-shine p-6 rounded-xl shadow-lg border border-white/20 dark:border-white/5 transition-all duration-300 relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-blue-100/80 dark:bg-blue-900/30 flex items-center justify-center mb-4 animate-float backdrop-blur-sm" style={{ animationDelay: '0.2s' }}>
-                <Wallet className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-6 rounded-xl shadow-lg border border-gray-800 bg-black transition-all duration-300 hover:border-gray-700 relative overflow-hidden">
+              <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center mb-4 animate-float border border-gray-800" style={{ animationDelay: '0.2s' }}>
+                <Wallet className="h-6 w-6 text-yellow-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Fast Deposits</h3>
-              <p className="text-gray-700 dark:text-gray-300 font-medium">
+              <h3 className="text-xl font-semibold mb-2 text-yellow-400">Fast Deposits</h3>
+              <p className="text-white font-medium">
                 Instant deposits and quick withdrawals to and from your casino account
               </p>
               <div className="floating dice hidden md:block absolute -right-5 -bottom-5 w-10 h-10 opacity-30">
-                <Dices className="h-8 w-8 text-red-500" />
+                <Dices className="h-8 w-8 text-yellow-400" />
               </div>
             </div>
             
-            <div className="glass-card glass-card-shine p-6 rounded-xl shadow-lg border border-white/20 dark:border-white/5 transition-all duration-300">
-              <div className="w-12 h-12 rounded-full bg-blue-100/80 dark:bg-blue-900/30 flex items-center justify-center mb-4 animate-float backdrop-blur-sm" style={{ animationDelay: '0.4s' }}>
-                <TrendingUp className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            <div className="p-6 rounded-xl shadow-lg border border-gray-800 bg-black transition-all duration-300 hover:border-gray-700">
+              <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center mb-4 animate-float border border-gray-800" style={{ animationDelay: '0.4s' }}>
+                <TrendingUp className="h-6 w-6 text-yellow-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">Real-time Updates</h3>
-              <p className="text-gray-700 dark:text-gray-300 font-medium">
+              <h3 className="text-xl font-semibold mb-2 text-yellow-400">Real-time Updates</h3>
+              <p className="text-white font-medium">
                 Monitor your transactions and balance in real-time with instant notifications
               </p>
             </div>
