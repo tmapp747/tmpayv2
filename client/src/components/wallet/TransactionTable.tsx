@@ -1,0 +1,1 @@
+className="w-full divide-y divide-border bg-card rounded-lg overflow-hidden"
