@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { apiRequest } from "@/lib/queryClient";
 
 interface PaymentStatusResponse {
   success: boolean;
@@ -19,7 +18,7 @@ export default function PaymentThankYou() {
   const [match, params] = useRoute("/payment/thank-you");
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"pending" | "completed" | "failed" | "expired">("pending");
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "completed" | "failed" | "expired">("pending");
   const [pollingCount, setPollingCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,18 +48,46 @@ export default function PaymentThankYou() {
           return;
         }
 
-        const response = await apiRequest("GET", `/api/payments/status/${reference}`);
-        const data: PaymentStatusResponse = await response.json();
+        // Get user token from localStorage
+        const userData = localStorage.getItem('userData');
+        let token = '';
+        
+        if (userData) {
+          try {
+            const parsedUserData = JSON.parse(userData);
+            if (parsedUserData?.user?.accessToken) {
+              token = parsedUserData.user.accessToken;
+            }
+          } catch (e) {
+            console.error("Error parsing userData:", e);
+          }
+        }
+
+        // Make authenticated request
+        const response = await fetch(`/api/payments/status/${reference}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Error checking payment: ${response.status}`);
+        }
+
+        const data = await response.json() as PaymentStatusResponse;
 
         if (data.status === "completed") {
-          setStatus("completed");
+          setPaymentStatus("completed");
           setLoading(false);
         } else if (data.status === "failed") {
-          setStatus("failed");
+          setPaymentStatus("failed");
           setLoading(false);
           setError(data.message || "Payment processing failed");
         } else if (data.status === "expired") {
-          setStatus("expired");
+          setPaymentStatus("expired");
           setLoading(false);
           setError("Your payment session has expired");
         } else {
@@ -85,15 +112,15 @@ export default function PaymentThankYou() {
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-2xl">
             {loading && "Processing Payment"}
-            {status === "completed" && "Payment Successful"}
-            {status === "failed" && "Payment Failed"}
-            {status === "expired" && "Payment Expired"}
+            {paymentStatus === "completed" && "Payment Successful"}
+            {paymentStatus === "failed" && "Payment Failed"}
+            {paymentStatus === "expired" && "Payment Expired"}
           </CardTitle>
           <CardDescription>
             {loading && "We're verifying your payment with DirectPay..."}
-            {status === "completed" && "Your account has been credited successfully!"}
-            {status === "failed" && error}
-            {status === "expired" && "Your payment session has expired"}
+            {paymentStatus === "completed" && "Your account has been credited successfully!"}
+            {paymentStatus === "failed" && error}
+            {paymentStatus === "expired" && "Your payment session has expired"}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center p-6 space-y-6">
@@ -107,7 +134,7 @@ export default function PaymentThankYou() {
                 Reference: {reference}
               </p>
             </div>
-          ) : status === "completed" ? (
+          ) : paymentStatus === "completed" ? (
             <div className="flex flex-col items-center justify-center">
               <CheckCircle2 className="h-16 w-16 text-green-500" />
               <h3 className="text-lg font-semibold mt-4">Thank You!</h3>
@@ -122,7 +149,7 @@ export default function PaymentThankYou() {
             <div className="flex flex-col items-center justify-center">
               <AlertTriangle className="h-16 w-16 text-amber-500" />
               <h3 className="text-lg font-semibold mt-4">
-                {status === "failed" ? "Payment Failed" : "Payment Expired"}
+                {paymentStatus === "failed" ? "Payment Failed" : "Payment Expired"}
               </h3>
               <p className="text-center text-sm text-muted-foreground mt-1">
                 {error || "There was an issue with your payment"}
@@ -140,7 +167,7 @@ export default function PaymentThankYou() {
               Back to Wallet
             </Link>
           </Button>
-          {(status === "failed" || status === "expired") && (
+          {(paymentStatus === "failed" || paymentStatus === "expired") && (
             <Button asChild>
               <Link href="/wallet">
                 Try Again
