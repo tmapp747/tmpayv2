@@ -59,15 +59,24 @@ export interface IStorage {
   exchangeCurrency(id: number, fromCurrency: Currency, toCurrency: Currency, amount: number): Promise<User>;
   updatePreferredCurrency(id: number, currency: Currency): Promise<User>;
   
-  // Transaction operations
+  // Transaction ledger and analytics operations
   getTransaction(id: number): Promise<Transaction | undefined>;
-  getTransactionsByUserId(userId: number): Promise<Transaction[]>;
+  getTransactionsByUserId(userId: number, options?: { limit?: number, offset?: number, type?: string, method?: string, status?: string, startDate?: Date, endDate?: Date }): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
   updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction>;
+  addStatusHistoryEntry(id: number, status: string, note?: string): Promise<Transaction>;
+  completeTransaction(id: number, metadata?: Record<string, any>): Promise<Transaction>;
+  recordTransactionFinancials(id: number, balanceBefore: number, balanceAfter: number, fee?: number): Promise<Transaction>;
+  updateTransactionMetadata(id: number, metadata: Record<string, any>): Promise<Transaction>;
+  setTransactionNonce(id: number, nonce: string): Promise<Transaction>;
+  getTransactionByNonce(nonce: string): Promise<Transaction | undefined>;
+  getTransactionsByDateRange(startDate: Date, endDate: Date, options?: { userId?: number, type?: string, method?: string, status?: string }): Promise<Transaction[]>;
+  getTransactionsSummary(options?: { userId?: number, type?: string, method?: string, status?: string, startDate?: Date, endDate?: Date }): Promise<{ count: number, totalAmount: number, successfulAmount: number, pendingAmount: number, failedAmount: number }>;
+  
   // Casino transaction operations
   getTransactionByUniqueId(uniqueId: string): Promise<Transaction | undefined>;
   getTransactionByCasinoReference(casinoReference: string): Promise<Transaction | undefined>;
-  getCasinoTransactions(userId: number, type?: string): Promise<Transaction[]>;
+  getCasinoTransactions(userId: number, type?: string, options?: { limit?: number, offset?: number }): Promise<Transaction[]>;
   
   // QR Payment operations
   createQrPayment(qrPayment: InsertQrPayment): Promise<QrPayment>;
@@ -538,29 +547,87 @@ export class MemStorage implements IStorage {
     return this.transactions.get(id);
   }
 
-  async getTransactionsByUserId(userId: number): Promise<Transaction[]> {
+  async getTransactionsByUserId(
+    userId: number, 
+    options?: { 
+      limit?: number, 
+      offset?: number, 
+      type?: string, 
+      method?: string, 
+      status?: string, 
+      startDate?: Date, 
+      endDate?: Date 
+    }
+  ): Promise<Transaction[]> {
     // If userId is 0, return all transactions (special case for admin)
     const transactions = Array.from(this.transactions.values());
     
-    const filteredTransactions = userId === 0 
-      ? transactions 
+    // Start with userId filter (if not 0, which means all)
+    let filteredTransactions = userId === 0
+      ? transactions
       : transactions.filter(tx => tx.userId === userId);
-
-    return filteredTransactions.sort((a, b) => {
+    
+    // Apply additional filters from options if provided
+    if (options) {
+      if (options.type) {
+        filteredTransactions = filteredTransactions.filter(tx => tx.type === options.type);
+      }
+      
+      if (options.method) {
+        filteredTransactions = filteredTransactions.filter(tx => tx.method === options.method);
+      }
+      
+      if (options.status) {
+        filteredTransactions = filteredTransactions.filter(tx => tx.status === options.status);
+      }
+      
+      if (options.startDate) {
+        filteredTransactions = filteredTransactions.filter(tx => {
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          return txDate >= options.startDate!;
+        });
+      }
+      
+      if (options.endDate) {
+        filteredTransactions = filteredTransactions.filter(tx => {
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          return txDate <= options.endDate!;
+        });
+      }
+    }
+    
+    // Sort by date (newest first)
+    const sortedTransactions = filteredTransactions.sort((a, b) => {
       const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
       const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
       return dateB - dateA;
     });
+    
+    // Apply pagination if specified
+    if (options && (options.limit !== undefined || options.offset !== undefined)) {
+      const offset = options.offset || 0;
+      const limit = options.limit || sortedTransactions.length;
+      return sortedTransactions.slice(offset, offset + limit);
+    }
+    
+    return sortedTransactions;
   }
 
   async createTransaction(txData: InsertTransaction): Promise<Transaction> {
     const id = this.transactionIdCounter++;
     const now = new Date();
     
-    // Make sure all required fields are set with defaults
+    // Make sure all required fields are set with defaults for the comprehensive ledger
     const transaction: Transaction = { 
-      ...txData, 
+      // Core default fields
       id, 
+      userId: txData.userId,
+      type: txData.type,
+      method: txData.method,
+      amount: txData.amount,
+      status: txData.status,
+      
+      // Casino fields with proper null handling
       casinoUsername: txData.casinoUsername || null,
       casinoClientId: txData.casinoClientId || null,
       paymentReference: txData.paymentReference || null,
@@ -569,11 +636,47 @@ export class MemStorage implements IStorage {
       destinationAddress: txData.destinationAddress || null,
       destinationNetwork: txData.destinationNetwork || null,
       uniqueId: txData.uniqueId || null,
+      
+      // Enhanced ledger fields
       currency: txData.currency || 'PHP',
-      metadata: txData.metadata || null,
+      fee: txData.fee || '0.00',
+      netAmount: txData.netAmount || txData.amount, // Default to amount if not specified
+      
+      // Status tracking
+      statusHistory: txData.statusHistory || null,
+      statusUpdatedAt: txData.statusUpdatedAt || now,
+      completedAt: txData.completedAt || null,
+      
+      // Financial tracking
+      nonce: txData.nonce || null,
+      balanceBefore: txData.balanceBefore || null,
+      balanceAfter: txData.balanceAfter || null,
+      exchangeRate: txData.exchangeRate || null,
+      
+      // Source and destination tracking
+      sourceUserId: txData.sourceUserId || null,
+      destinationUserId: txData.destinationUserId || null,
+      
+      // Additional data
+      description: txData.description || null,
+      notes: txData.notes || null,
+      ipAddress: txData.ipAddress || null,
+      userAgent: txData.userAgent || null,
+      
+      // Extended data and timestamps
+      metadata: txData.metadata || {},
       createdAt: now, 
       updatedAt: now 
     };
+    
+    // Add initial status history entry
+    if (!transaction.metadata.statusHistory) {
+      transaction.metadata.statusHistory = [{
+        status: transaction.status,
+        timestamp: now,
+        note: 'Transaction created'
+      }];
+    }
     
     this.transactions.set(id, transaction);
     return transaction;
@@ -618,8 +721,253 @@ export class MemStorage implements IStorage {
       (tx) => tx.casinoReference === casinoReference
     );
   }
+  
+  async getTransactionByNonce(nonce: string): Promise<Transaction | undefined> {
+    return Array.from(this.transactions.values()).find(
+      (tx) => tx.nonce === nonce
+    );
+  }
+  
+  async addStatusHistoryEntry(id: number, status: string, note?: string): Promise<Transaction> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
+    
+    const now = new Date();
+    const statusEntry = {
+      status,
+      timestamp: now,
+      note: note || null
+    };
+    
+    // Create or update the status history array in metadata
+    const metadata = transaction.metadata || {};
+    const statusHistory = metadata.statusHistory || [];
+    statusHistory.push(statusEntry);
+    
+    const updatedMetadata = {
+      ...metadata,
+      statusHistory
+    };
+    
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      status,
+      statusUpdatedAt: now,
+      statusHistory: updatedMetadata.statusHistory,
+      metadata: updatedMetadata,
+      updatedAt: now
+    };
+    
+    this.transactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async completeTransaction(id: number, metadata?: Record<string, any>): Promise<Transaction> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
+    
+    const now = new Date();
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      status: 'completed',
+      statusUpdatedAt: now,
+      completedAt: now,
+      updatedAt: now
+    };
+    
+    // Add any additional metadata
+    if (metadata) {
+      updatedTransaction.metadata = {
+        ...(transaction.metadata || {}),
+        ...metadata
+      };
+    }
+    
+    // Add status history entry for completion
+    if (updatedTransaction.metadata) {
+      const statusHistory = updatedTransaction.metadata.statusHistory || [];
+      statusHistory.push({
+        status: 'completed',
+        timestamp: now,
+        note: 'Transaction completed successfully'
+      });
+      updatedTransaction.metadata.statusHistory = statusHistory;
+    }
+    
+    this.transactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async recordTransactionFinancials(
+    id: number, 
+    balanceBefore: number, 
+    balanceAfter: number, 
+    fee?: number
+  ): Promise<Transaction> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
+    
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      balanceBefore: balanceBefore.toString(),
+      balanceAfter: balanceAfter.toString(),
+      fee: fee !== undefined ? fee.toString() : '0.00',
+      netAmount: (parseFloat(transaction.amount.toString()) - (fee || 0)).toString(),
+      updatedAt: new Date()
+    };
+    
+    this.transactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async updateTransactionMetadata(id: number, metadata: Record<string, any>): Promise<Transaction> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
+    
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      metadata: {
+        ...(transaction.metadata || {}),
+        ...metadata
+      },
+      updatedAt: new Date()
+    };
+    
+    this.transactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async setTransactionNonce(id: number, nonce: string): Promise<Transaction> {
+    const transaction = await this.getTransaction(id);
+    if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
+    
+    const updatedTransaction: Transaction = {
+      ...transaction,
+      nonce,
+      updatedAt: new Date()
+    };
+    
+    this.transactions.set(id, updatedTransaction);
+    return updatedTransaction;
+  }
+  
+  async getTransactionsByDateRange(
+    startDate: Date, 
+    endDate: Date, 
+    options?: { 
+      userId?: number, 
+      type?: string, 
+      method?: string, 
+      status?: string 
+    }
+  ): Promise<Transaction[]> {
+    let transactions = Array.from(this.transactions.values()).filter(tx => {
+      const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+      return txDate >= startDate && txDate <= endDate;
+    });
+    
+    // Apply additional filters if provided
+    if (options) {
+      if (options.userId !== undefined) {
+        transactions = transactions.filter(tx => tx.userId === options.userId);
+      }
+      
+      if (options.type) {
+        transactions = transactions.filter(tx => tx.type === options.type);
+      }
+      
+      if (options.method) {
+        transactions = transactions.filter(tx => tx.method === options.method);
+      }
+      
+      if (options.status) {
+        transactions = transactions.filter(tx => tx.status === options.status);
+      }
+    }
+    
+    return transactions.sort((a, b) => {
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
+      return dateB - dateA;
+    });
+  }
+  
+  async getTransactionsSummary(options?: { 
+    userId?: number, 
+    type?: string, 
+    method?: string, 
+    status?: string, 
+    startDate?: Date, 
+    endDate?: Date 
+  }): Promise<{ 
+    count: number, 
+    totalAmount: number, 
+    successfulAmount: number, 
+    pendingAmount: number, 
+    failedAmount: number 
+  }> {
+    // Get transactions based on filters
+    let transactions = Array.from(this.transactions.values());
+    
+    if (options) {
+      if (options.userId !== undefined) {
+        transactions = transactions.filter(tx => tx.userId === options.userId);
+      }
+      
+      if (options.type) {
+        transactions = transactions.filter(tx => tx.type === options.type);
+      }
+      
+      if (options.method) {
+        transactions = transactions.filter(tx => tx.method === options.method);
+      }
+      
+      if (options.status) {
+        transactions = transactions.filter(tx => tx.status === options.status);
+      }
+      
+      if (options.startDate) {
+        transactions = transactions.filter(tx => {
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          return txDate >= options.startDate!;
+        });
+      }
+      
+      if (options.endDate) {
+        transactions = transactions.filter(tx => {
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          return txDate <= options.endDate!;
+        });
+      }
+    }
+    
+    // Calculate summary metrics
+    const count = transactions.length;
+    const totalAmount = transactions.reduce((sum, tx) => sum + parseFloat(tx.amount.toString()), 0);
+    
+    // Group by status for specific metrics
+    const successfulAmount = transactions
+      .filter(tx => tx.status === 'completed')
+      .reduce((sum, tx) => sum + parseFloat(tx.amount.toString()), 0);
+      
+    const pendingAmount = transactions
+      .filter(tx => tx.status === 'pending' || tx.status === 'processing')
+      .reduce((sum, tx) => sum + parseFloat(tx.amount.toString()), 0);
+      
+    const failedAmount = transactions
+      .filter(tx => tx.status === 'failed' || tx.status === 'expired' || tx.status === 'rejected')
+      .reduce((sum, tx) => sum + parseFloat(tx.amount.toString()), 0);
+    
+    return {
+      count,
+      totalAmount,
+      successfulAmount,
+      pendingAmount,
+      failedAmount
+    };
+  }
 
-  async getCasinoTransactions(userId: number, type?: string): Promise<Transaction[]> {
+  async getCasinoTransactions(userId: number, type?: string, options?: { limit?: number, offset?: number }): Promise<Transaction[]> {
     let transactions = Array.from(this.transactions.values())
       .filter(tx => tx.userId === userId && 
         (tx.type === 'casino_deposit' || 
