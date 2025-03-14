@@ -25,7 +25,7 @@ const QRDeposit = () => {
     if (value === null || value === undefined) {
       return "0";
     }
-    
+
     try {
       return value.toLocaleString(undefined, { minimumFractionDigits: 0 });
     } catch (error) {
@@ -38,6 +38,14 @@ const QRDeposit = () => {
     setSelectedAmount(value);
     setAmount(value.toString());
   };
+
+  const getPresetButtonClasses = (amount: number): string => {
+    return cn(
+      "border-secondary/50 hover:border-secondary",
+      selectedAmount === amount && "bg-secondary hover:bg-secondary/90"
+    );
+  };
+
 
   const generateQrMutation = useMutation({
     mutationFn: async () => {
@@ -144,10 +152,7 @@ const QRDeposit = () => {
                 key={amt}
                 type="button"
                 variant={selectedAmount === amt ? "default" : "outline"}
-                className={cn(
-                  "border-secondary/50 hover:border-secondary",
-                  selectedAmount === amt && "bg-secondary hover:bg-secondary/90"
-                )}
+                className={getPresetButtonClasses(amt)}
                 onClick={() => handlePresetAmountClick(amt)}
               >
                 ₱{formatDisplayAmount(amt)}
@@ -157,7 +162,7 @@ const QRDeposit = () => {
         </div>
 
         <div className="mb-6">
-          <label className="block text-gray-300 mb-2">
+          <label className="block text-sm font-medium mb-2 text-white">
             Or Enter Custom Amount
           </label>
           <div className="flex">
@@ -172,7 +177,7 @@ const QRDeposit = () => {
                 setSelectedAmount(null);
               }}
               placeholder="Enter amount"
-              className="rounded-l-none"
+              className="rounded-l-none text-white placeholder-gray-400"
               min="100"
               max="50000"
             />
