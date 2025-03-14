@@ -2,52 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  /* Dark backgrounds get white/yellow text */
-  .bg-black *, .bg-gray-900 *, .bg-gray-800 *, .bg-gray-700 * {
-    color: #FFFFFF !important;
-  }
-  
-  /* Light backgrounds get black text */
-  .bg-white *, .bg-gray-100 *, .bg-gray-200 *, .bg-gray-300 * {
-    color: #000000 !important;
-  }
-  
-  /* Input styling */
-  input, textarea, select, option {
-    color: #FFFFFF !important;
-    background-color: #1a1a1a !important;
-    border-color: #333333 !important;
-  }
-  
-  /* Override for all text that might be hard to see */
-  .text-black, .text-gray-500, .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900,
-  .text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900,
-  .text-zinc-500, .text-zinc-600, .text-zinc-700, .text-zinc-800, .text-zinc-900,
-  .text-stone-500, .text-stone-600, .text-stone-700, .text-stone-800, .text-stone-900 {
-    color: #FFFF00 !important;
-  }
-  
-  /* Force all form elements to have yellow text */
-  .form-input, .form-textarea, .form-select, .form-multiselect,
-  .form-checkbox, .form-radio {
-    color: #FFFF00 !important;
-  }
-  
-  /* Handle Shadcn UI components */
-  [data-shadcn-ui] * {
-    color: #FFFF00 !important;
-  }
-  
-  /* Special card content */
-  .card-content * {
-    color: #FFFF00 !important;
-  }
+/* Global yellow text override for all elements */
+* {
+  color: #FFFF00 !important;
+}
+
+/* Global background color for body */
+body {
+  background-color: black !important;
+}
+
+/* Make all backgrounds black */
+div, section, header, footer, aside, main, nav, article {
+  background-color: black !important;
+}
+
+/* Form elements with yellow text and black backgrounds */
+input, textarea, select, option, button {
+  color: #FFFF00 !important;
+  background-color: black !important;
+  border-color: white !important;
+}
+
+/* All typography elements */
+h1, h2, h3, h4, h5, h6, p, span, a, label, li {
+  color: #FFFF00 !important;
+}
+
+/* Tables */
+table, th, td {
+  color: #FFFF00 !important;
+  border-color: white !important;
+}
+
+/* Override any color classes */
+[class*="text-"], [class*="text-"] * {
+  color: #FFFF00 !important;
+}
+
+/* Background classes */
+[class*="bg-"] {
+  background-color: black !important;
+}
+
+/* All SVG elements */
+svg, svg *, path, rect, circle {
+  fill: #FFFF00 !important;
+  stroke: #FFFF00 !important;
+}
+
+/* Border classes */
+[class*="border"] {
+  border-color: white !important;
 }
 
 @layer components {
   .card {
-    @apply bg-black;
+    @apply bg-black border border-white;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
@@ -60,23 +71,27 @@
   }
 
   .alert {
-    @apply border-opacity-50;
+    @apply border border-white;
   }
 
   .auth-card {
-    @apply bg-black;
+    @apply bg-black border border-white;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .card-info {
-    @apply bg-black;
+    @apply bg-black border border-white;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
   .casino-button {
-    @apply bg-black hover:bg-white rounded-lg relative overflow-hidden;
+    @apply bg-black rounded-lg relative overflow-hidden border border-white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .casino-button:hover {
+    background-color: #333 !important;
   }
 
   .casino-button:active {
@@ -96,42 +111,65 @@
   }
 }
 
+/* Button and interactive element hover states */
 button:hover,
 a:hover,
 [role="button"]:hover {
-  @apply hover:bg-black hover:text-yellow-300;
-}
-
-/* Fix button hover color issues */
-.bg-black button:hover,
-.bg-black a:hover,
-.bg-black [role="button"]:hover,
-button.bg-black:hover,
-a.bg-black:hover {
   background-color: #333 !important;
   color: #FFFF00 !important;
 }
 
-/* Target specific Shadcn UI components that might have visibility issues */
-.dialog-content, 
-.popover-content,
-.dropdown-content,
-.menu-content,
-.tooltip-content,
-.select-content,
-.command-dialog,
-.sheet-content {
+/* Shadcn UI specific components */
+.dialog,
+.popover,
+.dropdown,
+.menu,
+.tooltip,
+.select,
+.command,
+.sheet,
+.toast,
+.carousel,
+.tabs {
   background-color: black !important;
   border: 1px solid white !important;
 }
 
-.dialog-content *, 
-.popover-content *,
-.dropdown-content *,
-.menu-content *,
-.tooltip-content *,
-.select-content *,
-.command-dialog *,
-.sheet-content * {
+/* Fix for specific Shadcn components */
+[data-state="open"] {
+  background-color: black !important;
+}
+
+.dropdown-content,
+.select-content,
+.command-input,
+.accordion-content,
+.dialog-content {
+  background-color: black !important;
+}
+
+/* Ensure no text is invisible */
+.text-muted-foreground,
+.text-primary-foreground,
+.text-secondary-foreground,
+.text-popover-foreground,
+.text-card-foreground {
   color: #FFFF00 !important;
+}
+
+/* Fix for specific background colors */
+.bg-muted,
+.bg-accent,
+.bg-popover,
+.bg-card,
+.bg-primary,
+.bg-secondary {
+  background-color: black !important;
+}
+
+/* Fix for inputs in forms */
+.form-control, .form-input, .form-select, .form-file, .form-checkbox, .form-radio {
+  background-color: black !important;
+  color: #FFFF00 !important;
+  border-color: white !important;
 }

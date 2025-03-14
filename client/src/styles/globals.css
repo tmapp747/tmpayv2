@@ -4,34 +4,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    /* Set background to black and foreground to yellow */
+    --background: 0 0% 0%;
+    --foreground: 60 100% 50%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    /* Card styling */
+    --card: 0 0% 0%;
+    --card-foreground: 60 100% 50%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    /* Popover styling */
+    --popover: 0 0% 0%;
+    --popover-foreground: 60 100% 50%;
 
+    /* Primary styling */
     --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
+    --primary-foreground: 60 100% 50%;
 
-    --secondary: 0 0% 5%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary styling */
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 60 100% 50%;
 
+    /* Muted styling */
     --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 80%;
+    --muted-foreground: 60 100% 50%;
 
+    /* Accent styling */
     --accent: 0 0% 10%;
-    --accent-foreground: 0 0% 100%;
+    --accent-foreground: 60 100% 50%;
 
+    /* Destructive styling */
     --destructive: 0 0% 0%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 60 100% 50%;
 
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 30%;
+    /* Border, input, and ring styling */
+    --border: 0 0% 100%;
+    --input: 0 0% 0%;
+    --ring: 60 100% 50%;
 
+    /* Border radius */
     --radius: 0.5rem;
   }
 }
@@ -42,5 +52,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Additional theme overrides */
+@layer base {
+  /* Ensure all text is bright yellow */
+  h1, h2, h3, h4, h5, h6, p, span, a, label, li {
+    color: hsl(60, 100%, 50%) !important;
+  }
+  
+  /* Override SVG colors */
+  svg, path, rect, circle {
+    fill: hsl(60, 100%, 50%) !important;
+    stroke: hsl(60, 100%, 50%) !important;
   }
 }
