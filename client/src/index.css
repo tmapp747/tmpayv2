@@ -132,7 +132,13 @@ table, th, td, input, select, textarea, button,
    -------------------- */
 
 /* SVG elements default to white, with fallbacks */
-svg, svg *, path, rect, circle, line, polyline, polygon {
+svg:not([role="button"] *), 
+svg:not(button *), 
+svg:not(a *), 
+path:not([role="button"] *), 
+path:not(button *), 
+path:not(a *), 
+rect, circle, line, polyline, polygon {
   fill: #FFFFFF !important;
   stroke: #FFFFFF !important;
   color: #FFFFFF !important;
@@ -407,14 +413,8 @@ iframe, embed, object {
 /* 747 Casino specific overrides for form labels and inputs */
 .form-label, 
 .FormLabel, 
-label[class*="FormLabel"],
-.text-gray-300 {
+label[class*="FormLabel"] {
   color: white !important;
-}
-
-.text-gray-400, 
-.text-gray-500 {
-  color: #DDDDDD !important;
 }
 
 /* Make form placeholders more visible */
@@ -424,14 +424,6 @@ label[class*="FormLabel"],
 }
 
 /* Special fix for Radix UI & Shadcn UI components - highest priority */
-[data-radix-popper-content-wrapper] *,
-[cmdk-dialog] *,
-[cmdk-input] *,
-[cmdk-item] *,
-[cmdk-list] *,
-.radix-themes *,
-[data-overlay-container] *,
-[data-overlay-root] *,
 .light-theme,
 .light,
 .light *,
@@ -458,7 +450,4 @@ label[class*="FormLabel"],
   background-color: #000000 !important;
 }
 
-/* Target any inline styles that may set white backgrounds */
-[style^="background"], [style*=" background"] {
-  background-color: #000000 !important;
-}
+/* Removed problematic style that was making elements unclickable */
