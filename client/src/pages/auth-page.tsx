@@ -264,25 +264,25 @@ export default function AuthPage() {
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="px-3 sm:px-6 pt-2">
-              <TabsList className="grid w-full grid-cols-3 mb-2 h-10 sm:h-11">
+              <TabsList className="grid w-full grid-cols-3 mb-2 h-10 sm:h-11 bg-dark-light border border-gray-700">
                 <TabsTrigger 
                   value="verification" 
                   disabled={!!verifiedUsername}
-                  className={`text-xs sm:text-sm ${verifiedUsername ? "text-gray-400" : ""}`}
+                  className={`text-xs sm:text-sm ${verifiedUsername ? "text-gray-500" : "data-[state=active]:bg-dark-darker data-[state=active]:text-lime-400 data-[state=active]:border-t-2 data-[state=active]:border-lime-400"}`}
                 >
                   Verify
                 </TabsTrigger>
                 <TabsTrigger 
                   value="login" 
                   disabled={!verifiedUsername}
-                  className={`text-xs sm:text-sm ${!verifiedUsername ? "text-gray-400" : ""}`}
+                  className={`text-xs sm:text-sm ${!verifiedUsername ? "text-gray-500" : "data-[state=active]:bg-dark-darker data-[state=active]:text-lime-400 data-[state=active]:border-t-2 data-[state=active]:border-lime-400"}`}
                 >
                   Login
                 </TabsTrigger>
                 <TabsTrigger 
                   value="register" 
                   disabled={!verifiedUsername}
-                  className={`text-xs sm:text-sm ${!verifiedUsername ? "text-gray-400" : ""}`}
+                  className={`text-xs sm:text-sm ${!verifiedUsername ? "text-gray-500" : "data-[state=active]:bg-dark-darker data-[state=active]:text-lime-400 data-[state=active]:border-t-2 data-[state=active]:border-lime-400"}`}
                 >
                   Register
                 </TabsTrigger>
@@ -299,15 +299,15 @@ export default function AuthPage() {
                         name="username"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="flex items-center text-sm sm:text-base">
-                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600 dark:text-blue-400" />
+                            <FormLabel className="flex items-center text-sm text-gray-300">
+                              <User className="h-3.5 w-3.5 mr-2 text-lime-400" />
                               Username
                             </FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="Enter your 747 Casino username" 
                                 {...field} 
-                                className="h-9 sm:h-10 glass-input border-gray-300/50 dark:border-gray-700/50 focus:ring-blue-500 text-sm sm:text-base"
+                                className="h-9 sm:h-10 bg-dark-light text-white border-gray-700 focus:border-lime-500/50 focus:ring-0 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-red-500 text-xs sm:text-sm" />
@@ -320,13 +320,13 @@ export default function AuthPage() {
                         name="userType"
                         render={({ field }) => (
                           <FormItem className="space-y-1.5 sm:space-y-2">
-                            <FormLabel className="text-sm sm:text-base">Account Type</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Account Type</FormLabel>
                             <div className="flex space-x-3 sm:space-x-4">
                               <Button 
                                 type="button" 
                                 variant={field.value === "player" ? "default" : "outline"}
                                 onClick={() => verificationForm.setValue("userType", "player")}
-                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "player" ? "bg-blue-600" : "hover:bg-blue-50 dark:hover:bg-gray-800"}`}
+                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "player" ? "bg-lime-500 text-black" : "bg-dark-light text-gray-400 border-gray-700 hover:text-lime-400 hover:border-lime-500/30"}`}
                               >
                                 Player
                               </Button>
@@ -334,7 +334,7 @@ export default function AuthPage() {
                                 type="button" 
                                 variant={field.value === "agent" ? "default" : "outline"}
                                 onClick={() => verificationForm.setValue("userType", "agent")}
-                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "agent" ? "bg-green-600" : "hover:bg-green-50 dark:hover:bg-gray-800"}`}
+                                className={`flex-1 h-9 sm:h-10 text-xs sm:text-sm ${field.value === "agent" ? "bg-lime-500 text-black" : "bg-dark-light text-gray-400 border-gray-700 hover:text-lime-400 hover:border-lime-500/30"}`}
                               >
                                 Agent
                               </Button>
@@ -372,10 +372,10 @@ export default function AuthPage() {
               <TabsContent value="login">
                 <div className="space-y-3 sm:space-y-4">
                   {verifiedUsername && (
-                    <Alert className="bg-blue-50/80 dark:bg-blue-900/30 border-blue-100/50 dark:border-blue-800/30 mb-3 sm:mb-4 backdrop-blur-sm glass-alert">
-                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-blue-600 dark:text-blue-400" />
-                      <AlertDescription className="text-blue-800 dark:text-blue-300 text-xs sm:text-sm">
-                        Username verified successfully. You can now login or create a new account.
+                    <Alert className="mb-3 sm:mb-4 bg-dark-light border border-gray-700">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-lime-400" />
+                      <AlertDescription className="text-white text-xs sm:text-sm">
+                        Username verified successfully. You can now <span className="text-lime-400">login</span> or <span className="text-lime-400">create a new account</span>.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -486,10 +486,10 @@ export default function AuthPage() {
               <TabsContent value="register">
                 <div className="space-y-3 sm:space-y-4">
                   {casinoVerificationData && (
-                    <Alert className="bg-green-50/80 dark:bg-green-900/30 border-green-100/50 dark:border-green-800/30 mb-3 sm:mb-4 backdrop-blur-sm glass-alert">
-                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-green-600 dark:text-green-400" />
-                      <AlertDescription className="text-green-800 dark:text-green-300 text-xs sm:text-sm">
-                        Your casino account details have been verified and will be linked to your new e-wallet account.
+                    <Alert className="mb-3 sm:mb-4 bg-dark-light border border-gray-700">
+                      <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-lime-400" />
+                      <AlertDescription className="text-white text-xs sm:text-sm">
+                        Your casino account details have been <span className="text-lime-400">verified</span> and will be linked to your new e-wallet account.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -567,33 +567,33 @@ export default function AuthPage() {
                       
                       {/* Casino Account Details */}
                       {casinoVerificationData && (
-                        <div className="mt-3 sm:mt-4 p-3 bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm glass-card-info rounded-lg border border-white/30 dark:border-white/5">
-                          <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-200 mb-2">Casino Account Details</h4>
+                        <div className="mt-3 sm:mt-4 p-3 bg-dark-light rounded-lg border border-gray-700">
+                          <h4 className="text-xs sm:text-sm font-medium text-white mb-2">Casino Account Details</h4>
                           <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                             {casinoVerificationData.userType && (
                               <div>
-                                <span className="text-gray-500 dark:text-gray-400">Account Type:</span>
-                                <Badge className="ml-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs">
+                                <span className="text-gray-400">Account Type:</span>
+                                <Badge className="ml-2 bg-dark-darker text-lime-400 border border-lime-500/30 text-xs">
                                   {casinoVerificationData.userType}
                                 </Badge>
                               </div>
                             )}
                             {casinoVerificationData.topManager && (
                               <div>
-                                <span className="text-gray-500 dark:text-gray-400">Top Manager:</span>
-                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-200">{casinoVerificationData.topManager}</span>
+                                <span className="text-gray-400">Top Manager:</span>
+                                <span className="ml-2 font-medium text-white">{casinoVerificationData.topManager}</span>
                               </div>
                             )}
                             {casinoVerificationData.immediateManager && (
                               <div>
-                                <span className="text-gray-500 dark:text-gray-400">Manager:</span>
-                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-200">{casinoVerificationData.immediateManager}</span>
+                                <span className="text-gray-400">Manager:</span>
+                                <span className="ml-2 font-medium text-white">{casinoVerificationData.immediateManager}</span>
                               </div>
                             )}
                             {casinoVerificationData.clientId && (
                               <div>
-                                <span className="text-gray-500 dark:text-gray-400">Client ID:</span>
-                                <span className="ml-2 font-medium text-gray-900 dark:text-gray-200">{casinoVerificationData.clientId}</span>
+                                <span className="text-gray-400">Client ID:</span>
+                                <span className="ml-2 font-medium text-white">{casinoVerificationData.clientId}</span>
                               </div>
                             )}
                           </div>
@@ -653,13 +653,13 @@ export default function AuthPage() {
                     </p>
                   )}
                   
-                  <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200/30 dark:border-gray-700/30">
+                  <div className="w-full mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-700">
                     <Button
                       onClick={goBackToVerification}
                       variant="outline"
-                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 border-gray-300/50 dark:border-gray-700/50 backdrop-blur-sm hover:bg-white/80 dark:hover:bg-gray-700/30 transition-all duration-300 hover:shadow-md"
+                      className="w-full h-9 sm:h-10 text-xs sm:text-sm text-gray-400 bg-dark-darker border border-gray-700 hover:border-lime-500/30 hover:text-lime-400 transition-all duration-200"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 opacity-70" />
+                      <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 text-gray-500" />
                       Verify Different Username
                     </Button>
                   </div>
