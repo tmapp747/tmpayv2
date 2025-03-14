@@ -30,8 +30,8 @@ class DirectPayApi {
     try {
       console.log('Getting CSRF token from DirectPay...');
       
-      // Construct the CSRF token endpoint URL
-      const csrfEndpoint = `${this.baseUrl}/auth/csrf`;
+      // Use the exact endpoint from the curl example
+      const csrfEndpoint = `${this.baseUrl}/csrf_token`;
       console.log('CSRF token endpoint:', csrfEndpoint);
       
       const response = await axios.get(csrfEndpoint, {
@@ -99,8 +99,8 @@ class DirectPayApi {
           // First get CSRF token
           const csrfToken = await this.getCsrfToken();
           
-          // Then login with username and password
-          const loginEndpoint = `${this.baseUrl}/auth/login`;
+          // Then login with username and password using the exact endpoint from the curl example
+          const loginEndpoint = `${this.baseUrl}/create/login`;
           console.log('Login endpoint:', loginEndpoint);
           
           const response = await axios.post(loginEndpoint, {
@@ -180,14 +180,14 @@ class DirectPayApi {
         redirectUrl
       });
 
-      const gcashEndpoint = `${this.baseUrl}/payments/gcash`;
+      // Use the exact endpoint from the curl example
+      const gcashEndpoint = `${this.baseUrl}/gcash_cashin`;
       console.log('GCash payment endpoint:', gcashEndpoint);
       
       const response = await axios.post(gcashEndpoint, {
         amount: parseFloat(amount.toFixed(2)),
-        webhook_url: webhookUrl,
-        redirect_url: redirectUrl,
-        description: "Casino deposit"
+        webhook: webhookUrl,
+        redirectUrl: redirectUrl
       }, {
         httpsAgent,
         headers: {
@@ -261,7 +261,7 @@ class DirectPayApi {
     try {
       const token = await this.authenticate();
 
-      const statusEndpoint = `${this.baseUrl}/payments/status/${reference}`;
+      const statusEndpoint = `${this.baseUrl}/payment/status/${reference}`;
       console.log('Payment status endpoint:', statusEndpoint);
       
       const response = await axios.get(statusEndpoint, {
