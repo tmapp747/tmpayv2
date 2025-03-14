@@ -2,105 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global yellow text override for all elements */
+/* Set default text color to white */
 * {
-  color: #FFFF00 !important;
+  color: #FFFFFF !important;
 }
 
-/* Global background color for body */
+/* Make sure body is completely black */
 body {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
 /* Make all backgrounds black */
 div, section, header, footer, aside, main, nav, article {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
-/* Form elements with yellow text and black backgrounds */
+/* Form elements with black backgrounds and white text */
 input, textarea, select, option, button {
-  color: #FFFF00 !important;
-  background-color: black !important;
-  border-color: white !important;
+  color: #FFFFFF !important;
+  background-color: #000000 !important;
+  border-color: #333333 !important;
 }
 
-/* All typography elements */
+/* Set default typography to white */
 h1, h2, h3, h4, h5, h6, p, span, a, label, li {
-  color: #FFFF00 !important;
+  color: #FFFFFF !important;
 }
 
 /* Tables */
 table, th, td {
-  color: #FFFF00 !important;
-  border-color: white !important;
+  color: #FFFFFF !important;
+  border-color: #333333 !important;
 }
 
-/* Override any color classes */
-[class*="text-"], [class*="text-"] * {
+/* Use yellow only for highlights and important elements */
+.highlight, .important, .accent, .card-title, 
+.amount, .price, .value, .balance, .total {
   color: #FFFF00 !important;
 }
 
-/* Background classes */
+/* Override all background classes to be black */
 [class*="bg-"] {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
-/* All SVG elements */
+/* SVG elements should be white by default */
 svg, svg *, path, rect, circle {
-  fill: #FFFF00 !important;
-  stroke: #FFFF00 !important;
+  fill: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
-/* Border classes */
+/* Icon SVGs should use more subtle colors */
+.icon svg, .icon svg *, button svg, a svg {
+  fill: #CCCCCC !important;
+  stroke: #CCCCCC !important;
+}
+
+/* Dark borders instead of white */
 [class*="border"] {
-  border-color: white !important;
+  border-color: #333333 !important;
 }
 
 @layer components {
   .card {
-    @apply bg-black border border-white;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    @apply bg-black border border-gray-800;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 
   .panel {
-    @apply bg-black rounded-xl border border-white p-4;
+    @apply bg-black rounded-xl border border-gray-800 p-4;
   }
 
   .input {
-    @apply bg-black border-white;
+    @apply bg-black border-gray-800;
   }
 
   .alert {
-    @apply border border-white;
+    @apply border border-gray-800;
   }
 
   .auth-card {
-    @apply bg-black border border-white;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    @apply bg-black border border-gray-800;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 
   .card-info {
-    @apply bg-black border border-white;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    @apply bg-black border border-gray-800;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
   .casino-button {
-    @apply bg-black rounded-lg relative overflow-hidden border border-white;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    @apply bg-black rounded-lg relative overflow-hidden border border-gray-800;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .casino-button:hover {
-    background-color: #333 !important;
+    background-color: #111111 !important;
+    color: #FFFF00 !important;
   }
 
   .casino-button:active {
     transform: translateY(1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   }
 
   .casino-spinner {
-    @apply inline-block rounded-full border-2 border-yellow-300 border-t-transparent;
+    @apply inline-block rounded-full border-2 border-gray-500 border-t-transparent;
     animation: casino-spin 0.8s linear infinite;
   }
 
@@ -115,11 +123,11 @@ svg, svg *, path, rect, circle {
 button:hover,
 a:hover,
 [role="button"]:hover {
-  background-color: #333 !important;
+  background-color: #111111 !important;
   color: #FFFF00 !important;
 }
 
-/* Shadcn UI specific components */
+/* Shadcn UI specific components - pure black backgrounds */
 .dialog,
 .popover,
 .dropdown,
@@ -131,13 +139,13 @@ a:hover,
 .toast,
 .carousel,
 .tabs {
-  background-color: black !important;
-  border: 1px solid white !important;
+  background-color: #000000 !important;
+  border: 1px solid #333333 !important;
 }
 
 /* Fix for specific Shadcn components */
 [data-state="open"] {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
 .dropdown-content,
@@ -145,15 +153,20 @@ a:hover,
 .command-input,
 .accordion-content,
 .dialog-content {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
-/* Ensure no text is invisible */
+/* Yellow highlights for special UI elements */
 .text-muted-foreground,
 .text-primary-foreground,
 .text-secondary-foreground,
 .text-popover-foreground,
 .text-card-foreground {
+  color: #FFFFFF !important;
+}
+
+/* Headings can use yellow */
+h1, h2 {
   color: #FFFF00 !important;
 }
 
@@ -164,12 +177,17 @@ a:hover,
 .bg-card,
 .bg-primary,
 .bg-secondary {
-  background-color: black !important;
+  background-color: #000000 !important;
 }
 
-/* Fix for inputs in forms */
+/* Form inputs */
 .form-control, .form-input, .form-select, .form-file, .form-checkbox, .form-radio {
-  background-color: black !important;
-  color: #FFFF00 !important;
-  border-color: white !important;
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-color: #333333 !important;
+}
+
+/* Remove all white background traces */
+.bg-white, .bg-gray-100, .bg-gray-200, .bg-gray-300, .bg-gray-400 {
+  background-color: #000000 !important;
 }

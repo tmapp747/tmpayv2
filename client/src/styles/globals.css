@@ -4,42 +4,42 @@
 
 @layer base {
   :root {
-    /* Set background to black and foreground to yellow */
+    /* Set background to pure black and foreground to white */
     --background: 0 0% 0%;
-    --foreground: 60 100% 50%;
+    --foreground: 0 0% 100%;
 
     /* Card styling */
     --card: 0 0% 0%;
-    --card-foreground: 60 100% 50%;
+    --card-foreground: 0 0% 100%;
 
     /* Popover styling */
     --popover: 0 0% 0%;
-    --popover-foreground: 60 100% 50%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Primary styling */
-    --primary: 0 0% 0%;
-    --primary-foreground: 60 100% 50%;
+    /* Primary styling - yellow for special elements */
+    --primary: 60 100% 50%;
+    --primary-foreground: 0 0% 0%;
 
     /* Secondary styling */
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 60 100% 50%;
+    --secondary: 0 0% 5%;
+    --secondary-foreground: 0 0% 100%;
 
     /* Muted styling */
-    --muted: 0 0% 10%;
-    --muted-foreground: 60 100% 50%;
+    --muted: 0 0% 5%;
+    --muted-foreground: 0 0% 80%;
 
     /* Accent styling */
-    --accent: 0 0% 10%;
-    --accent-foreground: 60 100% 50%;
+    --accent: 0 0% 5%;
+    --accent-foreground: 0 0% 100%;
 
     /* Destructive styling */
-    --destructive: 0 0% 0%;
-    --destructive-foreground: 60 100% 50%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Border, input, and ring styling */
-    --border: 0 0% 100%;
+    --border: 0 0% 20%;
     --input: 0 0% 0%;
-    --ring: 60 100% 50%;
+    --ring: 0 0% 20%;
 
     /* Border radius */
     --radius: 0.5rem;
@@ -55,16 +55,31 @@
   }
 }
 
-/* Additional theme overrides */
+/* Subtle styling for different UI elements */
 @layer base {
-  /* Ensure all text is bright yellow */
-  h1, h2, h3, h4, h5, h6, p, span, a, label, li {
+  /* Main headings use yellow for emphasis */
+  h1, h2 {
     color: hsl(60, 100%, 50%) !important;
   }
   
-  /* Override SVG colors */
+  /* Secondary headings use white */
+  h3, h4, h5, h6 {
+    color: hsl(0, 0%, 100%) !important;
+  }
+  
+  /* Default text is white */
+  p, span, a, label, li {
+    color: hsl(0, 0%, 100%) !important;
+  }
+  
+  /* SVG icons in white */
   svg, path, rect, circle {
-    fill: hsl(60, 100%, 50%) !important;
-    stroke: hsl(60, 100%, 50%) !important;
+    fill: hsl(0, 0%, 100%) !important;
+    stroke: hsl(0, 0%, 100%) !important;
+  }
+  
+  /* Pure black background */
+  body, div, section, article, aside, nav, header, footer, main {
+    background-color: hsl(0, 0%, 0%) !important;
   }
 }
