@@ -45,15 +45,46 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     console.log(`- Webhook: ${webhook}`);
     console.log(`- Redirect URL: ${redirectUrl}`);
     
-    // Call the DirectPay API to generate a GCash QR code with iframe
-    const result = await directPayApi.generateGCashQR(amount, webhook, redirectUrl);
+    // Maximum retries for API call
+    const maxRetries = 3;
+    let result = null;
+    let error = null;
+    
+    // Try up to maxRetries times with exponential backoff
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Call the DirectPay API to generate a GCash QR code with iframe
+        result = await directPayApi.generateGCashQR(amount, webhook, redirectUrl);
+        
+        // If successful, break out of retry loop
+        if (result && (result.qrCodeData || result.payUrl)) {
+          console.log(`DirectPay API call successful on attempt ${attempt}`);
+          break;
+        }
+      } catch (e) {
+        error = e;
+        console.error(`DirectPay API call failed on attempt ${attempt}:`, e);
+        
+        // If this is not the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000; // Exponential backoff: 2s, 4s, 8s
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    // If all attempts failed, throw the last error
+    if (!result && error) {
+      throw error;
+    }
+    
+    // If we still don't have a result, throw a generic error
+    if (!result) {
+      throw new Error('No valid response received from DirectPay API after multiple attempts');
+    }
     
     console.log('DirectPay API Response:', JSON.stringify(result, null, 2));
-    
-    // Check the result for required fields
-    if (!result) {
-      throw new Error('No response received from DirectPay API');
-    }
     
     // The result contains the payment data (could be iframe HTML or QR code URL)
     const qrCodeData = result.qrCodeData;
@@ -419,44 +450,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Logout endpoint
-  app.post("/api/auth/logout", authMiddleware, async (req: Request, res: Response) => {
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
     try {
-      // Get the authenticated user
-      const user = (req as any).user;
+      // Try to get the authenticated user, but don't require it
+      // This allows users to logout even if their token is invalid
+      const authHeader = req.headers.authorization;
+      let user = null;
       
-      // Clear the user's access token by setting it to null
-      await storage.updateUserAccessToken(user.id, null);
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+          user = await storage.getUserByAccessToken(token);
+        } catch (err) {
+          console.log("Could not find user by token during logout, continuing anyway");
+        }
+      }
+      
+      // If we found the user, clear their access token
+      if (user) {
+        try {
+          await storage.updateUserAccessToken(user.id, null);
+          console.log(`Cleared access token for user ID: ${user.id}`);
+        } catch (err) {
+          console.error("Error clearing user access token:", err);
+          // Continue with logout even if this fails
+        }
+      }
       
       // Clear session if it exists (for passport/session auth)
       if (req.logout) {
-        req.logout((err) => {
-          if (err) {
-            console.error("Error during session logout:", err);
-          }
-        });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            req.logout((err) => {
+              if (err) {
+                console.error("Error during session logout:", err);
+                // Continue anyway
+              }
+              resolve();
+            });
+          });
+        } catch (err) {
+          console.error("Error during req.logout:", err);
+          // Continue with logout even if this fails
+        }
       }
       
       // Clear any session cookies
       if (req.session) {
-        req.session.destroy((err) => {
-          if (err) {
-            console.error("Error destroying session:", err);
-          }
-        });
+        try {
+          await new Promise<void>((resolve, reject) => {
+            req.session!.destroy((err) => {
+              if (err) {
+                console.error("Error destroying session:", err);
+                // Continue anyway
+              }
+              resolve();
+            });
+          });
+        } catch (err) {
+          console.error("Error destroying session:", err);
+          // Continue with logout even if this fails
+        }
       }
       
       // Send response with clear-cookie header for any auth cookies
-      res.clearCookie('connect.sid', { path: '/' });
+      try {
+        res.clearCookie('connect.sid', { path: '/' });
+      } catch (err) {
+        console.error("Error clearing cookie:", err);
+        // Continue with logout even if this fails
+      }
       
-      return res.json({
+      return res.status(200).json({
         success: true,
         message: "Logout successful"
       });
     } catch (error) {
       console.error("Logout error:", error);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Server error during logout" 
+      // Even if there's an error, we want to clear client-side auth
+      return res.status(200).json({ 
+        success: true, 
+        message: "Logout processed" 
       });
     }
   });

@@ -9,10 +9,21 @@ export class DirectPayApi {
   private authTokenExpiry: Date | null = null;
   private csrfToken: string | null = null;
   private sessionId: string | null = null;
+  private authInProgress: boolean = false;
+  private authPromise: Promise<void> | null = null;
   
   constructor() {
-    // Fixed session ID for testing as provided
-    this.sessionId = 'tj8jtvbkv1puebr46h3901f8q8';
+    // Generate a random session ID to avoid conflicts
+    this.sessionId = this.generateSessionId();
+    console.log(`DirectPay API initialized with session ID: ${this.sessionId}`);
+  }
+
+  /**
+   * Generate a random session ID
+   */
+  private generateSessionId(): string {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
   }
 
   /**
@@ -22,12 +33,21 @@ export class DirectPayApi {
   async getCsrfToken(): Promise<string> {
     try {
       console.log(`Fetching CSRF token from ${this.baseUrl}/csrf_token`);
+      
+      // Add timeout to avoid hanging requests
       const response = await axios.get(`${this.baseUrl}/csrf_token`, {
         headers: {
           'Accept': 'application/json',
           'Cookie': `PHPSESSID=${this.sessionId}`
-        }
+        },
+        timeout: 10000 // 10 second timeout
       });
+      
+      // Check response before accessing data
+      if (!response || !response.data) {
+        console.error('Empty response from CSRF token endpoint');
+        throw new Error('Empty response from DirectPay API');
+      }
       
       console.log('CSRF token response:', response.data);
       
@@ -41,9 +61,18 @@ export class DirectPayApi {
       }
       
       return this.csrfToken!;
-    } catch (error) {
-      console.error('Error fetching CSRF token:', error);
-      throw new Error('Failed to fetch CSRF token from DirectPay API');
+    } catch (error: any) {
+      console.error('Error fetching CSRF token:', error.message || error);
+      
+      // Try with a new session ID if this one fails
+      if (error.message && (error.message.includes('timeout') || error.message.includes('network'))) {
+        console.log('CSRF token request timed out, trying with new session ID');
+        this.sessionId = this.generateSessionId();
+        console.log(`New session ID: ${this.sessionId}`);
+        return this.getCsrfToken();
+      }
+      
+      throw new Error(`Failed to fetch CSRF token: ${error.message || 'Unknown error'}`);
     }
   }
 
@@ -71,9 +100,15 @@ export class DirectPayApi {
             'Content-Type': 'application/json',
             'Cookie': `PHPSESSID=${this.sessionId}`,
             'Accept': 'application/json'
-          }
+          },
+          timeout: 15000 // 15 second timeout
         }
       );
+      
+      // Check if we have a valid response
+      if (!response || !response.data) {
+        throw new Error('Empty response from DirectPay login endpoint');
+      }
       
       console.log('Login response:', response.data);
       
@@ -84,7 +119,7 @@ export class DirectPayApi {
         
         // Set token expiry (30 minutes from now)
         this.authTokenExpiry = new Date();
-        this.authTokenExpiry.setMinutes(this.authTokenExpiry.getMinutes() + 30);
+        this.authTokenExpiry.setMinutes(this.authTokenExpiry.getMinutes() + 25); // Set to 25 minutes to refresh earlier
         console.log(`Token expires at ${this.authTokenExpiry.toISOString()}`);
       } else {
         console.error('No auth token in response:', response.data);
@@ -92,9 +127,13 @@ export class DirectPayApi {
       }
       
       return response.data;
-    } catch (error) {
-      console.error('Error logging in to DirectPay API:', error);
-      throw new Error('Failed to login to DirectPay API');
+    } catch (error: any) {
+      console.error('Error logging in to DirectPay API:', error.message || error);
+      
+      // Reset CSRF token if login fails, to force a refresh on next attempt
+      this.csrfToken = null;
+      
+      throw new Error(`Failed to login to DirectPay API: ${error.message || 'Unknown error'}`);
     }
   }
 
@@ -125,26 +164,51 @@ export class DirectPayApi {
             'Content-Type': 'application/json',
             'Cookie': `PHPSESSID=${this.sessionId}`,
             'Accept': 'application/json'
-          }
+          },
+          timeout: 15000 // 15 second timeout
         }
       );
       
-      console.log('GCash payment response:', response.data);
-      
-      // Check if we got a valid response
-      if (!response.data || !response.data.payUrl) {
-        console.error('Invalid GCash payment response:', response.data);
-        throw new Error('Invalid response from DirectPay API');
+      // Check for empty response
+      if (!response || !response.data) {
+        throw new Error('Empty response from DirectPay GCash endpoint');
       }
       
-      const payUrl = response.data.payUrl;
+      console.log('GCash payment response:', response.data);
+      
+      // Check if the response indicates an authentication error
+      if (response.data.message && (
+          response.data.message.toLowerCase().includes('unauthorized') || 
+          response.data.message.toLowerCase().includes('token')
+        )) {
+        console.log('Authentication token rejected, refreshing...');
+        this.authToken = null;
+        this.authTokenExpiry = null;
+        await this.ensureValidToken();
+        // Retry the request once with the new token
+        return this.generateGCashQR(amount, webhook, redirectUrl);
+      }
+      
+      // Check if we got a valid response
+      if (!response.data.payUrl && !response.data.qrCodeUrl) {
+        console.error('Invalid GCash payment response:', response.data);
+        
+        // If there's a specific error message, return it
+        if (response.data.message) {
+          throw new Error(`DirectPay API error: ${response.data.message}`);
+        }
+        
+        throw new Error('No payment URL or QR code URL returned from DirectPay API');
+      }
+      
+      const payUrl = response.data.payUrl || '';
       const reference = response.data.reference || '';
       
       // Create iframe HTML if we have a pay URL
       let paymentData = '';
       if (payUrl) {
         // Create an iframe to display the payment URL
-        paymentData = `<iframe src="${payUrl}" frameborder="0" style="width:100%; height:100%;"></iframe>`;
+        paymentData = `<iframe src="${payUrl}" frameborder="0" style="width:100%; height:600px;"></iframe>`;
       } else if (response.data.qrCodeUrl) {
         // Use QR code URL as fallback
         paymentData = response.data.qrCodeUrl;
@@ -157,9 +221,20 @@ export class DirectPayApi {
         reference: reference,
         payUrl
       };
-    } catch (error) {
-      console.error('Error generating GCash payment:', error);
-      throw new Error('Failed to generate GCash payment from DirectPay API');
+    } catch (error: any) {
+      console.error('Error generating GCash payment:', error.message || error);
+      
+      // Check if this was an authentication error
+      if (error.response && error.response.status === 401) {
+        console.log('Authentication token expired during request, refreshing...');
+        this.authToken = null;
+        this.authTokenExpiry = null;
+        await this.ensureValidToken();
+        // Retry the request once with the new token
+        return this.generateGCashQR(amount, webhook, redirectUrl);
+      }
+      
+      throw new Error(`Failed to generate GCash payment: ${error.message || 'Unknown error'}`);
     }
   }
   
@@ -187,11 +262,33 @@ export class DirectPayApi {
             'Content-Type': 'application/json',
             'Cookie': `PHPSESSID=${this.sessionId}`,
             'Accept': 'application/json'
-          }
+          },
+          timeout: 10000 // 10 second timeout
         }
       );
       
+      // Check for empty response
+      if (!response || !response.data) {
+        return {
+          status: 'pending',
+          message: 'Empty response from DirectPay API'
+        };
+      }
+      
       console.log('Payment status response:', response.data);
+      
+      // Check if the response indicates an authentication error
+      if (response.data.message && (
+          response.data.message.toLowerCase().includes('unauthorized') || 
+          response.data.message.toLowerCase().includes('token')
+        )) {
+        console.log('Authentication token rejected, refreshing...');
+        this.authToken = null;
+        this.authTokenExpiry = null;
+        await this.ensureValidToken();
+        // Retry the request once with the new token
+        return this.checkPaymentStatus(reference);
+      }
       
       // Map DirectPay statuses to our internal statuses
       const directPayStatus = response.data.status?.toLowerCase();
@@ -210,19 +307,29 @@ export class DirectPayApi {
         transactionId: response.data.transactionId,
         message: response.data.message
       };
-    } catch (error) {
-      console.error('Error checking payment status:', error);
+    } catch (error: any) {
+      console.error('Error checking payment status:', error.message || error);
+      
+      // Check if this was an authentication error
+      if (error.response && error.response.status === 401) {
+        console.log('Authentication token expired during status check, refreshing...');
+        this.authToken = null;
+        this.authTokenExpiry = null;
+        await this.ensureValidToken();
+        // Retry the request once with the new token
+        return this.checkPaymentStatus(reference);
+      }
       
       // If we can't connect to DirectPay, we'll assume the payment is still pending
       return {
         status: 'pending',
-        message: 'Unable to check payment status with DirectPay API'
+        message: `Error checking payment status: ${error.message || 'Unknown error'}`
       };
     }
   }
 
   /**
-   * Ensure we have a valid auth token
+   * Ensure we have a valid auth token, with mutex to prevent multiple simultaneous auth attempts
    * @private
    */
   private async ensureValidToken(): Promise<void> {
@@ -234,26 +341,47 @@ export class DirectPayApi {
       ((this.authTokenExpiry.getTime() - now.getTime()) < 60000); // 1 minute buffer
     
     if (isExpired || isAboutToExpire) {
-      // Use the credentials provided
-      const username = process.env.DIRECTPAY_USERNAME || 'directpayuser';
-      const password = process.env.DIRECTPAY_PASSWORD || 'DjsSGXqjFrqqfNqkh!@1';
-      
-      // Only log if this is a new authentication, not a refresh
-      if (!this.authToken) {
-        console.log(`Authenticating with DirectPay as ${username}...`);
-      } else {
-        console.log(`Refreshing DirectPay authentication token (expires in ${
-          isAboutToExpire ? 'less than 1 minute' : 'expired'
-        })...`);
+      // If authentication is already in progress, wait for it to complete
+      if (this.authInProgress && this.authPromise) {
+        console.log('Authentication already in progress, waiting...');
+        await this.authPromise;
+        return;
       }
       
-      try {
-        await this.login(username, password);
-        console.log(`DirectPay authentication successful, token valid until ${this.authTokenExpiry?.toISOString()}`);
-      } catch (error) {
-        console.error('Failed to authenticate with DirectPay:', error);
-        throw new Error('DirectPay authentication failed. Please check your credentials.');
-      }
+      // Start authentication process
+      this.authInProgress = true;
+      this.authPromise = (async () => {
+        try {
+          // Use the credentials provided
+          const username = process.env.DIRECTPAY_USERNAME || 'directpayuser';
+          const password = process.env.DIRECTPAY_PASSWORD || 'DjsSGXqjFrqqfNqkh!@1';
+          
+          // Only log if this is a new authentication, not a refresh
+          if (!this.authToken) {
+            console.log(`Authenticating with DirectPay as ${username}...`);
+          } else {
+            console.log(`Refreshing DirectPay authentication token (expires in ${
+              isAboutToExpire ? 'less than 1 minute' : 'expired'
+            })...`);
+          }
+          
+          await this.login(username, password);
+          console.log(`DirectPay authentication successful, token valid until ${this.authTokenExpiry?.toISOString()}`);
+        } catch (error: any) {
+          console.error('Failed to authenticate with DirectPay:', error.message || error);
+          
+          // Reset tokens on authentication failure
+          this.authToken = null;
+          this.authTokenExpiry = null;
+          this.csrfToken = null;
+          
+          throw new Error(`DirectPay authentication failed: ${error.message || 'Unknown error'}`);
+        } finally {
+          this.authInProgress = false;
+        }
+      })();
+      
+      await this.authPromise;
     }
   }
 }
