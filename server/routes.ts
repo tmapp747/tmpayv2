@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { comparePasswords } from "./auth";
 import { 
   generateQrCodeSchema, 
   insertTransactionSchema, 
@@ -364,9 +365,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find the user by username
       const user = await storage.getUserByUsername(username);
       
-      // Since we're storing passwords in plain text for development, we'll do a direct comparison
-      // In production, this would use a secure password hashing and comparison method
-      if (!user || user.password !== password) {
+      // Check if user exists
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid username or password" 
+        });
+      }
+      
+      // Check if the password matches using the secure comparison function
+      // This supports both hashed passwords and plain text (for development)
+      const passwordValid = user.password.includes('.') 
+        ? await comparePasswords(password, user.password)
+        : user.password === password;
+        
+      if (!passwordValid) {
         return res.status(401).json({ 
           success: false, 
           message: "Invalid username or password" 
