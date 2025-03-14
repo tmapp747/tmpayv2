@@ -63,7 +63,7 @@ export interface IStorage {
   getTransaction(id: number): Promise<Transaction | undefined>;
   getTransactionsByUserId(userId: number): Promise<Transaction[]>;
   createTransaction(transaction: InsertTransaction): Promise<Transaction>;
-  updateTransactionStatus(id: number, status: string, reference?: string): Promise<Transaction>;
+  updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction>;
   // Casino transaction operations
   getTransactionByUniqueId(uniqueId: string): Promise<Transaction | undefined>;
   getTransactionByCasinoReference(casinoReference: string): Promise<Transaction | undefined>;
@@ -579,7 +579,7 @@ export class MemStorage implements IStorage {
     return transaction;
   }
 
-  async updateTransactionStatus(id: number, status: string, reference?: string): Promise<Transaction> {
+  async updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction> {
     const transaction = await this.getTransaction(id);
     if (!transaction) throw new Error(`Transaction with ID ${id} not found`);
     
@@ -591,6 +591,15 @@ export class MemStorage implements IStorage {
     
     if (reference) {
       updatedTransaction.paymentReference = reference;
+    }
+    
+    // Add any additional metadata to the transaction
+    if (metadata && typeof metadata === 'object') {
+      // Create or update the metadata field
+      updatedTransaction.metadata = {
+        ...(updatedTransaction.metadata || {}),
+        ...metadata
+      };
     }
     
     this.transactions.set(id, updatedTransaction);
