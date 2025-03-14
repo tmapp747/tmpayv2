@@ -8,7 +8,6 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { API_ENDPOINTS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
-import { CasinoElements3D } from "@/components/CasinoElements3D";
 
 // UI components
 import { Button } from "@/components/ui/button";

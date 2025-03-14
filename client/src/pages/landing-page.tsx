@@ -1,50 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield, Wallet, TrendingUp, ArrowRight, Dices, CreditCard, DollarSign } from "lucide-react";
+import { Shield, Wallet, TrendingUp, ArrowRight, CreditCard, DollarSign, Dice6 } from "lucide-react";
 import casinoLogo from "../assets/Logo teammarc.png";
-import casinoBg from "../assets/casino-background.svg";
-import { CasinoElements3D } from "@/components/CasinoElements3D";
 
 export default function LandingPage() {
-  const [showFloatingElements, setShowFloatingElements] = useState(false);
-  
-  // Delay the floating elements to ensure proper loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowFloatingElements(true);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
   return (
-    <div className="min-h-screen bg-dark-DEFAULT relative overflow-hidden">
-      {/* Dark background with gradient overlay */}
-      <div className="absolute inset-0 z-0">
-        {/* Dark solid background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-dark-DEFAULT via-dark-navy to-black"></div>
-      </div>
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Simple dark gradient background */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-black to-dark-DEFAULT"></div>
       
-      {/* Header - fully responsive with mobile adjustments */}
-      <header className="relative w-full h-14 sm:h-16 bg-dark-DEFAULT border-b border-gray-800 shadow-sm flex items-center px-3 sm:px-4 md:px-8 justify-between">
-        {/* Dice confined to header area only */}
-        <div className="absolute inset-0 overflow-hidden">
-          {showFloatingElements && <CasinoElements3D />}
-        </div>
-        
-        <div className="flex items-center space-x-2 z-10">
+      {/* Header - clean and minimal */}
+      <header className="relative w-full h-14 sm:h-16 bg-black border-b border-gray-800 shadow-sm flex items-center px-4 justify-between">
+        <div className="flex items-center space-x-2">
           <img src={casinoLogo} alt="747 Casino Logo" className="w-7 h-7 sm:w-8 sm:h-8" />
           <span className="font-medium text-base sm:text-lg text-lime-400">747 Casino E-Wallet</span>
         </div>
-        <div className="z-10 flex items-center space-x-2">
+        <div className="flex items-center space-x-2">
           <Link href="/admin/auth">
-            <Button size="sm" variant="ghost" className="text-xs sm:text-sm text-gray-300 hover:bg-dark-card hover:text-lime-400">
+            <Button size="sm" variant="ghost" className="text-xs sm:text-sm text-gray-300 hover:text-lime-400">
               Admin
             </Button>
           </Link>
           <Link href="/auth">
-            <Button size="sm" variant="outline" className="text-xs sm:text-sm bg-dark-darker text-lime-400 border-lime-500/30 hover:bg-lime-500 hover:text-black shadow-sm hover:shadow-md transition-all duration-300">
+            <Button size="sm" variant="outline" className="text-xs sm:text-sm bg-dark-darker text-lime-400 border-lime-500/30 hover:bg-lime-500 hover:text-black">
               Sign In
             </Button>
           </Link>
@@ -111,7 +90,7 @@ export default function LandingPage() {
                 Instant deposits and quick withdrawals to and from your casino account
               </p>
               <div className="floating dice hidden md:block absolute -right-5 -bottom-5 w-10 h-10 opacity-50">
-                <Dices className="h-8 w-8 text-lime-400" />
+                <Dice6 className="h-8 w-8 text-lime-400" />
               </div>
             </div>
             
