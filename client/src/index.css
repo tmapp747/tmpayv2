@@ -6,48 +6,92 @@
    ROOT OVERRIDES
    -------------------- */
 
-/* Enforce black backgrounds and white text at the root level - with highest priority */
-html, body {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-}
-
-/* Force dark mode via color-scheme */
+/* Define main colors as CSS variables */
 :root {
+  --color-lime: #AAFF00;
+  --color-bg-dark: #111111;
+  --color-bg-darker: #0A0A0A;
+  --color-bg-card: #1A1A1A;
+  --color-text: #FFFFFF;
+  --color-text-muted: #AAAAAA;
+  --color-border: #333333;
+  --color-success: #AAFF00;
+  --color-warning: #FFB800;
+  --color-danger: #FF4545;
+  
   color-scheme: dark !important;
 }
 
-/* Make all structural elements black */
+/* Base styling */
+html, body {
+  background-color: var(--color-bg-dark) !important;
+  color: var(--color-text) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Structural elements */
 div, section, header, footer, aside, main, nav, article, 
 #root, #__next, [id^="root-"], [id^="app-"] {
-  background-color: #000000 !important;
+  background-color: transparent;
 }
 
-/* Base text elements in white */
-p, span, a, label, li, td, th, input, textarea, select, 
+/* Base text elements */
+p, span, label, li, td, th, input, textarea, select, 
 button, option, fieldset, legend, code, pre, blockquote, cite {
-  color: #FFFFFF !important;
+  color: var(--color-text);
 }
 
-/* Headings: h1-h2 in yellow, h3-h6 in white */
+/* Links with lime accent */
+a {
+  color: var(--color-lime) !important;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Headings: h1-h2 in lime, h3-h6 in white */
 h1, h2 {
-  color: #FFFF00 !important;
+  color: var(--color-lime) !important;
+  font-weight: 700;
 }
 
 h3, h4, h5, h6 {
-  color: #FFFFFF !important;
+  color: var(--color-text) !important;
+  font-weight: 600;
 }
 
 /* -------------------- 
-   BACKGROUND FIXES
+   CARD COMPONENTS
    -------------------- */
 
-/* Remove all light backgrounds with higher specificity */
-[class^="bg-"], [class*=" bg-"],
-.bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-300, .bg-gray-400,
-section, article, aside, .panel, .card, .container, .wrapper,
-.section, .module, .block, .content, .main, .page {
-  background-color: #000000 !important;
+.card, .shadcn-card {
+  background-color: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden;
+}
+
+/* Card gradient effect for highlighted cards */
+.card-gradient {
+  position: relative;
+}
+
+.card-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  padding: 1px; 
+  background: linear-gradient(to bottom right, var(--color-lime), transparent);
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* Target background utilities with higher specificity */
