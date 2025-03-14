@@ -20,8 +20,12 @@ const QRDeposit = () => {
   const { toast } = useToast();
 
   // Handle displaying amounts in the preset buttons
-  const formatDisplayAmount = (value: number) => {
+  const formatDisplayAmount = (value: number | null) => {
     // Safely handle the formatting
+    if (value === null || value === undefined) {
+      return "0";
+    }
+    
     try {
       return value.toLocaleString(undefined, { minimumFractionDigits: 0 });
     } catch (error) {

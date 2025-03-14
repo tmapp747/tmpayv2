@@ -4,7 +4,8 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
+import { getQueryFn,  queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api-client"; // Corrected import
 import { useToast } from "@/hooks/use-toast";
 
 interface User {
