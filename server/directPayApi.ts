@@ -12,10 +12,46 @@ class DirectPayApi {
   private baseUrl: string;
   private token: string | null = null;
   private tokenExpiry: Date | null = null;
+  private csrfToken: string | null = null;
+  private cookies: string[] = [];
+  private username: string;
+  private password: string;
 
   constructor() {
     this.apiKey = process.env.DIRECTPAY_API_KEY || 'dev_test_key';
     this.baseUrl = process.env.DIRECTPAY_API_URL || 'https://api.directpay.ph/api/v1';
+    this.username = process.env.DIRECTPAY_USERNAME || 'colorway';
+    this.password = process.env.DIRECTPAY_PASSWORD || 'cassinoroyale@ngInaM0!2@';
+  }
+
+  /**
+   * Get CSRF token from DirectPay
+   */
+  private async getCsrfToken(): Promise<string> {
+    try {
+      console.log('Getting CSRF token from DirectPay...');
+      
+      const response = await axios.get(`${this.baseUrl}/auth/csrf`, {
+        httpsAgent,
+        withCredentials: true
+      });
+      
+      if (response.headers['set-cookie']) {
+        this.cookies = response.headers['set-cookie'];
+      }
+      
+      if (!response.data.csrfToken) {
+        throw new Error('No CSRF token received from DirectPay API');
+      }
+      
+      this.csrfToken = response.data.csrfToken;
+      console.log('Successfully received CSRF token');
+      
+      return response.data.csrfToken;
+    } catch (error) {
+      console.error('DirectPay CSRF token error:', error);
+      throw new Error('Failed to get CSRF token from DirectPay API');
+    }
   }
 
   /**
@@ -29,28 +65,42 @@ class DirectPayApi {
       }
 
       console.log('Authenticating with DirectPay API...');
-
+      
+      // First get CSRF token
+      const csrfToken = await this.getCsrfToken();
+      
+      // Then login with username and password
       const response = await axios.post(`${this.baseUrl}/auth/login`, {
-        apiKey: this.apiKey
+        username: this.username,
+        password: this.password
       }, {
         httpsAgent,
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+          Cookie: this.cookies.join('; ')
+        },
+        withCredentials: true
       });
+      
+      // Update cookies if present
+      if (response.headers['set-cookie']) {
+        this.cookies = response.headers['set-cookie'];
+      }
 
       if (!response.data.token) {
         throw new Error('No token received from DirectPay API');
       }
 
-      this.token = response.data.token;
+      const token: string = response.data.token;
+      this.token = token;
 
       // Set token expiry to 25 minutes from now (token typically lasts 30 minutes)
       this.tokenExpiry = new Date(Date.now() + 25 * 60 * 1000);
 
       console.log('Successfully authenticated with DirectPay API');
 
-      return this.token;
+      return token;
     } catch (error) {
       console.error('DirectPay authentication error:', error);
       throw new Error('Failed to authenticate with DirectPay API');
@@ -84,8 +134,11 @@ class DirectPayApi {
         httpsAgent,
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken || '',
+          Cookie: this.cookies.join('; ')
+        },
+        withCredentials: true
       });
 
       console.log('GCash QR code response:', response.data);
@@ -120,8 +173,11 @@ class DirectPayApi {
         httpsAgent,
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': this.csrfToken || '',
+          Cookie: this.cookies.join('; ')
+        },
+        withCredentials: true
       });
 
       console.log('Payment status response:', response.data);
