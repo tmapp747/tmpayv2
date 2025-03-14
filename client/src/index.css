@@ -3,16 +3,21 @@
 @tailwind utilities;
 
 @layer base {
-  /* Make all text bright yellow for visibility */
-  p, h1, h2, h3, h4, h5, h6, span, div, label, a, button, th, td {
-    color: #FFFF00 !important;
+  /* Dark backgrounds get white/yellow text */
+  .bg-black *, .bg-gray-900 *, .bg-gray-800 *, .bg-gray-700 * {
+    color: #FFFFFF !important;
   }
   
-  /* Add color to input text */
+  /* Light backgrounds get black text */
+  .bg-white *, .bg-gray-100 *, .bg-gray-200 *, .bg-gray-300 * {
+    color: #000000 !important;
+  }
+  
+  /* Input styling */
   input, textarea, select, option {
-    color: #FFFF00 !important;
-    background-color: black !important;
-    border-color: white !important;
+    color: #FFFFFF !important;
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
   }
   
   /* Override for all text that might be hard to see */
