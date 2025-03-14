@@ -22,12 +22,12 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white dark:bg-black relative overflow-hidden">
       {/* Background image with casino-themed elements */}
       <div className="absolute inset-0 z-0">
-        {/* Clean solid background with subtle gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50 dark:from-black dark:to-gray-900"></div>
+        {/* Clean solid background */}
+        <div className="absolute inset-0 bg-black"></div>
       </div>
       
-      {/* Glassmorphism Header - fully responsive with mobile adjustments */}
-      <header className="relative w-full h-14 sm:h-16 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200/70 dark:border-gray-800/70 shadow-sm flex items-center px-3 sm:px-4 md:px-8 justify-between">
+      {/* Header - fully responsive with mobile adjustments */}
+      <header className="relative w-full h-14 sm:h-16 bg-[#1A1A25] border-b border-gray-800 shadow-sm flex items-center px-3 sm:px-4 md:px-8 justify-between">
         {/* Dice confined to header area only */}
         <div className="absolute inset-0 overflow-hidden">
           {showFloatingElements && <CasinoElements3D />}
@@ -51,19 +51,19 @@ export default function LandingPage() {
         </div>
       </header>
       
-      {/* Hero Section with Glassmorphism */}
-      <section className="py-12 md:py-20 px-4 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-900/10 dark:to-transparent"></div>
+      {/* Hero Section with Dark Gunmetal Background */}
+      <section className="py-12 md:py-20 px-4 relative bg-[#161616]">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#161616] to-[#101010]"></div>
         
         <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="glass-panel inline-block px-8 py-6 mb-6">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 text-gray-900 dark:text-white">
-              <span className="text-blue-600 dark:text-blue-400 relative">
+          <div className="px-8 py-6 mb-6 bg-[#1A1A25] border border-gray-800 rounded-xl shadow-lg">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 text-white">
+              <span className="text-yellow-400 relative">
                 Casino Financial Gateway
-                <span className="absolute -bottom-2 left-0 w-full h-1 bg-blue-500/20 rounded"></span>
+                <span className="absolute -bottom-2 left-0 w-full h-1 bg-yellow-400/20 rounded"></span>
               </span>
             </h1>
-            <p className="text-gray-800 dark:text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium">
+            <p className="text-gray-200 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-medium">
               The secure and efficient payment platform designed exclusively for 747 Casino players and agents
             </p>
           </div>
@@ -128,21 +128,21 @@ export default function LandingPage() {
         </div>
       </section>
       
-      {/* CTA Section with Premium Glass */}
-      <section className="py-12 md:py-20 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-blue-50/50 to-transparent dark:from-blue-950/20 dark:to-transparent"></div>
+      {/* CTA Section with Dark Navy Background */}
+      <section className="py-12 md:py-20 px-4 relative overflow-hidden bg-[#0A0F1C]">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F1C] to-[#0A1018]"></div>
         
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="premium-glass p-8 md:p-12 rounded-2xl mb-8 inline-block">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
+          <div className="p-8 md:p-12 rounded-2xl mb-8 inline-block bg-[#161621] border border-gray-800 shadow-xl">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-yellow-400">
               Ready to manage your casino finances?
             </h2>
-            <p className="text-gray-700 dark:text-gray-300 font-medium mb-8">
+            <p className="text-white font-medium mb-8">
               Join the secure payment platform for 747 Casino
             </p>
             <div className="relative">
               <Link href="/auth">
-                <Button size="lg" className="casino-button text-sm sm:text-base shadow-lg z-10 relative transition-all duration-300">
+                <Button size="lg" className="casino-button text-sm sm:text-base shadow-lg z-10 relative transition-all duration-300 bg-black hover:bg-[#101010] text-yellow-400">
                   <span className="flex items-center">
                     <CreditCard className="mr-2 h-5 w-5" /> 
                     Create Account
@@ -154,14 +154,14 @@ export default function LandingPage() {
         </div>
       </section>
       
-      {/* Glassmorphism Footer */}
-      <footer className="py-8 border-t border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-black/80 backdrop-blur-md">
+      {/* Dark Footer */}
+      <footer className="py-8 border-t border-gray-800 bg-[#121212]">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <div className="flex justify-center items-center mb-4">
             <img src={casinoLogo} alt="747 Casino Logo" className="w-8 h-8" />
-            <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">747 Casino E-Wallet</span>
+            <span className="ml-2 font-medium text-yellow-400">747 Casino E-Wallet</span>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-400">
             &copy; {new Date().getFullYear()} 747 Casino. All rights reserved.
           </p>
         </div>
