@@ -1905,6 +1905,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get real-time balance from casino API (bypassing cache)
+  app.post("/api/casino/balance-realtime", async (req: Request, res: Response) => {
+    try {
+      const { username, clientId } = req.body;
+      
+      if (!username || !clientId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username and client ID are required" 
+        });
+      }
+      
+      try {
+        // Force a fresh request to the casino API
+        const balanceResult = await casino747Api.getUserBalance(clientId, username);
+        
+        // Find user in our database to update their casino balance
+        const localUser = await storage.getUserByCasinoUsername(username);
+        if (localUser) {
+          await storage.updateUserCasinoDetails(localUser.id, {
+            casinoBalance: balanceResult.balance.toString()
+          });
+        }
+        
+        return res.json({
+          success: true,
+          balance: balanceResult.balance,
+          currency: balanceResult.currency,
+          timestamp: new Date().toISOString(),
+          realtime: true
+        });
+      } catch (casinoError) {
+        console.error("Error fetching real-time balance from casino API:", casinoError);
+        return res.status(400).json({ 
+          success: false,
+          message: "Failed to fetch real-time balance from casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Get real-time casino balance error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching real-time casino balance" 
+      });
+    }
+  });
+  
+  // Send message to user or manager
+  app.post("/api/casino/send-message", async (req: Request, res: Response) => {
+    try {
+      const { username, subject, message } = req.body;
+      
+      if (!username || !subject || !message) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username, subject, and message are required" 
+        });
+      }
+      
+      try {
+        // Send message using the casino API
+        const messageResult = await casino747Api.sendMessage(username, subject, message);
+        
+        return res.json({
+          success: true,
+          messageId: messageResult.messageId || `MSG-${Date.now()}`,
+          message: "Message sent successfully"
+        });
+      } catch (casinoError) {
+        console.error("Error sending message via casino API:", casinoError);
+        return res.status(400).json({ 
+          success: false,
+          message: "Failed to send message via casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Send casino message error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while sending casino message" 
+      });
+    }
+  });
+  
+  // Get user hierarchy information
+  app.post("/api/casino/user-hierarchy", async (req: Request, res: Response) => {
+    try {
+      const { username, isAgent } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username is required" 
+        });
+      }
+      
+      try {
+        // Get hierarchy information from casino API
+        const hierarchyResult = await casino747Api.getUserHierarchy(username, isAgent || false);
+        
+        return res.json({
+          success: true,
+          hierarchy: hierarchyResult.hierarchy,
+          user: hierarchyResult.user,
+          message: "Hierarchy fetched successfully"
+        });
+      } catch (casinoError) {
+        console.error("Error fetching hierarchy from casino API:", casinoError);
+        return res.status(400).json({ 
+          success: false,
+          message: "Failed to fetch hierarchy from casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Get casino hierarchy error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching casino hierarchy" 
+      });
+    }
+  });
+  
   // Deposit to casino
   app.post("/api/casino/deposit", authMiddleware, async (req: Request, res: Response) => {
     try {

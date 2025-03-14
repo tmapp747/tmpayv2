@@ -162,6 +162,40 @@ export interface CasinoTransactionsResponse {
   message?: string;
 }
 
+export interface CasinoSendMessageRequest {
+  username: string;
+  subject: string;
+  message: string;
+}
+
+export interface CasinoSendMessageResponse {
+  success: boolean;
+  messageId?: string;
+  message: string;
+}
+
+export interface CasinoGetHierarchyRequest {
+  username: string;
+  isAgent: boolean;
+}
+
+export interface CasinoGetHierarchyResponse {
+  success: boolean;
+  hierarchy?: Array<{
+    id: number;
+    clientId: number;
+    username: string;
+    parentClientId: number | null;
+  }>;
+  user?: {
+    id: number;
+    clientId: number;
+    username: string;
+    parentClientId: number;
+  };
+  message: string;
+}
+
 // Navigation Link type
 export interface NavLink {
   path: string;

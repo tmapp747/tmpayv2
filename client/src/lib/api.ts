@@ -19,7 +19,11 @@ import type {
   CasinoTransferRequest,
   CasinoTransactionResponse,
   CasinoTransactionsRequest,
-  CasinoTransactionsResponse
+  CasinoTransactionsResponse,
+  CasinoSendMessageRequest,
+  CasinoSendMessageResponse,
+  CasinoGetHierarchyRequest,
+  CasinoGetHierarchyResponse
 } from "./types";
 
 // Auth API
@@ -77,6 +81,12 @@ export const casinoApi = {
     const res = await apiRequest("POST", API_ENDPOINTS.CASINO.BALANCE, data);
     return await res.json();
   },
+  
+  // Get real-time user balance from 747 Casino
+  getRealTimeBalance: async (data: CasinoBalanceRequest): Promise<CasinoBalanceResponse> => {
+    const res = await apiRequest("POST", API_ENDPOINTS.CASINO.BALANCE_REALTIME, data);
+    return await res.json();
+  },
 
   // Deposit funds to 747 Casino
   deposit: async (data: CasinoDepositRequest): Promise<CasinoTransactionResponse> => {
@@ -99,6 +109,18 @@ export const casinoApi = {
   // Get transaction history from 747 Casino
   getTransactions: async (username: string): Promise<CasinoTransactionsResponse> => {
     const res = await apiRequest("GET", API_ENDPOINTS.CASINO.TRANSACTIONS(username));
+    return await res.json();
+  },
+  
+  // Send message to a user or their manager
+  sendMessage: async (data: CasinoSendMessageRequest): Promise<CasinoSendMessageResponse> => {
+    const res = await apiRequest("POST", API_ENDPOINTS.CASINO.SEND_MESSAGE, data);
+    return await res.json();
+  },
+  
+  // Get user hierarchy information
+  getUserHierarchy: async (data: CasinoGetHierarchyRequest): Promise<CasinoGetHierarchyResponse> => {
+    const res = await apiRequest("POST", API_ENDPOINTS.CASINO.USER_HIERARCHY, data);
     return await res.json();
   }
 };

@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
     VERIFY_USERNAME: '/api/auth/verify-username',
   },
   USER: {
-    INFO: '/api/user',
+    INFO: '/api/user/info',
   },
   TRANSACTIONS: {
     LIST: '/api/transactions',
@@ -20,10 +20,13 @@ export const API_ENDPOINTS = {
   CASINO: {
     USER_DETAILS: '/api/casino/user-details',
     BALANCE: '/api/casino/balance',
+    BALANCE_REALTIME: '/api/casino/balance-realtime',
     DEPOSIT: '/api/casino/deposit',
     WITHDRAW: '/api/casino/withdraw',
     TRANSFER: '/api/casino/transfer',
     TRANSACTIONS: (username: string) => `/api/casino/transactions/${username}`,
+    SEND_MESSAGE: '/api/casino/send-message',
+    USER_HIERARCHY: '/api/casino/user-hierarchy',
   }
 };
 
