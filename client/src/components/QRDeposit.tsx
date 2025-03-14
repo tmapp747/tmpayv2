@@ -84,6 +84,8 @@ const QRDeposit = () => {
         // Check if there's a payment URL in addition to QR code
         if (data.qrPayment.payUrl) {
           setPayUrl(data.qrPayment.payUrl);
+          // Open payment URL in new window
+          window.open(data.qrPayment.payUrl, '_blank');
         }
         
         setIsModalOpen(true);
