@@ -2,18 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Make all text bright yellow for visibility */
+  p, h1, h2, h3, h4, h5, h6, span, div, label, a, button, th, td {
+    color: #FFFF00 !important;
+  }
+  
+  /* Add color to input text */
+  input, textarea, select, option {
+    color: #FFFF00 !important;
+    background-color: black !important;
+    border-color: white !important;
+  }
+  
+  /* Override for all text that might be hard to see */
+  .text-black, .text-gray-500, .text-gray-600, .text-gray-700, .text-gray-800, .text-gray-900,
+  .text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800, .text-slate-900,
+  .text-zinc-500, .text-zinc-600, .text-zinc-700, .text-zinc-800, .text-zinc-900,
+  .text-stone-500, .text-stone-600, .text-stone-700, .text-stone-800, .text-stone-900 {
+    color: #FFFF00 !important;
+  }
+  
+  /* Force all form elements to have yellow text */
+  .form-input, .form-textarea, .form-select, .form-multiselect,
+  .form-checkbox, .form-radio {
+    color: #FFFF00 !important;
+  }
+  
+  /* Handle Shadcn UI components */
+  [data-shadcn-ui] * {
+    color: #FFFF00 !important;
+  }
+  
+  /* Special card content */
+  .card-content * {
+    color: #FFFF00 !important;
+  }
+}
+
 @layer components {
   .card {
-    @apply bg-black text-white;
+    @apply bg-black;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .panel {
-    @apply bg-black text-white rounded-xl border border-white p-4;
+    @apply bg-black rounded-xl border border-white p-4;
   }
 
   .input {
-    @apply bg-black text-white border-white;
+    @apply bg-black border-white;
   }
 
   .alert {
@@ -21,17 +59,17 @@
   }
 
   .auth-card {
-    @apply bg-black text-white;
+    @apply bg-black;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .card-info {
-    @apply bg-black text-white;
+    @apply bg-black;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   }
 
   .casino-button {
-    @apply bg-black hover:bg-white hover:text-black text-white rounded-lg relative overflow-hidden;
+    @apply bg-black hover:bg-white rounded-lg relative overflow-hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -42,7 +80,7 @@
   }
 
   .casino-spinner {
-    @apply inline-block rounded-full border-2 border-t-transparent;
+    @apply inline-block rounded-full border-2 border-yellow-300 border-t-transparent;
     animation: casino-spin 0.8s linear infinite;
   }
 
@@ -56,5 +94,39 @@
 button:hover,
 a:hover,
 [role="button"]:hover {
-  @apply hover:bg-white hover:text-black;
+  @apply hover:bg-black hover:text-yellow-300;
+}
+
+/* Fix button hover color issues */
+.bg-black button:hover,
+.bg-black a:hover,
+.bg-black [role="button"]:hover,
+button.bg-black:hover,
+a.bg-black:hover {
+  background-color: #333 !important;
+  color: #FFFF00 !important;
+}
+
+/* Target specific Shadcn UI components that might have visibility issues */
+.dialog-content, 
+.popover-content,
+.dropdown-content,
+.menu-content,
+.tooltip-content,
+.select-content,
+.command-dialog,
+.sheet-content {
+  background-color: black !important;
+  border: 1px solid white !important;
+}
+
+.dialog-content *, 
+.popover-content *,
+.dropdown-content *,
+.menu-content *,
+.tooltip-content *,
+.select-content *,
+.command-dialog *,
+.sheet-content * {
+  color: #FFFF00 !important;
 }
