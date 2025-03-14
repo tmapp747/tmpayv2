@@ -237,7 +237,7 @@ export default function AuthPage() {
       </div>
       
       {/* Glassmorphism Header - with back button */}
-      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white/80 dark:bg-black/80 border-b border-white/20 dark:border-white/5 backdrop-blur-md shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-20">
+      <header className="fixed top-0 w-full h-14 sm:h-16 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-between px-3 sm:px-4 md:px-8 z-20">
         {/* Dice confined to header area only */}
         <div className="absolute inset-0 overflow-hidden">
           <CasinoElements3D />
