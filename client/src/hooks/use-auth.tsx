@@ -53,7 +53,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
-  
+
   // Initialize user from localStorage if available
   const initialUserData = (() => {
     try {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     return null;
   })();
-  
+
   const {
     data: userData,
     error,
@@ -91,10 +91,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-      
+
       // Save user data to localStorage for token persistence
       localStorage.setItem('userData', JSON.stringify({ user: data.user }));
-      
+
       toast({
         title: "Login successful",
         description: "Welcome back to 747 Casino E-Wallet!",
@@ -118,10 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-      
+
       // Save user data to localStorage for token persistence
       localStorage.setItem('userData', JSON.stringify({ user: data.user }));
-      
+
       toast({
         title: "Registration successful",
         description: "Your account has been created and you're now logged in!",
@@ -152,27 +152,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => {
       queryClient.setQueryData(["/api/user/info"], { user: null });
-      
+
       // Clear user data from localStorage
       localStorage.removeItem('userData');
-      
+
       // Redirect to login page after logout
       window.location.href = '/auth';
-      
+
       toast({
         title: "Logged out",
         description: "You've been successfully logged out.",
       });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
+      console.error("Logout API error:", error);
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: "Error contacting server, but you've been logged out locally",
         variant: "destructive",
       });
       // Force logout on frontend even if API call fails
       queryClient.setQueryData(["/api/user/info"], { user: null });
       localStorage.removeItem('userData');
+      sessionStorage.removeItem('userData');
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
       window.location.href = '/auth';
     },
   });

@@ -427,6 +427,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Clear the user's access token by setting it to null
       await storage.updateUserAccessToken(user.id, null);
       
+      // Clear session if it exists (for passport/session auth)
+      if (req.logout) {
+        req.logout((err) => {
+          if (err) {
+            console.error("Error during session logout:", err);
+          }
+        });
+      }
+      
+      // Clear any session cookies
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Error destroying session:", err);
+          }
+        });
+      }
+      
+      // Send response with clear-cookie header for any auth cookies
+      res.clearCookie('connect.sid', { path: '/' });
+      
       return res.json({
         success: true,
         message: "Logout successful"
