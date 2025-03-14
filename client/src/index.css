@@ -147,15 +147,15 @@
   }
 }
 
-/* Remove hover effects that might cause text visibility issues */
-.hover\:bg-white, 
-.hover\:bg-white\/50, 
-.hover\:bg-white\/20,
-.hover\:bg-white\/10 {
-  @apply hover:bg-transparent;
+/* Override any problematic hover effects */
+button:hover,
+a:hover,
+[role="button"]:hover {
+  @apply hover:bg-primary hover:text-primary-foreground;
 }
 
-/* Ensure text remains visible during interactions */
-.hover\:text-white {
-  @apply hover:text-foreground;
+.dark button:hover,
+.dark a:hover,
+.dark [role="button"]:hover {
+  @apply hover:bg-primary hover:text-primary-foreground;
 }
