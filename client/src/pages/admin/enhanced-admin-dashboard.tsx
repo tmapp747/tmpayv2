@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Loader2, Database, Shield, RefreshCw, Users } from "lucide-react";
+import { Loader2, Database, Shield, RefreshCw, Users, DollarSign, MessageCircle } from "lucide-react";
 import ManagerPerformanceCard from "@/components/admin/manager-dashboard/ManagerPerformanceCard";
 import ManagerAnalytics from "@/components/admin/manager-dashboard/ManagerAnalytics";
 import UserHierarchyTree from "@/components/admin/manager-dashboard/UserHierarchyTree";
@@ -91,7 +91,7 @@ export default function EnhancedAdminDashboard() {
   }, [toast, setLocation]);
 
   // Function to refresh token for a specific manager
-  const refreshManagerToken = async (manager: string) => {
+  const refreshManagerToken = async (manager: string): Promise<void> => {
     try {
       // In a real implementation, this would call an API endpoint to refresh the token
       toast({
@@ -107,8 +107,6 @@ export default function EnhancedAdminDashboard() {
         title: "Token refreshed",
         description: `${manager}'s token has been refreshed successfully`,
       });
-      
-      return true;
     } catch (error) {
       console.error(`Error refreshing token for ${manager}:`, error);
       toast({

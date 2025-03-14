@@ -16,6 +16,7 @@ import { ProtectedRoute } from "@/lib/protected-route";
 import { ProtectedAdminRoute } from "@/lib/protected-admin-route";
 import AdminAuth from "@/pages/admin/admin-auth";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
+import EnhancedAdminDashboard from "@/pages/admin/enhanced-admin-dashboard";
 import VideoIntro from "@/components/VideoIntro";
 
 function Router() {
@@ -49,6 +50,7 @@ function Router() {
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
       <ProtectedAdminRoute path="/admin/dashboard" component={AdminDashboard} />
+      <ProtectedAdminRoute path="/admin/enhanced-dashboard" component={EnhancedAdminDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

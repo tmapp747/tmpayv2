@@ -59,13 +59,15 @@ export default function TokenManagement({
         return { 
           label: 'Valid', 
           icon: <CheckCircle className="h-4 w-4 mr-1" />,
-          variant: 'success' as const
+          variant: 'default' as const,
+          className: 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
         };
       case 'expiring':
         return { 
           label: 'Expiring Soon', 
           icon: <AlertTriangle className="h-4 w-4 mr-1" />,
-          variant: 'warning' as const
+          variant: 'outline' as const,
+          className: 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20'
         };
       case 'expired':
         return { 
@@ -186,7 +188,7 @@ export default function TokenManagement({
                     <div>
                       <h3 className="font-semibold text-lg">{token.manager}</h3>
                       <div className="flex items-center gap-2">
-                        <Badge variant={variant}>
+                        <Badge variant={variant} className={getStatusInfo(token.status).className}>
                           {icon} {label}
                         </Badge>
                         

@@ -124,17 +124,25 @@ export default function AdminDashboard() {
     <div className="container mx-auto py-6 space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button 
-          variant="outline" 
-          onClick={() => {
-            // Log out admin
-            fetch('/api/admin/logout', { method: 'POST' })
-              .then(() => setLocation('/admin/auth'))
-              .catch(error => console.error('Logout error:', error));
-          }}
-        >
-          Logout
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="default" 
+            onClick={() => setLocation('/admin/enhanced-dashboard')}
+          >
+            Enhanced Dashboard
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              // Log out admin
+              fetch('/api/admin/logout', { method: 'POST' })
+                .then(() => setLocation('/admin/auth'))
+                .catch(error => console.error('Logout error:', error));
+            }}
+          >
+            Logout
+          </Button>
+        </div>
       </div>
 
       {/* Top Manager Filter */}
