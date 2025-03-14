@@ -19,155 +19,54 @@
   --color-warning: #FFB800;
   --color-danger: #FF4545;
   
-  color-scheme: dark !important;
+  color-scheme: dark;
 }
 
 /* Base styling */
 html, body {
-  background-color: var(--color-bg-dark) !important;
-  color: var(--color-text) !important;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Structural elements */
-div, section, header, footer, aside, main, nav, article, 
-#root, #__next, [id^="root-"], [id^="app-"] {
-  background-color: transparent;
-}
-
-/* Base text elements */
-p, span, label, li, td, th, input, textarea, select, 
-button, option, fieldset, legend, code, pre, blockquote, cite {
+  background-color: var(--color-bg-dark);
   color: var(--color-text);
-}
-
-/* Links with lime accent */
-a {
-  color: var(--color-lime) !important;
-  transition: opacity 0.2s ease;
-}
-
-a:hover {
-  opacity: 0.8;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Headings: h1-h2 in lime, h3-h6 in white */
 h1, h2 {
-  color: var(--color-lime) !important;
+  color: var(--color-lime);
   font-weight: 700;
 }
 
 h3, h4, h5, h6 {
-  color: var(--color-text) !important;
+  color: var(--color-text);
   font-weight: 600;
-}
-
-/* -------------------- 
-   CARD COMPONENTS
-   -------------------- */
-
-.card, .shadcn-card {
-  background-color: var(--color-bg-card) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
-  overflow: hidden;
-}
-
-/* Card gradient effect for highlighted cards */
-.card-gradient {
-  position: relative;
-}
-
-.card-gradient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  padding: 1px; 
-  background: linear-gradient(to bottom right, var(--color-lime), transparent);
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* Target background utilities with higher specificity */
-.bg-muted, .bg-accent, .bg-popover, .bg-card, 
-.bg-primary, .bg-secondary, [class*="bg-opacity"] {
-  background-color: #000000 !important;
-}
-
-/* -------------------- 
-   TEXT COLOR FIXES
-   -------------------- */
-
-/* Set all basic text colors to white by default */
-[class*="text-"], [class*="text-"] *:not(h1):not(h2) {
-  color: #FFFFFF !important;
-}
-
-/* Yellow accent elements only for specific UI elements */
-.highlight, .important, .accent, .card-title, 
-.amount, .price, .value, .balance, .total, 
-.heading, .title, .header-title, .logo-text, .brand {
-  color: #FFFF00 !important;
-}
-
-/* -------------------- 
-   BORDER FIXES 
-   -------------------- */
-
-/* Ensure all borders are dark gray, not white */
-[class*="border"], [class*="divide-"], hr, 
-table, th, td, input, select, textarea, button,
-.border, .border-t, .border-r, .border-b, .border-l {
-  border-color: #333333 !important;
-}
-
-/* -------------------- 
-   SVG & ICON FIXES 
-   -------------------- */
-
-/* SVG elements default to white, with fallbacks */
-svg:not([role="button"] *), 
-svg:not(button *), 
-svg:not(a *), 
-path:not([role="button"] *), 
-path:not(button *), 
-path:not(a *), 
-rect, circle, line, polyline, polygon {
-  fill: #FFFFFF !important;
-  stroke: #FFFFFF !important;
-  color: #FFFFFF !important;
-}
-
-/* But let specific SVG icons/controls use white */
-button svg, a svg, .icon svg, .control svg, [role="button"] svg {
-  fill: #FFFFFF !important;
-  stroke: #FFFFFF !important;
 }
 
 /* -------------------- 
    FORM ELEMENTS
    -------------------- */
 
-/* All form controls should be dark with white text */
-input, textarea, select, option, button, .input, .select, 
-.textarea, .button, [type="text"], [type="email"], 
-[type="password"], [type="number"], [type="search"],
-.form-control, .form-input, .form-select, .form-textarea {
-  color: #FFFFFF !important;
-  background-color: #1A1A1A !important;
-  border: 1px solid #333333 !important;
+/* Form labels */
+.form-label, 
+.FormLabel, 
+label[class*="FormLabel"] {
+  color: white;
 }
 
-/* Checkboxes and radio buttons */
-[type="checkbox"], [type="radio"] {
-  border-color: #333333 !important;
-  background-color: #000000 !important;
+/* Input styling */
+.input, input, textarea, select {
+  background-color: #1A1A1A;
+  color: white;
+  border: 1px solid #333333;
+}
+
+/* Input placeholders */
+::placeholder {
+  color: #AAAAAA;
+  opacity: 1;
+}
+
+/* Gray text for better visibility */
+.text-gray-300, .text-gray-400, .text-gray-500 {
+  color: white !important;
 }
 
 /* -------------------- 
@@ -207,8 +106,8 @@ input, textarea, select, option, button, .input, .select,
 
   /* Casino button hover state */
   .casino-button:hover {
-    background-color: #111111 !important;
-    color: #FFFF00 !important;
+    background-color: #111111;
+    color: #FFFF00;
   }
 
   /* Casino button active state */
@@ -229,225 +128,3 @@ input, textarea, select, option, button, .input, .select,
     }
   }
 }
-
-/* -------------------- 
-   INTERACTION STATES
-   -------------------- */
-
-/* Button hover states */
-button:hover, a:hover, [role="button"]:hover,
-.btn:hover, .button:hover, .link:hover {
-  background-color: #111111 !important;
-  color: #FFFF00 !important;
-}
-
-/* Focus states - subtle yellow ring/outline */
-button:focus, a:focus, input:focus, select:focus, textarea:focus,
-[role="button"]:focus, .btn:focus, .link:focus, .input:focus {
-  outline: 1px solid #FFFF00 !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 0, 0.2) !important;
-}
-
-/* -------------------- 
-   SHADCN UI COMPONENTS
-   -------------------- */
-
-/* Shadcn dialog */
-.dialog, .dialog-content, .dialog-overlay, 
-.modal, .modal-content, .modal-overlay {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-}
-
-/* Shadcn dropdown menus */
-.dropdown, .dropdown-content, .dropdown-menu, 
-.popover, .popover-content, .menu, .menu-content {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-  color: #FFFFFF !important;
-}
-
-/* Tooltips and popovers */
-.tooltip, .tooltip-content {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-  color: #FFFFFF !important;
-}
-
-/* Command palette */
-.command, .command-dialog, .command-input, .command-list, .command-item {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-  color: #FFFFFF !important;
-}
-
-/* Sheet, drawer and slide-over components */
-.sheet, .sheet-content, .drawer, .drawer-content, .slide-over {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-}
-
-/* Tab/carousel/accordion components */
-.tabs, .tab, .carousel, .carousel-item, .accordion, .accordion-item {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-}
-
-/* Toast notifications */
-.toast, .toast-content, .alert, .notification {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-  color: #FFFFFF !important;
-}
-
-/* Open state elements */
-[data-state="open"], [aria-expanded="true"] {
-  background-color: #000000 !important;
-}
-
-/* -------------------- 
-   ELEMENT-SPECIFIC FIXES
-   -------------------- */
-
-/* Fix dropdown items */
-.dropdown-item, .select-item, .menu-item, 
-[role="menuitem"], [role="option"] {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-}
-
-/* Fix hover states for dropdown/select items */
-.dropdown-item:hover, .select-item:hover, .menu-item:hover,
-[role="menuitem"]:hover, [role="option"]:hover {
-  background-color: #111111 !important;
-  color: #FFFFFF !important;
-}
-
-/* Fix selected state for dropdown/select items */
-.dropdown-item[data-selected], .select-item[data-selected], 
-.menu-item[aria-selected="true"], [role="option"][aria-selected="true"] {
-  background-color: #111111 !important;
-  color: #FFFF00 !important;
-}
-
-/* Fix for toasts and alerts */
-.toast-title, .alert-title, .notification-title {
-  color: #FFFF00 !important;
-}
-
-/* Fix for checkbox and radio button checked state */
-[type="checkbox"]:checked, [type="radio"]:checked {
-  background-color: #FFFF00 !important;
-  border-color: #FFFF00 !important;
-}
-
-/* Fix for iframes and embedded content */
-iframe, embed, object {
-  background-color: #000000 !important;
-  border-color: #333333 !important;
-}
-
-/* Fix for any remaining white backgrounds in specific components */
-.MuiPaper-root, .modal-content, .dialog-content, .drawer-content,
-.popover-content, .tooltip-content, .menu-content, .dropdown-content {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-  border-color: #333333 !important;
-}
-
-/* Ensure all modal backdrops are fully black */
-.backdrop, .overlay, .modal-backdrop,
-[class*="backdrop"], [class*="overlay"],
-[data-overlay], [aria-hidden="true"] {
-  background-color: rgba(0, 0, 0, 0.8) !important;
-}
-
-/* Fix calendar and date picker components */
-.calendar, .date-picker, .time-picker,
-[role="grid"], [role="calendar"] {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-  border-color: #333333 !important;
-}
-
-/* Fix for any material design components */
-[class*="mui-"], [class*="Mui"],
-[class*="chakra-"], [class*="ant-"] {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-  border-color: #333333 !important;
-}
-
-/* Force background color on pre-rendered or SSR content */
-[data-server-rendered], [data-reactroot], [data-react-helmet] {
-  background-color: #000000 !important;
-}
-
-/* Fix any image backgrounds that might appear */
-.bg-cover, .bg-contain, .bg-center, .bg-no-repeat,
-[style*="background-image"], [style*="background:url"],
-[style*="background-color: rgb(255, 255, 255)"],
-[style*="background-color: white"],
-[style*="background-color:#fff"],
-[style*="background:#fff"],
-[style*="background: #fff"],
-[style*="background: white"],
-[style*="background:white"] {
-  background-color: #000000 !important;
-  background-image: none !important;
-}
-
-/* Handle any inline style overrides */
-[style*="color: black"],
-[style*="color:#000"],
-[style*="color: #000"],
-[style*="color:black"] {
-  color: #FFFFFF !important;
-}
-
-/* Final catch-all for any edge cases */
-* {
-  scrollbar-color: #333333 #000000 !important;
-}
-
-/* 747 Casino specific overrides for form labels and inputs */
-.form-label, 
-.FormLabel, 
-label[class*="FormLabel"] {
-  color: white !important;
-}
-
-/* Make form placeholders more visible */
-::placeholder {
-  color: #AAAAAA !important;
-  opacity: 1 !important;
-}
-
-/* Special fix for Radix UI & Shadcn UI components - highest priority */
-.light-theme,
-.light,
-.light *,
-.light-mode,
-.light-mode * {
-  background-color: #000000 !important;
-  color: #FFFFFF !important;
-  border-color: #333333 !important;
-}
-
-/* Force any white elements to black */
-[style*="background-color: white"], 
-[style*="background-color: #fff"], 
-[style*="background-color: #ffffff"],
-[style*="background-color:white"], 
-[style*="background-color:#fff"], 
-[style*="background-color:#ffffff"],
-[style*="background: white"], 
-[style*="background: #fff"], 
-[style*="background: #ffffff"],
-[style*="background:white"], 
-[style*="background:#fff"], 
-[style*="background:#ffffff"] {
-  background-color: #000000 !important;
-}
-
-/* Removed problematic style that was making elements unclickable */
