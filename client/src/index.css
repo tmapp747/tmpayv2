@@ -6,10 +6,15 @@
    ROOT OVERRIDES
    -------------------- */
 
-/* Enforce black backgrounds and white text at the root level */
+/* Enforce black backgrounds and white text at the root level - with highest priority */
 html, body {
   background-color: #000000 !important;
   color: #FFFFFF !important;
+}
+
+/* Force dark mode via color-scheme */
+:root {
+  color-scheme: dark !important;
 }
 
 /* Make all structural elements black */
@@ -353,4 +358,44 @@ iframe, embed, object {
 /* Final catch-all for any edge cases */
 * {
   scrollbar-color: #333333 #000000 !important;
+}
+
+/* Special fix for Radix UI & Shadcn UI components - highest priority */
+[data-radix-popper-content-wrapper] *,
+[cmdk-dialog] *,
+[cmdk-input] *,
+[cmdk-item] *,
+[cmdk-list] *,
+.radix-themes *,
+[data-overlay-container] *,
+[data-overlay-root] *,
+.light-theme,
+.light,
+.light *,
+.light-mode,
+.light-mode * {
+  background-color: #000000 !important;
+  color: #FFFFFF !important;
+  border-color: #333333 !important;
+}
+
+/* Force any white elements to black */
+[style*="background-color: white"], 
+[style*="background-color: #fff"], 
+[style*="background-color: #ffffff"],
+[style*="background-color:white"], 
+[style*="background-color:#fff"], 
+[style*="background-color:#ffffff"],
+[style*="background: white"], 
+[style*="background: #fff"], 
+[style*="background: #ffffff"],
+[style*="background:white"], 
+[style*="background:#fff"], 
+[style*="background:#ffffff"] {
+  background-color: #000000 !important;
+}
+
+/* Target any inline styles that may set white backgrounds */
+[style^="background"], [style*=" background"] {
+  background-color: #000000 !important;
 }

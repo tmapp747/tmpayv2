@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"],
+  darkMode: ["class", '[data-theme="dark"]'],
   content: [
     "./client/index.html",
     "./client/src/**/*.{js,jsx,ts,tsx}",
@@ -17,6 +17,22 @@ export default {
     },
     extend: {
       colors: {
+        // Override default colors to enforce dark theme
+        white: "#000000",
+        black: "#000000",
+        gray: {
+          50: "#000000",
+          100: "#000000",
+          200: "#111111",
+          300: "#111111", 
+          400: "#222222",
+          500: "#333333",
+          600: "#444444",
+          700: "#555555",
+          800: "#666666", 
+          900: "#777777",
+          950: "#888888",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
