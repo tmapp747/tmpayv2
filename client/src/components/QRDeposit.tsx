@@ -1,290 +1,246 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2, QrCode } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import SuccessNotificationModal from "./SuccessNotificationModal";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/use-auth";
-import { formatCurrency, getTimeRemaining } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { QrPayment, Transaction, GenerateQrCodeRequest } from "@/lib/types";
-import { Loader2, QrCode, RefreshCw, Clock } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 
-// QR Code Deposit component
-export default function QRDeposit({ amount }: { amount: number }) {
+const QRDeposit = () => {
+  const [amount, setAmount] = useState("");
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [qrData, setQrData] = useState<string | null>(null);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
+  const [successData, setSuccessData] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
-  const [qrPayment, setQrPayment] = useState<QrPayment | null>(null);
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>("");
-  const [progress, setProgress] = useState<number>(100);
-  const [expiryDate, setExpiryDate] = useState<Date | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<"pending" | "completed" | "failed" | "expired">("pending");
-  const [isPolling, setIsPolling] = useState<boolean>(false);
-  
-  // Generate QR code mutation
+
+  // Handle displaying amounts in the preset buttons
+  const formatDisplayAmount = (value: number) => {
+    // Safely handle the formatting
+    try {
+      return value.toLocaleString(undefined, { minimumFractionDigits: 0 });
+    } catch (error) {
+      console.error("Error formatting amount:", error);
+      return value.toString();
+    }
+  };
+
+  const handlePresetAmountClick = (value: number) => {
+    setSelectedAmount(value);
+    setAmount(value.toString());
+  };
+
   const generateQrMutation = useMutation({
-    mutationFn: async (data: GenerateQrCodeRequest) => {
-      const response = await apiRequest("POST", "/api/payments/gcash/generate-qr", data);
-      return response.json();
+    mutationFn: async () => {
+      // Validate amount
+      const numAmount = parseFloat(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        throw new Error("Please enter a valid amount");
+      }
+
+      if (numAmount < 100) {
+        throw new Error("Minimum deposit amount is ₱100");
+      }
+
+      if (numAmount > 50000) {
+        throw new Error("Maximum deposit amount is ₱50,000");
+      }
+
+      const res = await apiRequest("POST", "/api/payments/gcash/generate-qr", {
+        amount: numAmount,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Failed to generate QR code");
+      }
+
+      const data = await res.json();
+      return data;
     },
     onSuccess: (data) => {
-      if (data.success) {
-        setQrPayment(data.qrPayment);
-        setTransaction(data.transaction);
-        setPaymentStatus(data.qrPayment.status);
-        
-        // Set expiry date
-        if (data.qrPayment.expiresAt) {
-          const expiry = new Date(data.qrPayment.expiresAt);
-          setExpiryDate(expiry);
-        }
-        
+      if (data.qrPayment) {
+        setQrData(data.qrPayment.qrCodeData);
+        setReferenceId(data.qrPayment.directPayReference);
+        setIsModalOpen(true);
+
         // Start polling for payment status
-        setIsPolling(true);
-      } else {
-        toast({
-          title: "Error",
-          description: data.message || "Failed to generate QR code",
-          variant: "destructive",
-        });
+        pollPaymentStatus(data.qrPayment.directPayReference);
       }
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to generate QR code",
+        description: error.message,
         variant: "destructive",
       });
     },
   });
-  
-  // Check payment status function
-  const checkPaymentStatus = async () => {
-    if (!qrPayment?.id) return;
-    
-    try {
-      const response = await fetch(`/api/payments/status/${qrPayment.directPayReference || qrPayment.id}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setPaymentStatus(data.status);
-        
-        // If payment is completed, stop polling and refresh user data
+
+  const pollPaymentStatus = async (refId: string) => {
+    // Poll every 5 seconds
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiRequest("GET", `/api/payments/status/${refId}`);
+        const data = await res.json();
+
         if (data.status === "completed") {
-          setIsPolling(false);
-          queryClient.invalidateQueries({ queryKey: ["/api/user/info"] });
-          queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-          
-          toast({
-            title: "Payment Successful",
-            description: `₱${formatCurrency(amount)} has been added to your account`,
+          clearInterval(interval);
+          setSuccessData({
+            amount: parseFloat(amount),
+            newBalance: data.qrPayment?.amount || amount,
+            transactionId: refId,
           });
+          setIsModalOpen(false);
+          setIsSuccessModalOpen(true);
         } else if (data.status === "failed" || data.status === "expired") {
-          setIsPolling(false);
+          clearInterval(interval);
+          setIsModalOpen(false);
           toast({
             title: "Payment Failed",
-            description: "Your payment could not be processed",
+            description: "Your payment was not completed. Please try again.",
             variant: "destructive",
           });
         }
+      } catch (error) {
+        console.error("Error checking payment status:", error);
       }
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-    }
+    }, 5000);
+
+    // Clear interval after 10 minutes (30 min is QR expiry)
+    setTimeout(() => {
+      clearInterval(interval);
+    }, 10 * 60 * 1000);
   };
-  
-  // Generate QR code
-  const generateQrCode = () => {
-    if (!user) return;
-    generateQrMutation.mutate({ amount });
-  };
-  
-  // Handle expiry time calculation and progress bar
-  useEffect(() => {
-    if (!expiryDate) return;
-    
-    const updateTimeLeft = () => {
-      const now = new Date();
-      const timeDifference = expiryDate.getTime() - now.getTime();
-      
-      if (timeDifference <= 0) {
-        setTimeLeft("Expired");
-        setProgress(0);
-        setPaymentStatus("expired");
-        setIsPolling(false);
-        return;
-      }
-      
-      // Calculate time left
-      const timeLeftString = getTimeRemaining(expiryDate);
-      setTimeLeft(timeLeftString);
-      
-      // Calculate progress (assuming 15 minutes expiry time)
-      const totalDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
-      const progressValue = Math.max(0, Math.min(100, (timeDifference / totalDuration) * 100));
-      setProgress(progressValue);
-    };
-    
-    updateTimeLeft();
-    const interval = setInterval(updateTimeLeft, 1000);
-    
-    return () => clearInterval(interval);
-  }, [expiryDate]);
-  
-  // Poll for payment status
-  useEffect(() => {
-    if (!isPolling) return;
-    
-    const poll = setInterval(checkPaymentStatus, 5000);
-    
-    return () => clearInterval(poll);
-  }, [isPolling, qrPayment]);
-  
+
+  const presetAmounts = [100, 200, 500, 1000, 5000];
+
   return (
-    <Card className="w-full shadow-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <QrCode className="mr-2 h-5 w-5" />
-          DirectPay GCash QR Deposit
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent>
-        {!qrPayment ? (
-          <div className="flex flex-col items-center justify-center space-y-4 py-8">
-            <p className="text-center text-muted-foreground">
-              Generate a QR code to make a GCash payment of ₱{formatCurrency(amount)}
+    <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30">
+      <div className="p-5">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium text-white">
+            Deposit via GCash
+          </h2>
+          <div className="bg-accent/20 text-accent px-3 py-1 rounded-full text-sm font-medium">
+            Instant
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-300 mb-2">Select Amount</label>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+            {presetAmounts.map((amt) => (
+              <Button
+                key={amt}
+                type="button"
+                variant={selectedAmount === amt ? "default" : "outline"}
+                className={cn(
+                  "border-secondary/50 hover:border-secondary",
+                  selectedAmount === amt && "bg-secondary hover:bg-secondary/90"
+                )}
+                onClick={() => handlePresetAmountClick(amt)}
+              >
+                ₱{formatDisplayAmount(amt)}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-gray-300 mb-2">
+            Or Enter Custom Amount
+          </label>
+          <div className="flex">
+            <span className="inline-flex items-center px-3 py-2 text-sm bg-secondary/20 border border-r-0 border-secondary/50 rounded-l-md text-white">
+              ₱
+            </span>
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setSelectedAmount(null);
+              }}
+              placeholder="Enter amount"
+              className="rounded-l-none"
+              min="100"
+              max="50000"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Min: ₱100 | Max: ₱50,000
+          </p>
+        </div>
+
+        <Button
+          onClick={() => generateQrMutation.mutate()}
+          disabled={generateQrMutation.isPending}
+          className="w-full bg-secondary hover:bg-secondary/90"
+        >
+          {generateQrMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating QR...
+            </>
+          ) : (
+            <>
+              <QrCode className="mr-2 h-4 w-4" />
+              Generate GCash QR
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* QR Code Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="bg-primary text-white border-secondary/30 sm:max-w-md">
+          <DialogTitle className="text-xl font-semibold text-center">
+            Scan with GCash App
+          </DialogTitle>
+          <div className="p-4 bg-white rounded-lg mx-auto" 
+               style={{ maxWidth: "280px" }}>
+            {qrData && qrData.includes('<iframe') ? (
+              <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
+            ) : (
+              <img 
+                src={qrData || '/images/placeholder-qr.png'} 
+                alt="GCash QR Code"
+                className="w-full h-auto"
+              />
+            )}
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-gray-300 mb-2">
+              Amount: <span className="text-white font-medium">₱{amount}</span>
             </p>
-            <Button 
-              onClick={generateQrCode} 
-              disabled={generateQrMutation.isPending}
-              className="w-full max-w-xs"
-            >
-              {generateQrMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Generate QR Code"
-              )}
-            </Button>
+            <p className="text-sm text-gray-300 mb-4">
+              Reference: <span className="text-white font-mono text-xs">{referenceId}</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              This QR code will expire in 30 minutes. Please complete your payment.
+            </p>
           </div>
-        ) : (
-          <div className="flex flex-col items-center space-y-6 py-4">
-            {paymentStatus === "pending" && (
-              <>
-                <div className="relative">
-                  <img 
-                    src={qrPayment.qrCodeData} 
-                    alt="GCash QR Code" 
-                    className="w-56 h-56 object-contain border rounded-lg shadow-sm" 
-                  />
-                  <div className="absolute bottom-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded-full">
-                    ₱{formatCurrency(amount)}
-                  </div>
-                </div>
-                
-                <div className="w-full space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Time Remaining</span>
-                    <span className="font-medium flex items-center">
-                      <Clock className="mr-1 h-3 w-3" />
-                      {timeLeft}
-                    </span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
-                </div>
-                
-                <div className="space-y-2 text-sm text-center w-full">
-                  <p>Scan the QR code with your GCash app</p>
-                  <p className="text-muted-foreground">Payment will be automatically detected</p>
-                </div>
-                
-                <div className="mt-4 flex justify-center">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={checkPaymentStatus}
-                    disabled={isPolling}
-                  >
-                    <RefreshCw className="mr-1 h-3 w-3" />
-                    Refresh Status
-                  </Button>
-                </div>
-              </>
-            )}
-            
-            {paymentStatus === "completed" && (
-              <div className="flex flex-col items-center space-y-4 py-8">
-                <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                  <svg
-                    className="h-10 w-10 text-green-600 dark:text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold">Payment Successful!</h3>
-                <p className="text-center text-muted-foreground">
-                  Your payment of ₱{formatCurrency(amount)} has been processed successfully and added to your account.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setQrPayment(null)}
-                >
-                  Make Another Payment
-                </Button>
-              </div>
-            )}
-            
-            {(paymentStatus === "failed" || paymentStatus === "expired") && (
-              <div className="flex flex-col items-center space-y-4 py-8">
-                <div className="h-20 w-20 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
-                  <svg
-                    className="h-10 w-10 text-red-600 dark:text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold">
-                  Payment {paymentStatus === "expired" ? "Expired" : "Failed"}
-                </h3>
-                <p className="text-center text-muted-foreground">
-                  {paymentStatus === "expired" 
-                    ? "Your payment session has expired. Please try again."
-                    : "There was an issue processing your payment. Please try again or use a different payment method."}
-                </p>
-                <Button onClick={() => setQrPayment(null)}>Try Again</Button>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="bg-muted/50 text-sm text-muted-foreground border-t flex justify-center">
-        <p>DirectPay powered secure payment</p>
-      </CardFooter>
-    </Card>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      {successData && (
+        <SuccessNotificationModal
+          isOpen={isSuccessModalOpen}
+          onClose={() => setIsSuccessModalOpen(false)}
+          amount={successData.amount}
+          newBalance={successData.newBalance}
+          transactionId={successData.transactionId}
+        />
+      )}
+    </div>
   );
-}
+};
+
+export default QRDeposit;
