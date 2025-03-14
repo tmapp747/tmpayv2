@@ -148,13 +148,13 @@ button svg, a svg, .icon svg, .control svg, [role="button"] svg {
    FORM ELEMENTS
    -------------------- */
 
-/* All form controls should be black with white text */
+/* All form controls should be dark with white text */
 input, textarea, select, option, button, .input, .select, 
 .textarea, .button, [type="text"], [type="email"], 
 [type="password"], [type="number"], [type="search"],
 .form-control, .form-input, .form-select, .form-textarea {
   color: #FFFFFF !important;
-  background-color: #000000 !important;
+  background-color: #1A1A1A !important;
   border: 1px solid #333333 !important;
 }
 
@@ -402,6 +402,25 @@ iframe, embed, object {
 /* Final catch-all for any edge cases */
 * {
   scrollbar-color: #333333 #000000 !important;
+}
+
+/* 747 Casino specific overrides for form labels and inputs */
+.form-label, 
+.FormLabel, 
+label[class*="FormLabel"],
+.text-gray-300 {
+  color: white !important;
+}
+
+.text-gray-400, 
+.text-gray-500 {
+  color: #DDDDDD !important;
+}
+
+/* Make form placeholders more visible */
+::placeholder {
+  color: #AAAAAA !important;
+  opacity: 1 !important;
 }
 
 /* Special fix for Radix UI & Shadcn UI components - highest priority */
