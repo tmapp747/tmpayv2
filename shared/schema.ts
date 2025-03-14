@@ -226,8 +226,7 @@ export const loginSchema = z.object({
 });
 
 export const authSchema = z.object({
-  token: z.string(),
-  username: z.string()
+  token: z.string()
 });
 
 export const allowedTopManagersSchema = z.array(z.string()).min(1);

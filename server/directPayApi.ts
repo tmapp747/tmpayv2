@@ -123,6 +123,42 @@ class DirectPayApi {
     expiresAt: Date;
   }> {
     try {
+      // In development environment, provide a simulated response
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEV MODE] Simulating DirectPay GCash payment with params:', {
+          amount,
+          webhookUrl,
+          redirectUrl
+        });
+        
+        // Generate a unique reference ID
+        const reference = `DP-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        
+        // Set expiry to 30 minutes from now
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        
+        // Use a static QR code image for testing purposes
+        const qrCodeData = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=GCASH_PAYMENT_${reference}_PHP${amount}`;
+        
+        // Create a mock payment URL
+        const payUrl = `https://simulatedpayment.direct-payph.com/pay?reference=${reference}&amount=${amount}`;
+        
+        console.log('[DEV MODE] Generated simulated payment data:', {
+          qrCodeData,
+          reference,
+          payUrl,
+          expiresAt
+        });
+        
+        return {
+          qrCodeData,
+          reference,
+          payUrl,
+          expiresAt
+        };
+      }
+      
+      // Real API implementation for production
       const token = await this.authenticate();
 
       console.log('Generating GCash payment with params:', {
@@ -181,6 +217,29 @@ class DirectPayApi {
     transactionId?: string;
   }> {
     try {
+      // In development environment, provide a simulated response
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEV MODE] Simulating DirectPay payment status check for reference:', reference);
+        
+        // For testing purposes, we'll simulate payment completion after a certain time
+        // References generated in the last 20 seconds will be "pending"
+        // References older than that will be "completed"
+        const referenceTimestamp = parseInt(reference.split('-')[1] || '0');
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - referenceTimestamp;
+        
+        // If reference is older than 20 seconds, mark as completed
+        const status = elapsedTime > 20000 ? 'completed' : 'pending';
+        
+        console.log(`[DEV MODE] Payment ${reference} status: ${status} (elapsed: ${elapsedTime}ms)`);
+        
+        return {
+          status,
+          transactionId: `TX-${reference}`
+        };
+      }
+      
+      // Real API implementation for production
       const token = await this.authenticate();
 
       const response = await axios.get(`${this.baseUrl}/payment/status/${reference}`, {
