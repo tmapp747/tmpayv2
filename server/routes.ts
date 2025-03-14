@@ -38,7 +38,8 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
     // Configure the webhook and redirect URLs
     const baseUrl = process.env.BASE_URL || 'https://747casino.replit.app';
     const webhook = `${baseUrl}/api/webhook/directpay/payment`;
-    const redirectUrl = `${baseUrl}/payment/success?ref=${reference}`;
+    // Updated to a more comprehensive thank you page with transaction details
+    const redirectUrl = `${baseUrl}/payment/thank-you?reference=${reference}&amount=${amount}&username=${encodeURIComponent(username)}`;
     
     console.log(`Generating DirectPay GCash payment with the following parameters:`);
     console.log(`- Amount: ${amount}`);
@@ -1206,8 +1207,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/direct-pay-gcash", async (req: Request, res: Response) => {
     try {
       const amount = 100; // Test with minimum amount
+      const testReference = `TEST-${Date.now()}`;
+      const testUsername = "debug_user";
       const webhookUrl = `${req.protocol}://${req.get('host')}/api/webhook/directpay/payment`;
-      const redirectUrl = `${req.protocol}://${req.get('host')}/payment/complete`;
+      const redirectUrl = `${req.protocol}://${req.get('host')}/payment/thank-you?reference=${testReference}&amount=${amount}&username=${encodeURIComponent(testUsername)}`;
       
       console.log('Webhook URL:', webhookUrl);
       console.log('Redirect URL:', redirectUrl);
