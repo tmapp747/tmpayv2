@@ -384,20 +384,25 @@ export class Casino747Api {
         return user.casinoAuthToken;
       }
       
-      // 4. If no valid token exists, generate a new one (this is a fallback that uses hardcoded tokens)
-      console.log(`Generating new auth token for top manager: ${topManager}`);
-      const tokenMap: Record<string, string> = {
-        'Marcthepogi': 'e726f734-0b50-4ca2-b8d7-bca385955acf',
-        'bossmarc747': 'a8c37f21-5e9b-4c83-a0d7-1d89ef988b2d',
-        'teammarc': 'f1d39b86-7c2e-4a01-9f8c-d103a8b73892'
-        // In a production environment, you would call an API to get a new token
-      };
+      // 4. If no valid token exists, get it from environment secrets
+      console.log(`Getting auth token from environment for top manager: ${topManager}`);
       
-      if (!tokenMap[topManager]) {
-        throw new Error(`No auth token available for manager: ${topManager}`);
+      let token: string | undefined;
+      switch (topManager) {
+        case 'Marcthepogi':
+          token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+          break;
+        case 'bossmarc747':
+          token = process.env.CASINO_TOKEN_BOSSMARC747;
+          break;
+        case 'teammarc':
+          token = process.env.CASINO_TOKEN_TEAMMARC;
+          break;
       }
       
-      const token = tokenMap[topManager];
+      if (!token) {
+        throw new Error(`No auth token found in environment for manager: ${topManager}`);
+      }
       const expiryDate = new Date();
       expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
       
@@ -436,14 +441,21 @@ export class Casino747Api {
       // Simulate API call
       console.log(`Fetching new auth token for manager: ${topManager}`);
       
-      const tokenMap: Record<string, string> = {
-        'Marcthepogi': 'e726f734-0b50-4ca2-b8d7-bca385955acf',
-        'bossmarc747': 'a8c37f21-5e9b-4c83-a0d7-1d89ef988b2d',
-        'teammarc': 'f1d39b86-7c2e-4a01-9f8c-d103a8b73892'
-      };
+      let token: string | undefined;
+      switch (topManager) {
+        case 'Marcthepogi':
+          token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+          break;
+        case 'bossmarc747':
+          token = process.env.CASINO_TOKEN_BOSSMARC747;
+          break;
+        case 'teammarc':
+          token = process.env.CASINO_TOKEN_TEAMMARC;
+          break;
+      }
       
-      if (!tokenMap[topManager]) {
-        throw new Error(`No credentials available for manager: ${topManager}`);
+      if (!token) {
+        throw new Error(`No auth token found in environment for manager: ${topManager}`);
       }
       
       // Calculate expiry (30 minutes from now)
@@ -451,7 +463,7 @@ export class Casino747Api {
       expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
       
       return {
-        token: tokenMap[topManager],
+        token,
         expiry: expiryDate
       };
     } catch (error) {
