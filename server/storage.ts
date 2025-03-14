@@ -133,7 +133,8 @@ export class MemStorage implements IStorage {
     const testUser: User = {
       id: this.userIdCounter++,
       username: 'chubbyme',
-      password: 'player123',
+      // Pre-hashed password for 'password123' - in a real app we'd hash this properly
+      password: '7cc166e38f9f42c065c20a03e5a6270ef9699017b2d8ef0a4a43f0e40a447e2599acaa8d66b95b1b9e627fac608c7a0f07aad1cef438cc13fad1e633201a9f38.d2fc14851c37b3563a56b784902ed979',
       email: null,
       balance: '1000.00',
       pendingBalance: '0.00',

@@ -1663,9 +1663,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allManualPayments = Array.from(storage.getAllManualPayments().values());
       
       // Sort by created date (newest first)
-      allManualPayments.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      allManualPayments.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : 
+                     (typeof a.createdAt === 'string' ? new Date(a.createdAt) : new Date());
+        const dateB = b.createdAt instanceof Date ? b.createdAt : 
+                     (typeof b.createdAt === 'string' ? new Date(b.createdAt) : new Date());
+        return dateB.getTime() - dateA.getTime();
+      });
       
       return res.json({
         success: true,
@@ -1688,9 +1692,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allTransactions = await storage.getTransactionsByUserId(0); // 0 is a placeholder to get all
       
       // Sort by created date (newest first)
-      allTransactions.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      allTransactions.sort((a, b) => {
+        const dateA = a.createdAt instanceof Date ? a.createdAt : 
+                     (typeof a.createdAt === 'string' ? new Date(a.createdAt) : new Date());
+        const dateB = b.createdAt instanceof Date ? b.createdAt : 
+                     (typeof b.createdAt === 'string' ? new Date(b.createdAt) : new Date());
+        return dateB.getTime() - dateA.getTime();
+      });
       
       return res.json({
         success: true,
