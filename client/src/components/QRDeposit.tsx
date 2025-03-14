@@ -207,30 +207,54 @@ const QRDeposit = () => {
           ) : (
             <>
               <QrCode className="mr-2 h-4 w-4" />
-              Generate GCash QR
+              Pay with GCash
             </>
           )}
         </Button>
       </div>
 
-      {/* QR Code Modal */}
+      {/* Payment Modal - QR Code or Payment URL */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-primary text-white border-secondary/30 sm:max-w-md">
           <DialogTitle className="text-xl font-semibold text-center">
-            Scan with GCash App
+            {payUrl ? "Pay with GCash" : "Scan with GCash App"}
           </DialogTitle>
-          <div className="p-4 bg-white rounded-lg mx-auto" 
-               style={{ maxWidth: "280px" }}>
-            {qrData && qrData.includes('<iframe') ? (
-              <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
-            ) : (
-              <img 
-                src={qrData || '/images/placeholder-qr.png'} 
-                alt="GCash QR Code"
-                className="w-full h-auto"
+          
+          {payUrl ? (
+            // If we have a payment URL, show the iframe or redirect button
+            <div className="w-full mx-auto">
+              {/* PayURL can be used in an iframe or as a redirect */}
+              <iframe 
+                src={payUrl} 
+                className="w-full rounded-lg border border-secondary/20"
+                style={{ height: "400px" }}
+                title="GCash Payment"
               />
-            )}
-          </div>
+              <div className="flex justify-center mt-3">
+                <Button 
+                  variant="outline" 
+                  className="text-xs border-secondary/20 hover:bg-secondary/20"
+                  onClick={() => window.open(payUrl, '_blank')}
+                >
+                  Open in New Window
+                </Button>
+              </div>
+            </div>
+          ) : (
+            // Otherwise show the QR code image
+            <div className="p-4 bg-white rounded-lg mx-auto" style={{ maxWidth: "280px" }}>
+              {qrData && qrData.includes('<iframe') ? (
+                <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
+              ) : (
+                <img 
+                  src={qrData || '/images/placeholder-qr.png'} 
+                  alt="GCash QR Code"
+                  className="w-full h-auto"
+                />
+              )}
+            </div>
+          )}
+          
           <div className="text-center">
             <p className="text-sm text-gray-300 mb-2">
               Amount: <span className="text-white font-medium">₱{amount}</span>
@@ -239,7 +263,7 @@ const QRDeposit = () => {
               Reference: <span className="text-white font-mono text-xs">{referenceId}</span>
             </p>
             <p className="text-xs text-gray-400">
-              This QR code will expire in 30 minutes. Please complete your payment.
+              This payment will expire in 30 minutes. Please complete your payment.
             </p>
           </div>
         </DialogContent>

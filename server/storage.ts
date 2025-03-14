@@ -603,7 +603,8 @@ export class MemStorage implements IStorage {
       ...qrPaymentData, 
       id,
       status: qrPaymentData.status || 'pending',
-      directPayReference: qrPaymentData.directPayReference || null, 
+      directPayReference: qrPaymentData.directPayReference || null,
+      payUrl: qrPaymentData.payUrl || null, // Support the payUrl field
       createdAt: now, 
       updatedAt: now 
     };

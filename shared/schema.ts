@@ -78,6 +78,7 @@ export const qrPayments = pgTable("qr_payments", {
   userId: integer("user_id").notNull(),
   transactionId: integer("transaction_id").notNull(),
   qrCodeData: text("qr_code_data").notNull(),
+  payUrl: text("pay_url"), // URL for DirectPay payment page
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   directPayReference: text("direct_pay_reference"),
