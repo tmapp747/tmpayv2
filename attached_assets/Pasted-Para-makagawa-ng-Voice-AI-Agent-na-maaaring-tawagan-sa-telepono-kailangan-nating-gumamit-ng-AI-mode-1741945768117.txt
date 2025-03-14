@@ -1,0 +1,120 @@
+Para makagawa ng Voice AI Agent na maaaring tawagan sa telepono, kailangan nating gumamit ng AI models para sa voice processing at isang telephony API tulad ng Twilio o Google Dialogflow CX para sa pagtanggap ng tawag at pagsagot sa caller.
+
+Hakbang 1: Mga Kailangan
+	1.	AI Model para sa Voice Processing
+	•	OpenAI (GPT-4-Turbo na may voice)
+	•	ElevenLabs (Para sa Text-to-Speech)
+	•	Whisper API (Para sa Speech-to-Text)
+	2.	Telephony API
+	•	Twilio (Pinakasikat na VoIP provider para sa automated calls)
+	•	Google Dialogflow CX (Kung gusto mo ng mas advanced na conversational AI)
+	3.	Server & Deployment
+	•	Flask/FastAPI (Para sa backend)
+	•	Ngrok (Para sa testing)
+	•	VPS o cloud deployment (Kung production-ready)
+
+⸻
+
+Hakbang 2: I-setup ang Voice AI
+
+1. I-install ang kinakailangang Python libraries
+
+pip install flask twilio openai elevenlabs whisper gradio
+
+2. Gumawa ng Flask server para sa voice processing
+
+from flask import Flask, request
+from twilio.twiml.voice_response import VoiceResponse
+import openai
+import elevenlabs
+import whisper
+
+app = Flask(__name__)
+
+# Set API Keys (Gamitin ENV Variables for security)
+OPENAI_API_KEY = "your_openai_key"
+ELEVEN_LABS_API_KEY = "your_elevenlabs_key"
+
+# OpenAI GPT-4 Voice Processing
+def get_ai_response(user_input):
+    response = openai.ChatCompletion.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": user_input}]
+    )
+    return response["choices"][0]["message"]["content"]
+
+# ElevenLabs TTS
+def text_to_speech(text):
+    audio_url = elevenlabs.generate(
+        text=text,
+        voice="Adam",  # Palitan kung gusto mo ng ibang boses
+        api_key=ELEVEN_LABS_API_KEY
+    )
+    return audio_url
+
+@app.route("/voice", methods=["POST"])
+def voice():
+    """Main webhook for handling incoming calls"""
+    response = VoiceResponse()
+    
+    # Kunin ang speech ng caller
+    user_speech = request.form.get("SpeechResult", "")
+
+    # I-process ang AI response
+    ai_reply = get_ai_response(user_speech)
+
+    # Convert AI text response to speech
+    speech_audio = text_to_speech(ai_reply)
+
+    # I-play ang AI-generated voice response
+    response.play(speech_audio)
+    
+    return str(response)
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)
+
+
+
+⸻
+
+Hakbang 3: I-connect sa Twilio
+
+1. Gumawa ng Twilio Account
+	•	Pumunta sa Twilio
+	•	Kumuha ng Phone Number
+	•	I-set up ang Voice Webhook
+
+2. I-set up ang Twilio Webhook
+	•	Sa Twilio Console, pumunta sa Phone Numbers > Configure
+	•	Hanapin ang “Voice & Fax” Webhook
+	•	Ilagay ang iyong webhook URL (https://yourserver.com/voice)
+
+Para sa local testing:
+
+ngrok http 5000
+
+Gamitin ang ngrok URL bilang webhook URL sa Twilio.
+
+⸻
+
+Hakbang 4: Subukan ang Voice AI Call
+	•	Tawagan ang Twilio Number mo.
+	•	Ibigay ang input (Bibigyan ka ng AI response).
+	•	Makikinig ka ng AI-generated na sagot sa telepono.
+
+⸻
+
+Hakbang 5: Dagdagan ng Features
+	•	Magsuporta ng multiple languages (Whisper API)
+	•	Gamitin ang Google Dialogflow CX para sa complex conversations
+	•	Magdagdag ng SMS fallback kung walang audio response
+	•	I-deploy sa VPS (DigitalOcean, AWS, o GCP)
+
+⸻
+
+Pangwakas
+
+Kapag natapos mo ito, makakagawa ka ng AI voice assistant na kayang sumagot sa tawag sa telepono! Pwede itong gamitin sa customer support, restaurant booking, o AI receptionist.
+
+Gusto mo bang may recording feature din para i-save ang mga tawag?
