@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { comparePasswords } from "./auth";
+import { comparePasswords, hashPassword } from "./auth";
 import { 
   generateQrCodeSchema, 
   insertTransactionSchema, 
@@ -428,14 +428,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if the password matches using the secure comparison function
       // This supports both hashed passwords and plain text (for development)
       console.log("Login attempt for user:", username);
-      console.log("Password format:", user.password.includes('.') ? "hashed" : "plaintext");
+      console.log("Password format:", user.password.includes('$2') ? "hashed" : "plaintext");
+      console.log("Password stored:", user.password.substr(0, 5) + "..." + user.password.substr(-5));
       
       let passwordValid;
-      if (user.password.includes('.')) {
-        console.log("Attempting to compare with hashed password");
+      if (user.password.includes('$2')) {
+        // Use bcrypt for hashed passwords (starts with $2a$ or $2b$)
+        console.log("Attempting to compare with bcrypt hashed password");
         passwordValid = await comparePasswords(password, user.password);
         console.log("Password comparison result:", passwordValid);
       } else {
+        // Direct comparison for plaintext passwords
         console.log("Using plaintext comparison");
         passwordValid = user.password === password;
         console.log("Password comparison result:", passwordValid);
@@ -724,7 +727,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[REGISTER] Creating user in storage...");
         const newUser = await storage.createUser({
           username,
-          password, // In production, this would be hashed
+          password: await hashPassword(password), // Always hash the password
           email, // Email is now required and non-null
           casinoId: `747-${casinoClientId}`,
           balance: "0.00",
