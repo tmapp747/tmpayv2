@@ -465,11 +465,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mark user as authorized
       await storage.updateUserAuthorizationStatus(user.id, true);
       
-      // Generate and store access token
+      // Generate and store access token with expiration (1 hour)
       const accessToken = generateAccessToken();
-      await storage.updateUserAccessToken(user.id, accessToken);
+      await storage.updateUserAccessToken(user.id, accessToken, 3600); // 1 hour
       
-      // Get updated user
+      // Generate and store refresh token with longer expiration (30 days)
+      const refreshToken = generateAccessToken();
+      await storage.updateUserRefreshToken(user.id, refreshToken, 2592000); // 30 days
+      
+      // Get updated user with tokens
       const updatedUser = await storage.getUser(user.id);
       
       if (!updatedUser) {
@@ -525,13 +529,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // If we found the user, clear their access token
+      // If we found the user, clear their access token and refresh token
       if (user) {
         try {
           await storage.updateUserAccessToken(user.id, null);
-          console.log(`Cleared access token for user ID: ${user.id}`);
+          await storage.updateUserRefreshToken(user.id, null);
+          console.log(`Cleared access and refresh tokens for user ID: ${user.id}`);
         } catch (err) {
-          console.error("Error clearing user access token:", err);
+          console.error("Error clearing user tokens:", err);
           // Continue with logout even if this fails
         }
       }

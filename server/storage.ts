@@ -163,6 +163,9 @@ export class MemStorage implements IStorage {
       isAuthorized: true,
       allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
       accessToken: null,
+      accessTokenExpiry: null,
+      refreshToken: null,
+      refreshTokenExpiry: null,
       casinoAuthToken: null,
       casinoAuthTokenExpiry: null,
       hierarchyLevel: 0,
@@ -194,6 +197,9 @@ export class MemStorage implements IStorage {
       isAuthorized: true,
       allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
       accessToken: null,
+      accessTokenExpiry: null,
+      refreshToken: null,
+      refreshTokenExpiry: null,
       casinoAuthToken: null,
       casinoAuthTokenExpiry: null,
       hierarchyLevel: 0,
@@ -239,6 +245,9 @@ export class MemStorage implements IStorage {
       isAuthorized: userData.isAuthorized || false,
       allowedTopManagers: userData.allowedTopManagers || [],
       accessToken: userData.accessToken || null,
+      accessTokenExpiry: userData.accessTokenExpiry || null,
+      refreshToken: userData.refreshToken || null,
+      refreshTokenExpiry: userData.refreshTokenExpiry || null,
       casinoAuthToken: userData.casinoAuthToken || null,
       casinoAuthTokenExpiry: userData.casinoAuthTokenExpiry || null,
       hierarchyLevel: userData.hierarchyLevel || 0,
@@ -330,17 +339,62 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async updateUserAccessToken(id: number, token: string | null | undefined): Promise<User> {
+  async updateUserAccessToken(id: number, token: string | null | undefined, expiresIn: number = 3600): Promise<User> {
     const user = await this.getUser(id);
     if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Calculate expiry date - default to 1 hour from now if not specified
+    const expiryDate = token 
+      ? new Date(Date.now() + expiresIn * 1000) 
+      : null;
     
     const updatedUser = { 
       ...user, 
       accessToken: token || null, // Ensure null instead of undefined
+      accessTokenExpiry: expiryDate,
       updatedAt: new Date() 
     };
     this.users.set(id, updatedUser);
     return updatedUser;
+  }
+  
+  async getUserByRefreshToken(token: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.refreshToken === token
+    );
+  }
+  
+  async updateUserRefreshToken(id: number, token: string | null | undefined, expiresIn: number = 2592000): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // Calculate expiry date - default to 30 days from now if not specified
+    const expiryDate = token 
+      ? new Date(Date.now() + expiresIn * 1000) 
+      : null;
+    
+    const updatedUser = { 
+      ...user, 
+      refreshToken: token || null, // Ensure null instead of undefined
+      refreshTokenExpiry: expiryDate,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async isTokenExpired(id: number): Promise<boolean> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    // If there's no token or expiry date, consider it expired
+    if (!user.accessToken || !user.accessTokenExpiry) {
+      return true;
+    }
+    
+    // Check if the current date is past the expiry date
+    const now = new Date();
+    return now > user.accessTokenExpiry;
   }
 
   async updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User> {
