@@ -165,9 +165,10 @@ export class MemStorage implements IStorage {
     const user: User = { 
       ...userData, 
       id,
-      email: userData.email || null,
+      email: userData.email || '',  // Use empty string instead of null to match type
       balance: userData.balance || '0.00',
       pendingBalance: userData.pendingBalance || '0.00',
+      casinoId: userData.casinoId || `user-${id}`, // Generate a unique casinoId if not provided
       balances: userData.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
       preferredCurrency: userData.preferredCurrency || 'PHP',
       isVip: userData.isVip || false,
