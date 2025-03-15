@@ -83,7 +83,8 @@ const registerSchema = z.object({
   // Read-only casino information fields (not actually sent in the request, but displayed)
   topManager: z.string().optional(),
   immediateManager: z.string().optional(),
-  casinoUserType: z.string().optional()
+  casinoUserType: z.string().optional(),
+  clientId: z.number().optional() // Casino client ID
 });
 
 type UsernameVerificationFormValues = z.infer<typeof usernameVerificationSchema>;
@@ -198,6 +199,10 @@ export default function AuthPage() {
         }
         if (casinoVerificationData.userType) {
           registerForm.setValue("casinoUserType", casinoVerificationData.userType);
+        }
+        if (casinoVerificationData.clientId) {
+          registerForm.setValue("clientId", casinoVerificationData.clientId);
+          console.log("Setting clientId in registration form:", casinoVerificationData.clientId);
         }
       }
     }

@@ -694,11 +694,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: z.string().min(3),
         password: z.string().min(6),
         email: z.string().email(), // Email is now required
-        userType: z.enum(['player', 'agent']).default('player')
+        userType: z.enum(['player', 'agent']).default('player'),
+        // Optional casino fields that may be provided by the frontend
+        clientId: z.number().optional(),
+        topManager: z.string().optional(),
+        immediateManager: z.string().optional(),
+        casinoUserType: z.string().optional()
       });
       
       // Validate registration data
-      const { username, password, email, userType } = registerSchema.parse(req.body);
+      const { username, password, email, userType, clientId: providedClientId, topManager: providedTopManager, 
+              immediateManager: providedImmediateManager, casinoUserType: providedCasinoUserType } = registerSchema.parse(req.body);
       console.log("[REGISTER] Valid registration data for username:", username);
       
       // Check if user already exists

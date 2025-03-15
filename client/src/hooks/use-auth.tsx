@@ -53,6 +53,10 @@ type RegisterData = {
   password: string;
   email?: string;
   userType?: string;
+  clientId?: number;
+  topManager?: string;
+  immediateManager?: string;
+  casinoUserType?: string;
 };
 
 export const AuthContext = createContext<AuthContextType | null>(null);
