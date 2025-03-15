@@ -1,14 +1,24 @@
+import { useState } from "react";
 import BalanceCard from "@/components/BalanceCard";
 import QuickActions from "@/components/QuickActions";
 import RecentTransactions from "@/components/RecentTransactions";
+import CasinoApiTester from "@/components/CasinoApiTester";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { Card } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
 
 const Home = () => {
+  const { user } = useAuth();
   const [, navigate] = useLocation();
+  const [showApiTester, setShowApiTester] = useState(false);
   
   const goToWallet = () => {
     navigate("/wallet");
+  };
+
+  const toggleApiTester = () => {
+    setShowApiTester(prev => !prev);
   };
 
   return (
@@ -43,6 +53,27 @@ const Home = () => {
       </div>
       
       <RecentTransactions />
+      
+      {/* API Testing Section - For Development Only */}
+      <div className="mt-6">
+        <Card className="bg-primary rounded-xl shadow-lg overflow-hidden mb-2 border border-secondary/30">
+          <div className="p-4">
+            <Button 
+              variant="outline" 
+              className="w-full border-dashed"
+              onClick={toggleApiTester}
+            >
+              {showApiTester ? "Hide API Testing Tools" : "Show API Testing Tools"}
+            </Button>
+          </div>
+        </Card>
+        
+        {showApiTester && (
+          <div className="my-6">
+            <CasinoApiTester />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
