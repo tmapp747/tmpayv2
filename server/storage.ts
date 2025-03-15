@@ -1274,6 +1274,8 @@ export class DbStorage extends MemStorage {
             // We have to manually force the ID to match the database
             const user = {...userData, 
               id: dbUser.id,
+              balances: dbUser.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
+              hierarchyLevel: dbUser.hierarchy_level || 0,
               accessTokenExpiry: dbUser.accessTokenExpiry ? new Date(dbUser.accessTokenExpiry) : null,
               refreshTokenExpiry: dbUser.refreshTokenExpiry ? new Date(dbUser.refreshTokenExpiry) : null,
               casinoAuthTokenExpiry: dbUser.casinoAuthTokenExpiry ? new Date(dbUser.casinoAuthTokenExpiry) : null,
@@ -1487,7 +1489,7 @@ export class DbStorage extends MemStorage {
           allowed_top_managers: allowedTopManagers,
           updated_at: user.updatedAt
         })
-        .where(eq(users.id, id));
+        .where(sql`id = ${id}`);
       
       console.log(`Persisted allowed top managers for user ${id} to database: ${allowedTopManagers.join(', ')}`);
     } catch (error) {
@@ -1510,7 +1512,7 @@ export class DbStorage extends MemStorage {
           casino_auth_token_expiry: expiryDate,
           updated_at: user.updatedAt
         })
-        .where(eq(users.id, id));
+        .where(sql`id = ${id}`);
       
       console.log(`Persisted casino auth token for user ${id} to database, expires: ${expiryDate.toISOString()}`);
     } catch (error) {
