@@ -78,7 +78,7 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  email: z.string().email({ message: "Please enter a valid email" }).optional(),
+  email: z.string().email({ message: "Please enter a valid email" }), // Email is now required
   userType: z.enum(["player", "agent"]).default("player"),
   // Read-only casino information fields (not actually sent in the request, but displayed)
   topManager: z.string().optional(),
@@ -541,7 +541,7 @@ export default function AuthPage() {
                           <FormItem className="space-y-1.5 sm:space-y-2">
                             <FormLabel className="flex items-center text-sm text-gray-300">
                               <AtSign className="h-3.5 w-3.5 mr-2 text-lime-400" />
-                              Email (Optional)
+                              Email
                             </FormLabel>
                             <FormControl>
                               <Input 
@@ -552,7 +552,7 @@ export default function AuthPage() {
                               />
                             </FormControl>
                             <FormDescription className="text-xs text-gray-400">
-                              We'll use this to notify you about important transactions
+                              Required for account verification and transaction notifications
                             </FormDescription>
                             <FormMessage className="text-xs sm:text-sm" />
                           </FormItem>

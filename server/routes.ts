@@ -670,11 +670,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("[REGISTER] Registration attempt with data:", JSON.stringify(req.body, null, 2));
       
-      // Create a register schema based on the user schema with minimal required fields
+      // Create a register schema based on the user schema with required fields
       const registerSchema = z.object({
         username: z.string().min(3),
         password: z.string().min(6),
-        email: z.string().email().optional(),
+        email: z.string().email(), // Email is now required
         userType: z.enum(['player', 'agent']).default('player')
       });
       
@@ -725,7 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const newUser = await storage.createUser({
           username,
           password, // In production, this would be hashed
-          email: email || null,
+          email, // Email is now required and non-null
           casinoId: `747-${casinoClientId}`,
           balance: "0.00",
           pendingBalance: "0.00",

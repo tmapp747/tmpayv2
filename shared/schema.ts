@@ -10,7 +10,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  email: text("email"),
+  email: text("email").notNull(), // Email is now required
   // Primary balance in PHP (Philippine Peso) for DirectPay transactions
   balance: numeric("balance", { precision: 10, scale: 2 }).default("0").notNull(),
   pendingBalance: numeric("pending_balance", { precision: 10, scale: 2 }).default("0").notNull(),
