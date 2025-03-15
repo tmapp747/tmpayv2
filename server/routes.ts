@@ -1569,75 +1569,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint to simulate payment completion (in production this would be a webhook from DirectPay)
+  // Endpoint to simulate payment completion for testing & development (in production this would be a webhook from DirectPay)
   app.post("/api/payments/simulate-completion", async (req: Request, res: Response) => {
     try {
-      const { directPayReference } = req.body;
+      console.log(`🧪 SIMULATION: Payment completion simulation called with payload:`, req.body);
+      
+      const { directPayReference, testMode } = req.body;
       
       if (!directPayReference) {
-        return res.status(400).json({ message: "DirectPay reference is required" });
+        console.log("❌ SIMULATION: DirectPay reference is missing");
+        return res.status(400).json({ 
+          success: false, 
+          message: "DirectPay reference is required" 
+        });
       }
       
       // Find the QR payment
       const qrPayment = await storage.getQrPaymentByReference(directPayReference);
+      console.log(`🔍 SIMULATION: Looking up QR payment by reference: ${directPayReference}`, 
+        qrPayment ? { found: true, id: qrPayment.id, status: qrPayment.status } : { found: false });
       
       if (!qrPayment) {
-        return res.status(404).json({ message: "Payment not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "Payment not found" 
+        });
       }
       
-      if (qrPayment.status !== "pending") {
+      // Only enforce pending status check if not in test mode
+      if (qrPayment.status !== "pending" && !testMode) {
+        console.log(`⚠️ SIMULATION: Payment is already in ${qrPayment.status} state`);
         return res.status(400).json({ 
+          success: false, 
           message: `Payment is already ${qrPayment.status}` 
         });
       }
       
       // Find the user
       const user = await storage.getUser(qrPayment.userId);
+      console.log(`👤 SIMULATION: Looking up user with ID: ${qrPayment.userId}`, 
+        user ? { found: true, username: user.username, casinoId: user.casinoId } : { found: false });
+      
       if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "User not found" 
+        });
+      }
+      
+      // Verify casino ID exists
+      if (!user.casinoId || !user.casinoUsername) {
+        console.error(`❌ SIMULATION: User ${user.username} has no casino ID or username`);
+        return res.status(400).json({
+          success: false, 
+          message: "User has no casino ID or username"
+        });
       }
       
       // Find the transaction
       const transaction = await storage.getTransaction(qrPayment.transactionId);
+      console.log(`💼 SIMULATION: Looking up transaction with ID: ${qrPayment.transactionId}`, 
+        transaction ? { found: true, id: transaction.id, status: transaction.status } : { found: false });
+      
       if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
+        return res.status(404).json({ 
+          success: false, 
+          message: "Transaction not found" 
+        });
       }
+      
+      console.log(`✅ SIMULATION: All validations passed, proceeding with payment completion`);
       
       // Update QR payment status
       await storage.updateQrPaymentStatus(qrPayment.id, "completed");
+      console.log(`🔄 SIMULATION: Updated QR payment status to completed`);
       
-      // Update transaction status
-      await storage.updateTransactionStatus(transaction.id, "completed");
-      
-      // Call 747 Casino API to complete the topup
-      const amount = parseFloat(qrPayment.amount.toString());
-      const { transactionId } = await casino747CompleteTopup(
-        user.casinoId,
-        amount,
-        transaction.paymentReference || ""
+      // Update transaction status with a simulated transaction ID
+      const simulatedTxId = `SIM${Date.now()}`;
+      await storage.updateTransactionStatus(
+        transaction.id, 
+        "completed", 
+        simulatedTxId
       );
+      console.log(`🔄 SIMULATION: Updated transaction status to completed with ID: ${simulatedTxId}`);
       
-      // Update user's balance with the transaction currency (default to PHP for GCash)
-      const currency = transaction.currency || 'PHP';
-      await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+      // Parse amount and prepare for casino topup
+      const amount = parseFloat(qrPayment.amount.toString());
+      console.log(`💰 SIMULATION: Amount to be transferred to casino: ${amount}`);
       
-      // Get the updated currency balance
-      const newBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
+      // Determine payment reference to use
+      const paymentRef = transaction.paymentReference || directPayReference || simulatedTxId;
+      console.log(`🔑 SIMULATION: Using payment reference for casino transfer: ${paymentRef}`);
       
-      return res.json({
-        success: true,
-        message: "Payment completed successfully",
-        transaction: {
-          ...transaction,
-          status: "completed",
-          transactionId
-        },
-        newBalance,
-        currencyUsed: currency
-      });
+      try {
+        console.log(`🎰 SIMULATION: Initiating casino topup with params:`, {
+          casinoId: user.casinoId,
+          casinoUsername: user.casinoUsername,
+          amount,
+          reference: paymentRef
+        });
+        
+        // Call 747 Casino API to complete the topup
+        const casinoResult = await casino747CompleteTopup(
+          user.casinoId,
+          amount,
+          paymentRef
+        );
+        
+        console.log(`✅ SIMULATION: Casino topup completed successfully:`, casinoResult);
+        
+        // Update transaction with the unique nonce for reconciliation
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "completed",
+          simulatedTxId,
+          { nonce: casinoResult.nonce, casinoTransactionId: casinoResult.transactionId }
+        );
+        
+        // Update user's balance with the transaction currency (default to PHP for GCash)
+        const currency = transaction.currency || 'PHP';
+        await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+        console.log(`💵 SIMULATION: Updated user's ${currency} balance with amount: ${amount}`);
+        
+        // Get the updated currency balance
+        const newBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
+        console.log(`💵 SIMULATION: New user balance: ${newBalance} ${currency}`);
+        
+        return res.json({
+          success: true,
+          message: "Payment completed successfully with casino transfer",
+          transaction: {
+            ...transaction,
+            status: "completed",
+            transactionId: casinoResult.transactionId,
+            casinoNonce: casinoResult.nonce
+          },
+          newBalance,
+          currencyUsed: currency,
+          casinoTopup: {
+            success: true,
+            newCasinoBalance: casinoResult.newBalance
+          }
+        });
+      } catch (casinoError) {
+        console.error("❌ SIMULATION: Error during casino topup:", casinoError);
+        
+        // Update user's balance despite casino error
+        const currency = transaction.currency || 'PHP';
+        await storage.updateUserCurrencyBalance(user.id, currency as Currency, amount);
+        const newBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
+        
+        // Add error details to transaction
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "completed",
+          simulatedTxId,
+          { 
+            casinoError: casinoError instanceof Error ? casinoError.message : String(casinoError),
+            casinoErrorTime: new Date().toISOString() 
+          }
+        );
+        
+        return res.json({
+          success: true,
+          message: "Payment completed but casino transfer failed",
+          transaction: {
+            ...transaction,
+            status: "completed",
+            transactionId: simulatedTxId
+          },
+          newBalance,
+          currencyUsed: currency,
+          casinoTopup: {
+            success: false,
+            error: casinoError instanceof Error ? casinoError.message : String(casinoError)
+          }
+        });
+      }
     } catch (error) {
-      console.error("Simulate payment completion error:", error);
-      return res.status(500).json({ message: "Server error while processing payment completion" });
+      console.error("❌ SIMULATION: Payment completion simulation error:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Server error while processing simulated payment completion",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -2464,6 +2579,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test webhook endpoint for testing DirectPay webhook handling
+  app.post("/api/debug/test-payment-webhook", async (req: Request, res: Response) => {
+    try {
+      console.log(`🧪 TEST WEBHOOK: Received test webhook payload:`, req.body);
+      
+      // Forward to the actual webhook handler
+      const webhookResponse = await axios.post(
+        `http://localhost:5000/api/webhook/directpay/payment`, 
+        req.body,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+      
+      console.log(`🧪 TEST WEBHOOK: Webhook handler response:`, webhookResponse.data);
+      
+      return res.json({
+        success: true,
+        message: "Test webhook forwarded to handler",
+        webhookResponse: webhookResponse.data
+      });
+    } catch (error) {
+      console.error(`🧪 TEST WEBHOOK: Error forwarding webhook:`, error);
+      return res.status(500).json({
+        success: false,
+        message: "Error forwarding webhook",
+        error: error instanceof Error ? error.message : String(error),
+        errorDetails: axios.isAxiosError(error) && error.response ? error.response.data : undefined
+      });
+    }
+  });
+  
   // DirectPay webhook endpoint for payment notifications
   app.post("/api/webhook/directpay/payment", async (req: Request, res: Response) => {
     try {
