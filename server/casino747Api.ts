@@ -105,20 +105,38 @@ export class Casino747Api {
       // Make sure we have a valid auth token
       const authToken = await this.getAuthToken(username);
       
-      const response = await axios.post(`${this.baseUrl}/account/get-balances`, {
+      console.log(`DEBUG: Making balance request for ${username} with clientId ${clientId}`);
+      console.log(`DEBUG: Using token: ${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`);
+      
+      const requestData = {
         authToken,
         platform: this.defaultPlatform,
         clientId,
         username
-      }, {
+      };
+      
+      console.log(`DEBUG: Request data: ${JSON.stringify(requestData)}`);
+      console.log(`DEBUG: Request URL: ${this.baseUrl}/account/get-balances`);
+      
+      const response = await axios.post(`${this.baseUrl}/account/get-balances`, requestData, {
         headers: {
           'Content-Type': 'application/json'
         }
       });
       
+      console.log(`DEBUG: Balance API Response: ${JSON.stringify(response.data)}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user balance:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('Error fetching balance from casino API:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else {
+        console.error('Error fetching balance from casino API:', error);
+      }
       throw new Error('Failed to fetch balance from 747 Casino API');
     }
   }
