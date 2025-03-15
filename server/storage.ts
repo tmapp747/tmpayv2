@@ -47,6 +47,7 @@ export interface IStorage {
   updateUserRefreshToken(id: number, token: string | null | undefined, expiresIn?: number): Promise<User>;
   isTokenExpired(id: number): Promise<boolean>;
   updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User>;
+  updateUserPassword(id: number, password: string): Promise<User>;
   updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
   setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;
   isUserAuthorized(username: string): Promise<boolean>;
@@ -340,6 +341,23 @@ export class MemStorage implements IStorage {
       updatedAt: new Date() 
     };
     this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserPassword(id: number, password: string): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    console.log(`Updating password for user ID ${id} (${user.username})`);
+    
+    const updatedUser = { 
+      ...user, 
+      password,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    
+    console.log(`Password updated successfully for user ID ${id}`);
     return updatedUser;
   }
 

@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { comparePasswords, hashPassword } from "./auth";
 import { 
   generateQrCodeSchema, 
   insertTransactionSchema, 
@@ -30,7 +29,7 @@ import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
 import { paygramApi } from "./paygramApi";
-import { setupAuth, hashPassword, comparePasswords } from "./auth";
+import { setupAuth, hashPassword, comparePasswords, isPasswordHashed } from "./auth";
 
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
@@ -447,6 +446,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: false, 
           message: "Invalid username or password" 
         });
+      }
+      
+      // Automatic password migration from plaintext to bcrypt hash
+      // Only do this if the password is not already hashed and login was successful
+      if (!isPasswordHashed(user.password) && passwordValid) {
+        console.log(`Migrating password for user ${username} from plaintext to bcrypt hash`);
+        try {
+          // Hash the password using bcrypt
+          const hashedPassword = await hashPassword(password);
+          
+          // Update the user record with the hashed password
+          await storage.updateUserPassword(user.id, hashedPassword);
+          console.log(`Password migration successful for user ${username}`);
+        } catch (error) {
+          console.error(`Password migration failed for user ${username}:`, error);
+          // Continue with login even if migration fails
+          // We'll try again next time
+        }
       }
       
       // User is eligible and credentials are valid
