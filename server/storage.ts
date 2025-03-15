@@ -1460,13 +1460,15 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(users)
-        .set({
-          access_token: token,
-          access_token_expiry: user.accessTokenExpiry,
-          updated_at: user.updatedAt
-        })
-        .where(eq(users.id, id));
+      // Update query with proper SQL syntax
+      await this.dbInstance.execute(
+        sql`UPDATE ${users} 
+            SET access_token = ${token}, 
+                access_token_expiry = ${user.accessTokenExpiry}, 
+                updated_at = ${user.updatedAt} 
+            WHERE id = ${id}`
+      );
+      console.log(`Successfully updated access token in database for user ID: ${id}`);
     } catch (error) {
       console.error('Error updating user access token in database:', error);
       // Continue with memory update even if DB fails
@@ -1481,13 +1483,15 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(users)
-        .set({
-          refresh_token: token,
-          refresh_token_expiry: user.refreshTokenExpiry,
-          updated_at: user.updatedAt
-        })
-        .where(eq(users.id, id));
+      // Update query with proper SQL syntax
+      await this.dbInstance.execute(
+        sql`UPDATE ${users} 
+            SET refresh_token = ${token}, 
+                refresh_token_expiry = ${user.refreshTokenExpiry}, 
+                updated_at = ${user.updatedAt} 
+            WHERE id = ${id}`
+      );
+      console.log(`Successfully updated refresh token in database for user ID: ${id}`);
     } catch (error) {
       console.error('Error updating user refresh token in database:', error);
       // Continue with memory update even if DB fails
@@ -1622,7 +1626,7 @@ export class DbStorage extends MemStorage {
       const existingPrefs = await this.dbInstance
         .select()
         .from(userPreferences)
-        .where(eq(userPreferences.userId, userId))
+        .where(eq(userPreferences.user_id, userId))
         .where(eq(userPreferences.key, key));
       
       if (existingPrefs && existingPrefs.length > 0) {
@@ -1639,11 +1643,11 @@ export class DbStorage extends MemStorage {
         // Insert new preference
         await this.dbInstance.insert(userPreferences).values({
           id: preference.id,
-          userId: userId,
+          user_id: userId,
           key: key,
           value: preference.value,
-          createdAt: preference.createdAt,
-          updatedAt: preference.updatedAt
+          created_at: preference.createdAt,
+          updated_at: preference.updatedAt
         });
         
         console.log(`Inserted new user preference to database: userId=${userId}, key=${key}`);

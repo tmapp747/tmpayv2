@@ -2979,14 +2979,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newUser = await storage.createUser({
         username,
         password: hashedPassword,
-        email: email || null,
+        email: email || `${username}@example.com`, // Ensure email is not null
         balance: "0",
         pendingBalance: "0",
         isVip: false,
         isAuthorized: true,
         casinoId,
         ...mockCasinoDetails,
-        currencyBalances: { PHP: "0", PHPT: "0", USDT: "0" },
+        balances: { PHP: "0", PHPT: "0", USDT: "0" }, // Use balances instead of currencyBalances
         preferredCurrency: "PHP",
         allowedTopManagers: ["TestManager"]
       });
@@ -3001,7 +3001,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Setup session
       if (req.session) {
-        req.session.userId = newUser.id;
+        // Explicitly type the session to include userId
+        (req.session as any).userId = newUser.id;
         req.session.save();
       }
       
