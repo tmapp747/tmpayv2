@@ -2943,6 +2943,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Special debug route to register a user bypassing the Casino API verification
+  app.post("/api/debug/register-bypass", async (req: Request, res: Response) => {
+    try {
+      const { username, password, email } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ success: false, message: "Username and password are required" });
+      }
+      
+      console.log("[DEBUG] Registering user with bypass:", username);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: "Username already taken" });
+      }
+      
+      // Mock casino details for testing
+      const mockCasinoDetails = {
+        casinoUsername: username,
+        casinoClientId: Math.floor(1000000 + Math.random() * 9000000),
+        topManager: "TestManager",
+        immediateManager: "TestManager",
+        casinoUserType: "player"
+      };
+      
+      // Generate unique casino ID
+      const casinoId = `747-${mockCasinoDetails.casinoClientId}`;
+      
+      // Hash password
+      const hashedPassword = await hashPassword(password);
+      
+      // Create user with mock casino details
+      const newUser = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email: email || null,
+        balance: "0",
+        pendingBalance: "0",
+        isVip: false,
+        isAuthorized: true,
+        casinoId,
+        ...mockCasinoDetails,
+        currencyBalances: { PHP: "0", PHPT: "0", USDT: "0" },
+        preferredCurrency: "PHP",
+        allowedTopManagers: ["TestManager"]
+      });
+      
+      // Generate tokens
+      const accessToken = generateAccessToken();
+      const refreshToken = generateAccessToken(); // Using same function for simplicity
+      
+      // Update tokens
+      await storage.updateUserAccessToken(newUser.id, accessToken);
+      await storage.updateUserRefreshToken(newUser.id, refreshToken);
+      
+      // Setup session
+      if (req.session) {
+        req.session.userId = newUser.id;
+        req.session.save();
+      }
+      
+      console.log("[DEBUG] User registered successfully with bypass:", username);
+      
+      // Return success response
+      const { password: _, ...userWithoutPassword } = newUser;
+      return res.status(201).json({
+        success: true,
+        message: "Debug registration successful (Casino API bypassed)",
+        user: {
+          ...userWithoutPassword,
+          accessToken,
+          refreshToken
+        }
+      });
+    } catch (error) {
+      console.error("[DEBUG] Error in bypass registration:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Registration failed", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Helper function to handle DirectPay webhook logic
   async function handleDirectPayWebhook(payload: any) {
     // Log the payload
