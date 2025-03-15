@@ -42,7 +42,10 @@ export interface IStorage {
   
   // Authentication operations
   getUserByAccessToken(token: string): Promise<User | undefined>;
-  updateUserAccessToken(id: number, token: string | null | undefined): Promise<User>;
+  updateUserAccessToken(id: number, token: string | null | undefined, expiresIn?: number): Promise<User>;
+  getUserByRefreshToken(token: string): Promise<User | undefined>;
+  updateUserRefreshToken(id: number, token: string | null | undefined, expiresIn?: number): Promise<User>;
+  isTokenExpired(id: number): Promise<boolean>;
   updateUserAuthorizationStatus(id: number, isAuthorized: boolean): Promise<User>;
   updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User>;
   setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User>;

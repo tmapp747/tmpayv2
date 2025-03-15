@@ -2,8 +2,8 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
-import { scrypt, randomBytes, timingSafeEqual } from "crypto";
-import { promisify } from "util";
+import { randomBytes } from "crypto";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { casino747Api } from "./casino747Api";
@@ -14,14 +14,47 @@ declare global {
   }
 }
 
-const scryptAsync = promisify(scrypt);
+// Number of salt rounds for bcrypt hashing
+const SALT_ROUNDS = 10;
 
+/**
+ * Hashes a password using bcrypt
+ * In development mode, can be configured to use plaintext for easier testing
+ */
 export async function hashPassword(password: string) {
-  return password; // Direct storage for development
+  // Check if we're in development mode and if plaintext passwords are allowed
+  if (process.env.NODE_ENV !== "production" && process.env.ALLOW_PLAINTEXT_PASSWORDS === "true") {
+    console.warn("WARNING: Using plaintext passwords in development mode");
+    return password;
+  }
+  
+  // Otherwise use proper bcrypt hashing even in development
+  return await bcrypt.hash(password, SALT_ROUNDS);
 }
 
+/**
+ * Compares a supplied password with a stored password
+ * Handles both bcrypt hashed passwords and plaintext passwords (for development)
+ */
 export async function comparePasswords(supplied: string, stored: string) {
-  return supplied === stored; // Direct comparison for development
+  // If the stored password appears to be a bcrypt hash, use bcrypt.compare
+  if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
+    return await bcrypt.compare(supplied, stored);
+  }
+  
+  // Fallback for plaintext passwords (development only)
+  if (process.env.NODE_ENV !== "production" && process.env.ALLOW_PLAINTEXT_PASSWORDS === "true") {
+    return supplied === stored;
+  }
+  
+  // If we're in production and the password doesn't look like a hash, always fail
+  if (process.env.NODE_ENV === "production") {
+    console.error("Plaintext password found in production environment");
+    return false;
+  }
+  
+  // Default comparison (should only reach here in non-production)
+  return supplied === stored;
 }
 
 export function setupAuth(app: Express) {

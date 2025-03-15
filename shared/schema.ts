@@ -28,6 +28,9 @@ export const users = pgTable("users", {
   casinoBalance: numeric("casino_balance", { precision: 10, scale: 2 }).default("0"),
   // Auth and hierarchy fields
   accessToken: text("access_token"), // Each user has a unique token for transfers
+  accessTokenExpiry: timestamp("access_token_expiry"), // When the access token expires
+  refreshToken: text("refresh_token"), // Token used to refresh the access token
+  refreshTokenExpiry: timestamp("refresh_token_expiry"), // When the refresh token expires
   casinoAuthToken: text("casino_auth_token"), // Casino API auth token (typically from top manager)
   casinoAuthTokenExpiry: timestamp("casino_auth_token_expiry"), // When the casino auth token expires
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
