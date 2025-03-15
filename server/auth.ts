@@ -7,6 +7,8 @@ import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import { casino747Api } from "./casino747Api";
+import { pool } from "./db";
+import pgSession from "connect-pg-simple";
 
 declare global {
   namespace Express {
@@ -114,13 +116,23 @@ export async function comparePasswords(supplied: string, stored: string): Promis
 }
 
 export function setupAuth(app: Express) {
+  // Create PostgreSQL session store
+  const PgStore = pgSession(session);
+  
+  // Setup PostgreSQL session store with the connection pool
+  const pgSessionStore = new PgStore({
+    pool,
+    tableName: 'session', // Use default table name
+    createTableIfMissing: true, // Auto-create the session table if it doesn't exist
+  });
+  
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" 
       ? randomBytes(32).toString('hex') // Generate a secure random secret in production
       : "casino747_dev_session_secret"),
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: pgSessionStore, // Use PostgreSQL session store instead of memory store
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,

@@ -18,16 +18,11 @@ import {
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
-import session from "express-session";
-import createMemoryStore from "memorystore";
 import { eq, sql } from "drizzle-orm";
-
-const MemoryStore = createMemoryStore(session);
 
 // Storage interface for all database operations
 export interface IStorage {
-  // Session store
-  sessionStore: session.Store;
+  // Previous sessionStore property has been removed as session storage is now handled by PostgreSQL
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -123,8 +118,6 @@ export class MemStorage implements IStorage {
   private telegramPaymentIdCounter: number;
   private manualPaymentIdCounter: number;
 
-  sessionStore: session.Store;
-
   constructor() {
     this.users = new Map();
     this.transactions = new Map();
@@ -137,11 +130,6 @@ export class MemStorage implements IStorage {
     this.qrPaymentIdCounter = 1;
     this.telegramPaymentIdCounter = 1;
     this.manualPaymentIdCounter = 1;
-
-    // Initialize the session store
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000 // prune expired entries every 24h
-    });
     
     console.log('MemStorage initialized without test users');
   }
