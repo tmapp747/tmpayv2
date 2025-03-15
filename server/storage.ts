@@ -20,6 +20,7 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import { eq } from "drizzle-orm";
 
 const MemoryStore = createMemoryStore(session);
 
@@ -1393,13 +1394,13 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           access_token: token,
           access_token_expiry: user.accessTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user access token in database:', error);
       // Continue with memory update even if DB fails

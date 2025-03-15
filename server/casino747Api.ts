@@ -574,17 +574,16 @@ export class Casino747Api {
       // 4. If no valid token exists, get it from environment secrets
       console.log(`Getting auth token from environment for top manager: ${topManager}`);
       
+      // Make the comparison case-insensitive
+      const topManagerLower = topManager.toLowerCase();
       let token: string | undefined;
-      switch (topManager) {
-        case 'Marcthepogi':
-          token = process.env.CASINO_TOKEN_MARCTHEPOGI;
-          break;
-        case 'bossmarc747':
-          token = process.env.CASINO_TOKEN_BOSSMARC747;
-          break;
-        case 'teammarc':
-          token = process.env.CASINO_TOKEN_TEAMMARC;
-          break;
+      
+      if (topManagerLower === 'marcthepogi' || topManagerLower === 'marcthepogi') {
+        token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+      } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
+        token = process.env.CASINO_TOKEN_BOSSMARC747;
+      } else if (topManagerLower === 'teammarc' || topManagerLower === 'teammarc') {
+        token = process.env.CASINO_TOKEN_TEAMMARC;
       }
       
       if (!token) {
@@ -628,22 +627,23 @@ export class Casino747Api {
       // Simulate API call
       console.log(`Fetching new auth token for manager: ${topManager}`);
       
+      // Make the comparison case-insensitive
+      const topManagerLower = topManager.toLowerCase();
       let token: string | undefined;
-      switch (topManager) {
-        case 'Marcthepogi':
-          token = process.env.CASINO_TOKEN_MARCTHEPOGI;
-          console.log(`DEBUG: Attempting to fetch token for Marcthepogi: ${token ? 'Token found' : 'No token in env'}`);
-          // For debugging - show limited part of token if available
-          if (token) {
-            console.log(`Marcthepogi token starts with: ${token.substring(0, 5)}... and ends with: ...${token.substring(token.length - 5)}`);
-          }
-          break;
-        case 'bossmarc747':
-          token = process.env.CASINO_TOKEN_BOSSMARC747;
-          break;
-        case 'teammarc':
-          token = process.env.CASINO_TOKEN_TEAMMARC;
-          break;
+      
+      if (topManagerLower === 'marcthepogi') {
+        token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+        console.log(`DEBUG: Attempting to fetch token for Marcthepogi: ${token ? 'Token found' : 'No token in env'}`);
+        // For debugging - show limited part of token if available
+        if (token) {
+          console.log(`Marcthepogi token starts with: ${token.substring(0, 5)}... and ends with: ...${token.substring(token.length - 5)}`);
+        }
+      } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
+        token = process.env.CASINO_TOKEN_BOSSMARC747;
+        console.log(`DEBUG: Attempting to fetch token for bossmarc747: ${token ? 'Token found' : 'No token in env'}`);
+      } else if (topManagerLower === 'teammarc') {
+        token = process.env.CASINO_TOKEN_TEAMMARC;
+        console.log(`DEBUG: Attempting to fetch token for teammarc: ${token ? 'Token found' : 'No token in env'}`);
       }
       
       if (!token) {
