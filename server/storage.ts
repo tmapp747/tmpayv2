@@ -1406,6 +1406,76 @@ export class DbStorage extends MemStorage {
     
     return user;
   }
+  
+  async updateUserHierarchyInfo(id: number, topManager: string, immediateManager: string, userType: string): Promise<User> {
+    // First update in memory
+    const user = await super.updateUserHierarchyInfo(id, topManager, immediateManager, userType);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          topManager: topManager,
+          immediateManager: immediateManager,
+          casinoUserType: userType,
+          hierarchyLevel: user.hierarchyLevel,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+      
+      console.log(`Persisted hierarchy info for user ${id} to database: topManager=${topManager}, immediateManager=${immediateManager}, userType=${userType}`);
+    } catch (error) {
+      console.error('Error updating user hierarchy info in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
+  
+  async setUserAllowedTopManagers(id: number, allowedTopManagers: string[]): Promise<User> {
+    // First update in memory
+    const user = await super.setUserAllowedTopManagers(id, allowedTopManagers);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          allowedTopManagers: allowedTopManagers,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+      
+      console.log(`Persisted allowed top managers for user ${id} to database: ${allowedTopManagers.join(', ')}`);
+    } catch (error) {
+      console.error('Error updating user allowed top managers in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
+  
+  async updateUserCasinoAuthToken(id: number, token: string, expiryDate: Date): Promise<User> {
+    // First update in memory
+    const user = await super.updateUserCasinoAuthToken(id, token, expiryDate);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          casinoAuthToken: token,
+          casinoAuthTokenExpiry: expiryDate,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+      
+      console.log(`Persisted casino auth token for user ${id} to database, expires: ${expiryDate.toISOString()}`);
+    } catch (error) {
+      console.error('Error updating user casino auth token in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
 }
 
 // Import database connection
