@@ -657,8 +657,10 @@ export class MemStorage implements IStorage {
     
     // Sort by date (newest first)
     const sortedTransactions = filteredTransactions.sort((a, b) => {
-      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : new Date(a.createdAt as string).getTime()) : 0;
-      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : new Date(b.createdAt as string).getTime()) : 0;
+      const dateA = a.createdAt ? (a.createdAt instanceof Date ? a.createdAt.getTime() : 
+        (typeof a.createdAt === 'string' ? new Date(a.createdAt).getTime() : 0)) : 0;
+      const dateB = b.createdAt ? (b.createdAt instanceof Date ? b.createdAt.getTime() : 
+        (typeof b.createdAt === 'string' ? new Date(b.createdAt).getTime() : 0)) : 0;
       return dateB - dateA;
     });
     
@@ -923,7 +925,8 @@ export class MemStorage implements IStorage {
     }
   ): Promise<Transaction[]> {
     let transactions = Array.from(this.transactions.values()).filter(tx => {
-      const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+      const txDate = tx.createdAt instanceof Date ? tx.createdAt : 
+        (typeof tx.createdAt === 'string' ? new Date(tx.createdAt) : new Date());
       return txDate >= startDate && txDate <= endDate;
     });
     
@@ -989,14 +992,16 @@ export class MemStorage implements IStorage {
       
       if (options.startDate) {
         transactions = transactions.filter(tx => {
-          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : 
+            (typeof tx.createdAt === 'string' ? new Date(tx.createdAt) : new Date());
           return txDate >= options.startDate!;
         });
       }
       
       if (options.endDate) {
         transactions = transactions.filter(tx => {
-          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : 
+            (typeof tx.createdAt === 'string' ? new Date(tx.createdAt) : new Date());
           return txDate <= options.endDate!;
         });
       }
