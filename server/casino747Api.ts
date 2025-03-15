@@ -108,6 +108,7 @@ export class Casino747Api {
       console.log(`DEBUG: Making balance request for ${username} with clientId ${clientId}`);
       console.log(`DEBUG: Using token: ${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`);
       
+      // Create the request payload exactly as specified in the API documentation
       const requestData = {
         authToken,
         platform: this.defaultPlatform,
@@ -120,11 +121,16 @@ export class Casino747Api {
       
       const response = await axios.post(`${this.baseUrl}/account/get-balances`, requestData, {
         headers: {
+          'accept': 'text/plain',
           'Content-Type': 'application/json'
         }
       });
       
-      console.log(`DEBUG: Balance API Response: ${JSON.stringify(response.data)}`);
+      // Log the complete response for debugging
+      console.log(`DEBUG: Balance API Response Headers:`, response.headers);
+      console.log(`DEBUG: Balance API Response Status:`, response.status);
+      console.log(`DEBUG: Balance API Response:`, JSON.stringify(response.data, null, 2));
+      
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -132,12 +138,18 @@ export class Casino747Api {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          message: error.message
+          message: error.message,
+          config: error.config
         });
+        
+        // Print the complete error for deeper analysis
+        console.error('Complete error details:', JSON.stringify(error.toJSON(), null, 2));
+        
+        throw new Error(`Failed to fetch balance: ${error.response?.data?.message || error.message}`);
       } else {
         console.error('Error fetching balance from casino API:', error);
+        throw new Error('Failed to fetch balance from 747 Casino API');
       }
-      throw new Error('Failed to fetch balance from 747 Casino API');
     }
   }
 
@@ -257,7 +269,7 @@ export class Casino747Api {
     amount: number,
     toClientId: number,
     toUsername: string,
-    currency: string = "USD",
+    currency: string = "php", // Changed default to "php" instead of "USD"
     fromUsername: string,
     comment: string = "Transfer from e-wallet"
   ) {
@@ -273,16 +285,27 @@ export class Casino747Api {
       
       console.log(`✅ [CASINO747] Successfully obtained auth token for ${fromUsername}`);
       
+      // Generate a unique nonce for this transaction
+      const nonce = `NONCE-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      
       console.log(`💰 [CASINO747] Transfer attempt: Amount ${amount} ${currency} to ${toUsername} (ID: ${toClientId}) from ${fromUsername}`);
-      console.log(`📝 [CASINO747] Transfer payload:`, {
-        authToken: "***REDACTED***", // Hide token for security
+      
+      // Prepare the exact request payload as specified in the API documentation
+      const requestPayload = {
+        authToken: authToken,
         platform: this.defaultPlatform,
-        amount,
+        amount: amount,
         toAgent: false,
-        currency,
+        currency: currency.toLowerCase(), // Ensure lowercase as per example
+        nonce: nonce,
         clientId: toClientId,
         username: toUsername,
-        commentLength: comment.length
+        comment: comment
+      };
+      
+      console.log(`📝 [CASINO747] Transfer payload:`, {
+        ...requestPayload, 
+        authToken: "***REDACTED***" // Hide token for security
       });
       
       // Add timeout and retry logic for reliability
@@ -295,17 +318,10 @@ export class Casino747Api {
           attempts++;
           console.log(`🔄 [CASINO747] Transfer attempt ${attempts}/${maxAttempts}`);
           
-          const response = await axios.post(`${this.baseUrl}/Default/Transfer`, {
-            authToken,
-            platform: this.defaultPlatform,
-            amount,
-            toAgent: false,
-            currency,
-            clientId: toClientId,
-            username: toUsername,
-            comment
-          }, {
+          // Set up the exact request format as required by the API
+          const response = await axios.post(`${this.baseUrl}/Default/Transfer`, requestPayload, {
             headers: {
+              'accept': 'text/plain',
               'Content-Type': 'application/json'
             },
             timeout: 15000 // 15 second timeout
@@ -394,21 +410,45 @@ export class Casino747Api {
       // Make sure we have a valid auth token based on the top manager
       const authToken = await this.getAuthToken(userDetails.topManager);
       
-      const response = await axios.post(`${this.baseUrl}/Default/SendMessage`, {
+      console.log(`[CASINO747] Sending message to ${recipientUsername} with subject: ${subject}`);
+      
+      // Create the request payload exactly as specified in the API documentation
+      const requestPayload = {
         authToken,
         platform: this.defaultPlatform,
         username: recipientUsername,
         subject,
         message
-      }, {
+      };
+      
+      const response = await axios.post(`${this.baseUrl}/Default/SendMessage`, requestPayload, {
         headers: {
+          'accept': 'text/plain',
           'Content-Type': 'application/json'
         }
       });
       
+      console.log(`[CASINO747] Message send response:`, response.data);
+      
       return response.data;
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[CASINO747] Error sending message:', error);
+      
+      // Provide detailed error information
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.error('[CASINO747] Message API response error:', {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data
+          });
+        } else if (error.request) {
+          console.error('[CASINO747] Message API request error (no response):', {
+            message: error.message
+          });
+        }
+      }
+      
       throw new Error('Failed to send message using 747 Casino API');
     }
   }
@@ -436,18 +476,57 @@ export class Casino747Api {
     message: string;
   }> {
     try {
-      const response = await axios.get(
-        `${this.baseUrl}/Default/GetHierarchy?username=${encodeURIComponent(username)}&isAgent=${isAgent}`,
+      console.log(`[CASINO747] Getting hierarchy for user: ${username}, isAgent: ${isAgent}`);
+      
+      // Make sure we have a valid auth token based on the user
+      const authToken = await this.getAuthToken(username);
+      
+      // Use POST with authToken in body instead of GET with query parameters
+      // as per the API specification
+      const requestPayload = {
+        authToken,
+        platform: this.defaultPlatform,
+        username,
+        isAgent
+      };
+      
+      console.log(`[CASINO747] Hierarchy request payload:`, {
+        ...requestPayload,
+        authToken: "***REDACTED***" // Hide token for security
+      });
+      
+      const response = await axios.post(
+        `${this.baseUrl}/Default/GetHierarchy`,
+        requestPayload,
         {
           headers: {
+            'accept': 'text/plain',
             'Content-Type': 'application/json'
           }
         }
       );
       
+      console.log(`[CASINO747] Hierarchy response:`, response.data);
+      
       return response.data;
     } catch (error) {
-      console.error(`Error fetching hierarchy for ${username}:`, error);
+      console.error(`[CASINO747] Error fetching hierarchy for ${username}:`, error);
+      
+      // Provide detailed error information
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          console.error('[CASINO747] Hierarchy API response error:', {
+            status: error.response.status,
+            statusText: error.response.statusText,
+            data: error.response.data
+          });
+        } else if (error.request) {
+          console.error('[CASINO747] Hierarchy API request error (no response):', {
+            message: error.message
+          });
+        }
+      }
+      
       throw new Error('Failed to fetch user hierarchy from 747 Casino API');
     }
   }
