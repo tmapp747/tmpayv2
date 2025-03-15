@@ -1487,7 +1487,7 @@ export class DbStorage extends MemStorage {
           refresh_token_expiry: user.refreshTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user refresh token in database:', error);
       // Continue with memory update even if DB fails
@@ -1507,7 +1507,7 @@ export class DbStorage extends MemStorage {
           password: password,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user password in database:', error);
       // Continue with memory update even if DB fails
@@ -1530,7 +1530,7 @@ export class DbStorage extends MemStorage {
           hierarchy_level: user.hierarchyLevel,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
       
       console.log(`Persisted hierarchy info for user ${id} to database: topManager=${topManager}, immediateManager=${immediateManager}, userType=${userType}`);
     } catch (error) {
@@ -1552,7 +1552,7 @@ export class DbStorage extends MemStorage {
           allowed_top_managers: allowedTopManagers,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
       
       console.log(`Persisted allowed top managers for user ${id} to database: ${allowedTopManagers.join(', ')}`);
     } catch (error) {
@@ -1575,7 +1575,7 @@ export class DbStorage extends MemStorage {
           casino_auth_token_expiry: expiryDate,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
       
       console.log(`Persisted casino auth token for user ${id} to database, expires: ${expiryDate.toISOString()}`);
     } catch (error) {
@@ -1622,7 +1622,10 @@ export class DbStorage extends MemStorage {
       const existingPrefs = await this.dbInstance
         .select()
         .from(userPreferences)
-        .where(sql`user_id = ${userId} AND key = ${key}`);
+        .where(and(
+          eq(userPreferences.user_id, userId),
+          eq(userPreferences.key, key)
+        ));
       
       if (existingPrefs && existingPrefs.length > 0) {
         // Update existing preference
@@ -1631,7 +1634,7 @@ export class DbStorage extends MemStorage {
             value: preference.value,
             updated_at: preference.updatedAt
           })
-          .where(sql`id = ${preference.id}`);
+          .where(eq(userPreferences.id, preference.id));
         
         console.log(`Updated user preference in database: userId=${userId}, key=${key}`);
       } else {
@@ -1663,7 +1666,10 @@ export class DbStorage extends MemStorage {
     if (result) {
       try {
         await this.dbInstance.delete(userPreferences)
-          .where(sql`user_id = ${userId} AND key = ${key}`);
+          .where(and(
+            eq(userPreferences.user_id, userId),
+            eq(userPreferences.key, key)
+          ));
         
         console.log(`Deleted user preference from database: userId=${userId}, key=${key}`);
       } catch (error) {
