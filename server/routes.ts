@@ -2985,8 +2985,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isVip: false,
         isAuthorized: true,
         casinoId,
-        ...mockCasinoDetails,
-        balances: { PHP: "0", PHPT: "0", USDT: "0" }, // Use balances instead of currencyBalances
+        casinoUsername: mockCasinoDetails.casinoUsername,
+        casinoClientId: mockCasinoDetails.casinoClientId,
+        topManager: mockCasinoDetails.topManager,
+        immediateManager: mockCasinoDetails.immediateManager,
+        casinoUserType: mockCasinoDetails.casinoUserType,
+        currencyBalances: { PHP: "0", PHPT: "0", USDT: "0" }, // Using proper field name
         preferredCurrency: "PHP",
         allowedTopManagers: ["TestManager"]
       });
