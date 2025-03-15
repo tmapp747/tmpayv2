@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { initMobileEnhancements } from "./lib/mobile-utils";
+
+// Initialize mobile enhancements
+initMobileEnhancements();
 
 // Add global styles
 document.documentElement.style.setProperty('--primary-color', '#1a2b47');

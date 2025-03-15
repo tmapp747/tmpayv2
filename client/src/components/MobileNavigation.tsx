@@ -33,20 +33,20 @@ const MobileNavigation = () => {
     <>
       {showLogoutConfirm && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-primary p-5 m-4 rounded-lg shadow-lg">
+          <div className="bg-primary p-5 m-4 rounded-lg shadow-lg mobile-safe-area">
             <h3 className="font-bold text-lg text-white mb-3">Confirm Logout</h3>
             <p className="text-gray-300 mb-4">Are you sure you want to logout?</p>
             <div className="flex justify-end gap-3">
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="px-3 py-2 rounded-md bg-gray-600 text-white"
+                className="px-3 py-2 rounded-md bg-gray-600 text-white native-button mobile-clickable"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
-                className="px-3 py-2 rounded-md bg-error text-white"
+                className="px-3 py-2 rounded-md bg-error text-white native-button mobile-clickable"
               >
                 {logoutMutation.isPending ? (
                   <div className="flex items-center">
@@ -61,7 +61,7 @@ const MobileNavigation = () => {
           </div>
         </div>
       )}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-primary border-t border-secondary/30 z-40 shadow-lg">
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-primary border-t border-secondary/30 z-40 shadow-lg mobile-safe-area" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around p-2">
           {navLinks.map((link) => {
             const isActive = location === link.path;
@@ -70,7 +70,7 @@ const MobileNavigation = () => {
                 key={link.path}
                 href={link.path}
                 className={cn(
-                  "flex flex-col items-center p-2 text-white",
+                  "flex flex-col items-center p-2 text-white mobile-clickable",
                   isActive && "bg-secondary/20 rounded-lg"
                 )}
               >
@@ -84,7 +84,7 @@ const MobileNavigation = () => {
           })}
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex flex-col items-center p-2 text-white"
+            className="flex flex-col items-center p-2 text-white mobile-clickable"
           >
             <LogOut className="h-5 w-5" />
             <span className="text-xs mt-1">Logout</span>

@@ -118,6 +118,9 @@ input, select, textarea, button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
 
 .mobile-clickable:active {
@@ -135,6 +138,36 @@ input, select, textarea, button {
 
 .native-button:active {
   transform: scale(0.98);
+}
+
+/* iOS-specific keyboard styles */
+.keyboard-open {
+  /* Adjust content when keyboard is open */
+  padding-bottom: var(--keyboard-height, 0px);
+}
+
+.keyboard-open .fixed-bottom {
+  /* Hide bottom elements when keyboard is open */
+  display: none !important;
+}
+
+/* Disable text selection on mobile */
+.ios-device, .android-device {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Enable text selection only in input fields */
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/* Prevent zooming on focus */
+input, textarea, select, button {
+  font-size: 16px; /* Minimum font size to prevent iOS zoom */
 }
 
 /* Prevent text size adjustment on orientation change */

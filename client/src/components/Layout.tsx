@@ -29,18 +29,18 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="flex min-h-screen pb-16 lg:pb-0 bg-dark text-neutral-100 font-inter">
+    <div className="mobile-container flex min-h-screen pb-16 lg:pb-0 bg-dark text-neutral-100 font-inter mobile-safe-area" style={{ height: 'var(--app-height, 100vh)' }}>
       {/* Desktop Sidebar */}
       <DesktopSidebar />
       
       {/* Main Content */}
-      <div className="flex-1 bg-dark">
+      <div className="flex-1 bg-dark flex flex-col">
         {/* Header */}
         <header className={cn(
           "bg-primary p-4 lg:py-4 lg:px-6 border-b border-secondary/30",
-          "flex items-center justify-between shadow-md"
+          "flex items-center justify-between shadow-md sticky top-0 z-10"
         )}>
-          <div className="flex items-center lg:hidden">
+          <div className="flex items-center lg:hidden mobile-clickable">
             <div className="w-10 h-10 overflow-hidden">
               <svg viewBox="0 0 200 200" className="h-full w-full">
                 <circle cx="100" cy="100" r="90" fill="#1a2b47" />
@@ -58,26 +58,28 @@ const Layout = ({ children }: LayoutProps) => {
           
           <div className="flex items-center space-x-3">
             <div className="relative">
-              <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-primary/80">
+              <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-primary/80 mobile-clickable">
                 <BellIcon className="h-5 w-5" />
                 <span className="absolute top-0 right-0 bg-error text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">3</span>
               </button>
             </div>
             <div className="lg:hidden">
-              <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-primary/80">
+              <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-primary/80 mobile-clickable">
                 <UserIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
         </header>
         
-        {/* Content Container */}
-        <div className="container mx-auto p-4">
-          {children}
+        {/* Content Container - Using mobile-container for smooth scrolling */}
+        <div className="flex-1 overflow-y-auto -webkit-overflow-scrolling-touch scrollbar-none">
+          <div className="container mx-auto p-4">
+            {children}
+          </div>
         </div>
       </div>
       
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - Fixed at bottom */}
       <MobileNavigation />
     </div>
   );
