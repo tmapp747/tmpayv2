@@ -1386,6 +1386,26 @@ export class DbStorage extends MemStorage {
     
     return user;
   }
+  
+  async updateUserPassword(id: number, password: string): Promise<User> {
+    // First update in memory
+    const user = await super.updateUserPassword(id, password);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          password: password,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+    } catch (error) {
+      console.error('Error updating user password in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
 }
 
 // Import database connection

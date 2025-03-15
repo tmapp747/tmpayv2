@@ -164,7 +164,7 @@ export function setupAuth(app: Express) {
           try {
             // Hash the password and update the user record
             const hashedPassword = await hashPassword(password);
-            await storage.updateUserCasinoDetails(user.id, { password: hashedPassword });
+            await storage.updateUserPassword(user.id, hashedPassword);
             console.log(`Password migration completed successfully for user "${username}"`);
             
             // Get the updated user with the new hashed password
