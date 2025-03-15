@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and } from "drizzle-orm";
 import { 
   users, 
   transactions, 
@@ -1622,10 +1622,8 @@ export class DbStorage extends MemStorage {
       const existingPrefs = await this.dbInstance
         .select()
         .from(userPreferences)
-        .where(and(
-          eq(userPreferences.user_id, userId),
-          eq(userPreferences.key, key)
-        ));
+        .where(eq(userPreferences.userId, userId))
+        .where(eq(userPreferences.key, key));
       
       if (existingPrefs && existingPrefs.length > 0) {
         // Update existing preference
@@ -1641,11 +1639,11 @@ export class DbStorage extends MemStorage {
         // Insert new preference
         await this.dbInstance.insert(userPreferences).values({
           id: preference.id,
-          user_id: userId,
+          userId: userId,
           key: key,
           value: preference.value,
-          created_at: preference.createdAt,
-          updated_at: preference.updatedAt
+          createdAt: preference.createdAt,
+          updatedAt: preference.updatedAt
         });
         
         console.log(`Inserted new user preference to database: userId=${userId}, key=${key}`);
@@ -1666,10 +1664,8 @@ export class DbStorage extends MemStorage {
     if (result) {
       try {
         await this.dbInstance.delete(userPreferences)
-          .where(and(
-            eq(userPreferences.user_id, userId),
-            eq(userPreferences.key, key)
-          ));
+          .where(eq(userPreferences.userId, userId))
+          .where(eq(userPreferences.key, key));
         
         console.log(`Deleted user preference from database: userId=${userId}, key=${key}`);
       } catch (error) {
