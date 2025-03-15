@@ -36,6 +36,7 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   error: Error | null;
+  refreshToken: (token: string) => Promise<string>;
   loginMutation: UseMutationResult<{ user: User, message: string }, Error, LoginData>;
   logoutMutation: UseMutationResult<{ success: boolean, message: string }, Error, void>;
   registerMutation: UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
@@ -58,6 +59,55 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+
+  // Token refresh function - to be called when an access token expires
+  const refreshAccessToken = async (refreshToken: string) => {
+    try {
+      const res = await fetch("/api/auth/refresh-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to refresh token");
+      }
+      
+      // Get the current user data from localStorage
+      const storedData = localStorage.getItem('userData');
+      if (!storedData) {
+        throw new Error("No user data found in storage");
+      }
+      
+      const userData = JSON.parse(storedData);
+      if (!userData.user) {
+        throw new Error("Invalid user data in storage");
+      }
+      
+      // Update the access token
+      userData.user.accessToken = data.accessToken;
+      
+      // Save updated user data back to localStorage
+      localStorage.setItem('userData', JSON.stringify(userData));
+      
+      // Update the query cache
+      queryClient.setQueryData(["/api/user/info"], userData);
+      
+      return data.accessToken;
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      // If refresh fails, we need to log the user out
+      localStorage.removeItem('userData');
+      queryClient.setQueryData(["/api/user/info"], { user: null });
+      
+      // Redirect to login page
+      window.location.href = '/auth';
+      throw error;
+    }
+  };
 
   // Initialize user from localStorage if available
   const initialUserData = (() => {
@@ -90,9 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
-      return data;
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Login failed");
+      }
+      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
@@ -117,9 +169,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
       const res = await apiRequest("POST", "/api/auth/register", userData);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Registration failed");
-      return data;
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Registration failed");
+      }
+      return await res.json();
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
@@ -146,12 +200,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await apiRequest("POST", "/api/auth/logout");
       // Handle cases where response might not be JSON
       try {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Logout failed");
-        return data;
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Logout failed");
+        }
+        return await res.json();
       } catch (e) {
         // If the response isn't JSON, we'll still consider it a success if status is 2xx
         if (res.ok) return { success: true };
+        if (e instanceof Error) throw e;
         throw new Error("Logout failed");
       }
     },
@@ -193,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         error,
+        refreshToken: refreshAccessToken,
         loginMutation,
         logoutMutation,
         registerMutation,

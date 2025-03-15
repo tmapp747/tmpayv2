@@ -640,14 +640,16 @@ export class MemStorage implements IStorage {
       
       if (options.startDate) {
         filteredTransactions = filteredTransactions.filter(tx => {
-          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : 
+            (typeof tx.createdAt === 'string' ? new Date(tx.createdAt) : new Date());
           return txDate >= options.startDate!;
         });
       }
       
       if (options.endDate) {
         filteredTransactions = filteredTransactions.filter(tx => {
-          const txDate = tx.createdAt instanceof Date ? tx.createdAt : new Date(tx.createdAt as string);
+          const txDate = tx.createdAt instanceof Date ? tx.createdAt : 
+            (typeof tx.createdAt === 'string' ? new Date(tx.createdAt) : new Date());
           return txDate <= options.endDate!;
         });
       }

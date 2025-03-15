@@ -7,37 +7,23 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Import the robust apiRequest from api-client.ts
+import { apiRequest as authApiRequest } from './api-client';
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json"
-  };
-  
-  // Get the access token from userData in localStorage if it exists
-  const userData = localStorage.getItem('userData');
-  if (userData) {
-    try {
-      const parsedUserData = JSON.parse(userData);
-      if (parsedUserData?.user?.accessToken) {
-        headers["Authorization"] = `Bearer ${parsedUserData.user.accessToken}`;
-      }
-    } catch (e) {
-      console.error("Error parsing userData from localStorage:", e);
-    }
+  try {
+    // Use the more robust apiRequest that handles token refresh
+    const res = await authApiRequest(method, url, data);
+    await throwIfResNotOk(res);
+    return res;
+  } catch (error) {
+    console.error(`API Request failed: ${method} ${url}`, error);
+    throw error;
   }
-  
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -46,32 +32,30 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const headers: Record<string, string> = {};
-    
-    // Get the access token from userData in localStorage if it exists
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-      try {
-        const parsedUserData = JSON.parse(userData);
-        if (parsedUserData?.user?.accessToken) {
-          headers["Authorization"] = `Bearer ${parsedUserData.user.accessToken}`;
-        }
-      } catch (e) {
-        console.error("Error parsing userData from localStorage:", e);
+    try {
+      // Use our enhanced apiRequest that handles tokens and refreshes
+      const res = await authApiRequest("GET", queryKey[0] as string);
+      
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
       }
+      
+      // For consistency, still use our error handler
+      await throwIfResNotOk(res);
+      return await res.json();
+    } catch (error) {
+      // If this is a 401 and we're configured to just return null, do that
+      if (
+        error instanceof Error && 
+        error.message.startsWith("401:") && 
+        unauthorizedBehavior === "returnNull"
+      ) {
+        return null;
+      }
+      
+      // Otherwise, rethrow
+      throw error;
     }
-    
-    const res = await fetch(queryKey[0] as string, {
-      headers,
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
