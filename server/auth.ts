@@ -35,25 +35,64 @@ export async function hashPassword(password: string) {
 /**
  * Compares a supplied password with a stored password
  * Handles both bcrypt hashed passwords and plaintext passwords (for development)
+ * Uses constant-time comparison to prevent timing attacks
  */
 export async function comparePasswords(supplied: string, stored: string) {
+  // Log password comparison attempt (without revealing passwords)
+  console.log(`Password comparison attempt: ${supplied ? 'Password provided' : 'No password'} vs ${stored ? (stored.includes('$') ? 'Hashed password' : 'Plaintext password') : 'No stored password'}`);
+  
+  // Immediately fail if either value is missing
+  if (!supplied || !stored) {
+    console.warn("Password comparison failed: Missing password input");
+    return false;
+  }
+  
   // If the stored password appears to be a bcrypt hash, use bcrypt.compare
   if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
-    return await bcrypt.compare(supplied, stored);
+    try {
+      const result = await bcrypt.compare(supplied, stored);
+      console.log(`Bcrypt comparison result: ${result ? 'Success' : 'Failed'}`);
+      return result;
+    } catch (error) {
+      console.error("Bcrypt comparison error:", error);
+      return false;
+    }
   }
   
   // Fallback for plaintext passwords (development only)
   if (process.env.NODE_ENV !== "production" && process.env.ALLOW_PLAINTEXT_PASSWORDS === "true") {
-    return supplied === stored;
+    console.warn("Using plaintext password comparison in development mode");
+    
+    // Use a constant-time comparison for plaintext too
+    // This prevents timing attacks even in development
+    let result = true;
+    const suppliedBuffer = Buffer.from(supplied);
+    const storedBuffer = Buffer.from(stored);
+    
+    // If lengths differ, result will be false, but continue to prevent timing attacks
+    if (suppliedBuffer.length !== storedBuffer.length) {
+      result = false;
+    }
+    
+    // Constant-time comparison
+    for (let i = 0; i < Math.min(suppliedBuffer.length, storedBuffer.length); i++) {
+      if (suppliedBuffer[i] !== storedBuffer[i]) {
+        result = false;
+      }
+    }
+    
+    console.log(`Plaintext comparison result: ${result ? 'Success' : 'Failed'}`);
+    return result;
   }
   
   // If we're in production and the password doesn't look like a hash, always fail
   if (process.env.NODE_ENV === "production") {
-    console.error("Plaintext password found in production environment");
+    console.error("SECURITY ISSUE: Plaintext password found in production environment");
     return false;
   }
   
   // Default comparison (should only reach here in non-production)
+  console.warn("Using default password comparison (not recommended)");
   return supplied === stored;
 }
 

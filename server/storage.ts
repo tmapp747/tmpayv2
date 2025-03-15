@@ -1253,4 +1253,194 @@ export class MemStorage implements IStorage {
 }
 
 // Create a singleton instance of the storage
-export const storage = new MemStorage();
+// Database Storage implementation
+export class DbStorage extends MemStorage {
+  private dbInstance: any; // Drizzle database connection
+  
+  constructor(dbInstance: any) {
+    super();
+    this.dbInstance = dbInstance;
+    this.initializeFromDb();
+  }
+
+  // Initialize memory store from database
+  private async initializeFromDb() {
+    try {
+      console.log('Initializing storage from database...');
+      // Load existing users from database
+      const dbUsers = await this.dbInstance.select().from(schema.users);
+      
+      if (dbUsers && dbUsers.length > 0) {
+        console.log(`Found ${dbUsers.length} users in database`);
+        // Process and add each user to the in-memory store using parent class methods
+        for (const dbUser of dbUsers) {
+          // Skip DB initialization for users that already exist in memory
+          const existingUser = await super.getUser(dbUser.id);
+          if (existingUser) {
+            console.log(`User ${dbUser.username} (ID: ${dbUser.id}) already exists in memory, skipping`);
+            continue;
+          }
+          
+          // Extract only the properties we need for the user
+          // This ensures type compatibility with our schema
+          const userData = {
+            // Required fields
+            username: dbUser.username,
+            password: dbUser.password,
+            casinoId: dbUser.casinoId || 'default',
+            
+            // Optional fields with defaults
+            email: dbUser.email || null,
+            balance: dbUser.balance || '0',
+            pendingBalance: dbUser.pendingBalance || '0',
+            isVip: dbUser.isVip || false,
+            
+            // Casino specific fields
+            casinoUsername: dbUser.casinoUsername || null,
+            casinoClientId: dbUser.casinoClientId || null,
+            topManager: dbUser.topManager || null,
+            immediateManager: dbUser.immediateManager || null,
+            casinoUserType: dbUser.casinoUserType || null,
+            casinoBalance: dbUser.casinoBalance || '0',
+            
+            // Authentication fields
+            accessToken: dbUser.accessToken || null,
+            refreshToken: dbUser.refreshToken || null,
+            
+            // Multi-currency support
+            currencyBalances: dbUser.currencyBalances || {},
+            preferredCurrency: dbUser.preferredCurrency || 'PHP',
+            
+            // Authorization
+            isAuthorized: dbUser.isAuthorized || false,
+            allowedTopManagers: dbUser.allowedTopManagers || []
+          };
+          
+          // Call the parent class method to create the user but without database persistence
+          try {
+            // We have to manually force the ID to match the database
+            const user = {...userData, 
+              id: dbUser.id,
+              accessTokenExpiry: dbUser.accessTokenExpiry ? new Date(dbUser.accessTokenExpiry) : null,
+              refreshTokenExpiry: dbUser.refreshTokenExpiry ? new Date(dbUser.refreshTokenExpiry) : null,
+              casinoAuthTokenExpiry: dbUser.casinoAuthTokenExpiry ? new Date(dbUser.casinoAuthTokenExpiry) : null,
+              casinoAuthToken: dbUser.casinoAuthToken,
+              createdAt: new Date(dbUser.createdAt),
+              updatedAt: new Date(dbUser.updatedAt)
+            };
+            
+            // Use special override implementation to avoid incrementing ID counter
+            this.insertUserDirect(user);
+            console.log(`Loaded user ${user.username} (ID: ${user.id}) from database`);
+          } catch (error) {
+            console.error(`Error loading user ${dbUser.username} (ID: ${dbUser.id}) from database:`, error);
+          }
+        }
+      } else {
+        console.log('No existing users found in database');
+      }
+    } catch (error) {
+      console.error('Error initializing from database:', error);
+      // Continue with empty memory store if database initialization fails
+    }
+  }
+  
+  // Special method to directly insert a user without database persistence
+  private insertUserDirect(user: User): void {
+    // We know this is risky, but we need to rebuild the in-memory state from DB
+    // Using typescript type assertion to bypass private property access restrictions
+    // This is only used during initialization
+    const self = this as any;
+    self.users.set(user.id, user);
+  }
+
+  // Override user creation to persist to database
+  async createUser(userData: InsertUser): Promise<User> {
+    let createdUser: User | null = null;
+    
+    try {
+      // First create user in memory as parent class does
+      createdUser = await super.createUser(userData);
+
+      // Now persist to database
+      await this.dbInstance.insert(schema.users).values({
+        ...userData,
+        id: createdUser.id, // Ensure ID consistency
+        createdAt: createdUser.createdAt,
+        updatedAt: createdUser.updatedAt
+      });
+
+      console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database`);
+      return createdUser;
+    } catch (error) {
+      console.error('Error creating user in database:', error);
+      
+      // If DB operation fails and we already created the user in memory, try to clean up
+      if (createdUser && createdUser.id) {
+        try {
+          // Get all users and manipulate the Map
+          const allUsers = super.getAllUsers();
+          if (allUsers && allUsers.has(createdUser.id)) {
+            allUsers.delete(createdUser.id);
+            console.log(`Removed user ${createdUser.username} (ID: ${createdUser.id}) from memory due to DB error`);
+          }
+        } catch (cleanupError) {
+          console.error('Error cleaning up memory after DB error:', cleanupError);
+        }
+      }
+      
+      throw error;
+    }
+  }
+
+  // Override update methods to persist changes
+  async updateUserAccessToken(id: number, token: string | null | undefined, expiresIn: number = 3600): Promise<User> {
+    // First update in memory
+    const user = await super.updateUserAccessToken(id, token, expiresIn);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          accessToken: token,
+          accessTokenExpiry: user.accessTokenExpiry,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+    } catch (error) {
+      console.error('Error updating user access token in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
+
+  async updateUserRefreshToken(id: number, token: string | null | undefined, expiresIn: number = 2592000): Promise<User> {
+    // First update in memory
+    const user = await super.updateUserRefreshToken(id, token, expiresIn);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.update(schema.users)
+        .set({
+          refreshToken: token,
+          refreshTokenExpiry: user.refreshTokenExpiry,
+          updatedAt: user.updatedAt
+        })
+        .where(eq(schema.users.id, id));
+    } catch (error) {
+      console.error('Error updating user refresh token in database:', error);
+      // Continue with memory update even if DB fails
+    }
+    
+    return user;
+  }
+}
+
+// Import database connection
+import { db } from './db';
+import { eq } from 'drizzle-orm';
+import * as schema from '../shared/schema';
+
+// Export storage instance
+export const storage = new DbStorage(db);
