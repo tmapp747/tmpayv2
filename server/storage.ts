@@ -141,74 +141,7 @@ export class MemStorage implements IStorage {
       checkPeriod: 86400000 // prune expired entries every 24h
     });
     
-    // Add a test user
-    const testUser: User = {
-      id: this.userIdCounter++,
-      username: 'chubbyme',
-      // Using plaintext password for testing
-      password: 'password123',
-      email: null,
-      balance: '1000.00',
-      pendingBalance: '0.00',
-      balances: { PHP: '1000.00', PHPT: '500.00', USDT: '100.00' },
-      preferredCurrency: 'PHP',
-      isVip: false,
-      casinoId: '747-123456',
-      casinoUsername: 'chubbyme',
-      casinoClientId: 123456,
-      topManager: 'Marcthepogi',
-      immediateManager: 'manager1',
-      casinoUserType: 'player',
-      casinoBalance: '1000.00',
-      isAuthorized: true,
-      allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
-      accessToken: null,
-      accessTokenExpiry: null,
-      refreshToken: null,
-      refreshTokenExpiry: null,
-      casinoAuthToken: null,
-      casinoAuthTokenExpiry: null,
-      hierarchyLevel: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.users.set(testUser.id, testUser);
-    console.log('Added test user:', testUser.username);
-    
-    // Add another test user for deposit operations
-    const athan45User: User = {
-      id: this.userIdCounter++,
-      username: 'athan45',
-      password: 'player123',
-      email: null,
-      balance: '1000.00',
-      pendingBalance: '0.00',
-      balances: { PHP: '1000.00', PHPT: '500.00', USDT: '100.00' },
-      preferredCurrency: 'PHP',
-      isVip: false,
-      casinoId: '747-654321',
-      casinoUsername: 'athan45',
-      casinoClientId: 654321,
-      topManager: 'Marcthepogi',
-      immediateManager: 'manager1',
-      casinoUserType: 'player',
-      casinoBalance: '500.00',
-      isAuthorized: true,
-      allowedTopManagers: ['Marcthepogi', 'bossmarc747', 'teammarc'],
-      accessToken: null,
-      accessTokenExpiry: null,
-      refreshToken: null,
-      refreshTokenExpiry: null,
-      casinoAuthToken: null,
-      casinoAuthTokenExpiry: null,
-      hierarchyLevel: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    
-    this.users.set(athan45User.id, athan45User);
-    console.log('Added test user:', athan45User.username);
+    console.log('MemStorage initialized without test users');
   }
 
   // User operations

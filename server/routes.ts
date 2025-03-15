@@ -278,17 +278,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log(`Checking if username '${username}' is allowed (isAgent: ${isAgent})`);
       
-      // For development purposes, skip hierarchy check for test users
-      if (username.toLowerCase() === 'wakay' || username.toLowerCase() === 'chubbyme' || username.toLowerCase() === 'athan45') {
-        console.log(`Test user '${username}' detected, bypassing hierarchy check`);
-        return {
-          allowed: true,
-          topManager: 'Marcthepogi', // default test top manager
-          immediateManager: 'TeamMarc', // default test immediate manager
-          userType: isAgent ? 'agent' : 'player',
-          casinoClientId: 12345 // fake ID for test users
-        };
-      }
       
       // Fetch user hierarchy from casino API
       console.log(`Fetching hierarchy data for user: ${username}`);
