@@ -38,8 +38,11 @@ export async function hashPassword(password: string) {
  * Uses constant-time comparison to prevent timing attacks
  */
 export async function comparePasswords(supplied: string, stored: string) {
-  // Log password comparison attempt (without revealing passwords)
-  console.log(`Password comparison attempt: ${supplied ? 'Password provided' : 'No password'} vs ${stored ? (stored.includes('$') ? 'Hashed password' : 'Plaintext password') : 'No stored password'}`);
+  // Log password comparison attempt with more details but keeping security in mind
+  console.log(`Password comparison attempt details:`);
+  console.log(`- Supplied password length: ${supplied ? supplied.length : 0}`);
+  console.log(`- Stored password type: ${stored ? (stored.startsWith('$2') ? 'bcrypt hash' : 'plaintext') : 'missing'}`);
+  console.log(`- Stored password preview: ${stored ? stored.substring(0, 3) + '...' + stored.substring(stored.length - 3) : 'none'}`);
   
   // Immediately fail if either value is missing
   if (!supplied || !stored) {
@@ -50,11 +53,13 @@ export async function comparePasswords(supplied: string, stored: string) {
   // If the stored password appears to be a bcrypt hash, use bcrypt.compare
   if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
     try {
+      console.log("Using bcrypt.compare for password validation");
       const result = await bcrypt.compare(supplied, stored);
       console.log(`Bcrypt comparison result: ${result ? 'Success' : 'Failed'}`);
       return result;
     } catch (error) {
       console.error("Bcrypt comparison error:", error);
+      console.error("Error details:", error instanceof Error ? error.message : String(error));
       return false;
     }
   }
@@ -71,29 +76,34 @@ export async function comparePasswords(supplied: string, stored: string) {
     
     // If lengths differ, result will be false, but continue to prevent timing attacks
     if (suppliedBuffer.length !== storedBuffer.length) {
+      console.log(`Password length mismatch: ${suppliedBuffer.length} vs ${storedBuffer.length}`);
       result = false;
     }
     
     // Constant-time comparison
+    let differences = 0;
     for (let i = 0; i < Math.min(suppliedBuffer.length, storedBuffer.length); i++) {
       if (suppliedBuffer[i] !== storedBuffer[i]) {
+        differences++;
         result = false;
       }
     }
     
-    console.log(`Plaintext comparison result: ${result ? 'Success' : 'Failed'}`);
+    console.log(`Plaintext comparison result: ${result ? 'Success' : `Failed with ${differences} differences`}`);
+    return result;
+  }
+  
+  // If we're not in production, allow direct comparison as final fallback
+  if (process.env.NODE_ENV !== "production") {
+    console.warn("Using direct plaintext comparison for password (development only)");
+    const result = supplied === stored;
+    console.log(`Direct comparison result: ${result ? 'Success' : 'Failed'}`);
     return result;
   }
   
   // If we're in production and the password doesn't look like a hash, always fail
-  if (process.env.NODE_ENV === "production") {
-    console.error("SECURITY ISSUE: Plaintext password found in production environment");
-    return false;
-  }
-  
-  // Default comparison (should only reach here in non-production)
-  console.warn("Using default password comparison (not recommended)");
-  return supplied === stored;
+  console.error("SECURITY ISSUE: Non-hashed password found when comparing");
+  return false;
 }
 
 export function setupAuth(app: Express) {

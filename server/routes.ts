@@ -431,18 +431,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Password format:", user.password.includes('$2') ? "hashed" : "plaintext");
       console.log("Password stored:", user.password.substr(0, 5) + "..." + user.password.substr(-5));
       
-      let passwordValid;
-      if (user.password.includes('$2')) {
-        // Use bcrypt for hashed passwords (starts with $2a$ or $2b$)
-        console.log("Attempting to compare with bcrypt hashed password");
-        passwordValid = await comparePasswords(password, user.password);
-        console.log("Password comparison result:", passwordValid);
-      } else {
-        // Direct comparison for plaintext passwords
-        console.log("Using plaintext comparison");
-        passwordValid = user.password === password;
-        console.log("Password comparison result:", passwordValid);
-      }
+      // Enhanced debugging for login attempt
+      console.log("Login debugging info:");
+      console.log(`- Username: ${username}`);
+      console.log(`- Password length: ${password.length}`);
+      console.log(`- Stored password preview: ${user.password.substring(0, 3)}...${user.password.substring(user.password.length - 3)}`);
+      
+      // Always use the comparePasswords function which handles both hash and plaintext scenarios
+      console.log("Using comparePasswords function for unified password comparison");
+      const passwordValid = await comparePasswords(password, user.password);
+      console.log("Password comparison final result:", passwordValid);
         
       if (!passwordValid) {
         return res.status(401).json({ 
@@ -1317,6 +1315,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({
         success: false,
         message: "Error retrieving users"
+      });
+    }
+  });
+  
+  // Password migration utility endpoint for fixing existing plaintext passwords
+  app.post("/api/debug/fix-password", async (req: Request, res: Response) => {
+    try {
+      // Get username and plaintext password from request
+      const { username, currentPassword, newPassword } = z.object({
+        username: z.string(),
+        currentPassword: z.string().optional(),
+        newPassword: z.string().min(6)
+      }).parse(req.body);
+      
+      // Find the user
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found"
+        });
+      }
+      
+      // Verify current password if provided
+      if (currentPassword) {
+        console.log("Verifying current password before migration");
+        // Use direct comparison for plaintext passwords
+        const isCurrentPasswordValid = user.password === currentPassword;
+        if (!isCurrentPasswordValid) {
+          return res.status(401).json({
+            success: false,
+            message: "Current password is incorrect"
+          });
+        }
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Log the operation details
+      console.log(`Updating password for user ${username} (ID: ${user.id})`);
+      console.log(`Old password format: ${user.password.includes('$2') ? 'hashed' : 'plaintext'}`);
+      console.log(`New password will be properly hashed`);
+      
+      // Create SQL query to update the user's password directly in the database
+      const query = `UPDATE users SET password = '${hashedPassword}' WHERE id = ${user.id}`;
+      await db.execute(query);
+      console.log("Password updated successfully in database");
+      
+      return res.json({
+        success: true,
+        message: "Password migrated successfully",
+        userId: user.id,
+        username: user.username,
+        passwordUpdated: true
+      });
+    } catch (error) {
+      console.error("Error during password migration:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error during password migration",
+        details: error instanceof Error ? error.message : String(error)
       });
     }
   });
