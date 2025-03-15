@@ -4,10 +4,11 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { getQueryFn,  queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/api-client"; // Corrected import
+import { getQueryFn, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/api-client"; 
 import { useToast } from "@/hooks/use-toast";
 
+// Types for user data
 interface User {
   id: number;
   username: string;
@@ -32,6 +33,7 @@ interface User {
   updatedAt: string | Date;
 }
 
+// Auth context type definition
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
@@ -42,12 +44,14 @@ type AuthContextType = {
   registerMutation: UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
 };
 
+// Login form data type
 type LoginData = {
   username: string;
   password: string;
   userType?: string;
 };
 
+// Registration form data type
 type RegisterData = {
   username: string;
   password: string;
@@ -59,79 +63,79 @@ type RegisterData = {
   casinoUserType?: string;
 };
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+// Create the auth context
+const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const { toast } = useToast();
-
-  // Session refresh function - using Passport.js sessions
-  const refreshAccessToken = async (_: string = '') => {
-    try {
-      console.log("Attempting to refresh session...");
-      // Request with credentials included for session cookies
-      const res = await fetch("/api/auth/refresh-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-        // No body needed - session is used for authentication
-      });
+// Session refresh function - using Passport.js sessions
+const refreshSession = async (): Promise<string> => {
+  try {
+    console.log("Attempting to refresh session...");
+    const res = await fetch("/api/auth/refresh-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: 'include', // Include cookies for session auth
+    });
+    
+    // Handle 401 errors gracefully - user is simply not logged in
+    if (res.status === 401) {
+      console.log("Session refresh 401 - user not authenticated");
       
-      // Handle 401 errors gracefully - user is simply not logged in
-      if (res.status === 401) {
-        console.log("Session refresh 401 - user not authenticated");
-        
-        // Don't update state if we're on the auth page already
-        if (window.location.pathname !== '/auth') {
-          // Clear user data from cache
-          queryClient.setQueryData(["/api/user/info"], { user: null });
-        }
-        
-        // Return empty string without throwing for expected 401s
-        return '';
-      }
-      
-      // For other non-2xx responses, handle as errors
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("Session refresh failed:", errorData.message || res.statusText);
-        throw new Error(errorData.message || "Failed to refresh session");
-      }
-      
-      // Parse response data
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        console.log("Empty response from refresh endpoint");
-        return '';
-      }
-      
-      console.log("Session refreshed successfully");
-      // Update the query cache with returned user data
-      if (data.user) {
-        queryClient.setQueryData(["/api/user/info"], { user: data.user });
-      }
-      
-      // Return empty string as we're not using tokens anymore
-      return '';
-    } catch (error) {
-      console.error("Session refresh failed:", error);
-      
-      // Only clear user data and redirect if not already on auth page
-      if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
-        // If refresh fails, we need to log the user out
+      // Don't update state if we're on the auth page already
+      if (window.location.pathname !== '/auth') {
+        // Clear user data from cache
         queryClient.setQueryData(["/api/user/info"], { user: null });
-        
-        // Redirect to login page
-        window.location.href = '/auth';
       }
       
-      // Always throw for unexpected errors
-      throw error;
+      // Return empty string without throwing for expected 401s
+      return '';
     }
-  };
+    
+    // For other non-2xx responses, handle as errors
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      console.error("Session refresh failed:", errorData.message || res.statusText);
+      throw new Error(errorData.message || "Failed to refresh session");
+    }
+    
+    // Parse response data
+    let data;
+    try {
+      data = await res.json();
+    } catch (e) {
+      console.log("Empty response from refresh endpoint");
+      return '';
+    }
+    
+    console.log("Session refreshed successfully");
+    // Update the query cache with returned user data
+    if (data.user) {
+      queryClient.setQueryData(["/api/user/info"], { user: data.user });
+    }
+    
+    // Return empty string as we're not using tokens anymore
+    return '';
+  } catch (error) {
+    console.error("Session refresh failed:", error);
+    
+    // Only clear user data and redirect if not already on auth page
+    if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+      // If refresh fails, we need to log the user out
+      queryClient.setQueryData(["/api/user/info"], { user: null });
+      
+      // Redirect to login page for unauthorized access
+      window.location.href = '/auth';
+    }
+    
+    // Always throw for unexpected errors
+    throw error;
+  }
+};
+
+// Auth Provider component
+function AuthProvider({ children }: { children: ReactNode }) {
+  const { toast } = useToast();
 
   // Fetch user data from server on initial load
   const {
@@ -147,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = userData?.user || null;
 
+  // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
@@ -160,7 +165,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
 
       // No need to save to localStorage - auth handled by server session
-
       toast({
         title: "Login successful",
         description: "Welcome back to 747 Casino E-Wallet!",
@@ -175,6 +179,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
       const res = await apiRequest("POST", "/api/auth/register", userData);
@@ -188,7 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
 
       // No need to save to localStorage - auth handled by server session
-
       toast({
         title: "Registration successful",
         description: "Your account has been created and you're now logged in!",
@@ -203,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout");
@@ -250,7 +255,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         error,
-        refreshToken: refreshAccessToken,
+        refreshToken: refreshSession,
         loginMutation,
         logoutMutation,
         registerMutation,
@@ -261,10 +266,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+// Hook to use auth context
+function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
+
+// Export components and hooks
+export { AuthProvider, useAuth };
