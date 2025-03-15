@@ -209,12 +209,15 @@ export default function AuthPage() {
   }, [verifiedUsername, verifiedUserType, casinoVerificationData, loginForm, registerForm]);
 
   const onLoginSubmit = (data: LoginFormValues) => {
+    console.log("Submitting login with session-based auth:", data.username);
+    // Include credentials option to ensure cookies are sent/received
     loginMutation.mutate(data);
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
     // Debug log to see what values are being submitted
     console.log("Submitting registration form with data:", JSON.stringify(data, null, 2));
+    // Include credentials option to ensure cookies are sent/received
     registerMutation.mutate(data);
   };
   

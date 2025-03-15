@@ -136,8 +136,8 @@ export function setupAuth(app: Express) {
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'strict' // Prevent CSRF
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      sameSite: 'lax' // Allow cross-site requests to support redirection
     }
   };
   
@@ -150,6 +150,10 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // Log session initialization
+  console.log("Session middleware initialized with PostgreSQL store");
+  console.log("Passport.js initialized for authentication");
 
   passport.use(
     new LocalStrategy(async (username, password, done) => {
@@ -198,12 +202,27 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  // Enhanced serializer for users - only store the user ID in the session
+  passport.serializeUser((user: Express.User, done) => {
+    console.log(`Serializing user: ${user.username} (ID: ${user.id})`);
+    done(null, user.id);
+  });
+  
+  // Enhanced deserializer that retrieves the full user info from storage
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`Deserializing user with ID: ${id}`);
       const user = await storage.getUser(id);
+      
+      if (!user) {
+        console.error(`Failed to deserialize user with ID: ${id} - User not found`);
+        return done(null, false);
+      }
+      
+      console.log(`Successfully deserialized user: ${user.username}`);
       done(null, user);
     } catch (error) {
+      console.error(`Error deserializing user with ID: ${id}:`, error);
       done(error);
     }
   });

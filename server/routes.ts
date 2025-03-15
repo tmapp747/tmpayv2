@@ -520,16 +520,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't return the password to the client
       const { password: _, ...userWithoutPassword } = updatedUser;
       
-      // Return updated user info with both tokens
-      return res.json({
-        success: true,
-        message: "Login successful",
-        user: { 
-          ...userWithoutPassword, 
-          accessToken,
-          refreshToken,
-          isAuthorized: true
+      // Set up user session for Passport
+      req.login(updatedUser, (err) => {
+        if (err) {
+          console.error("Session login error:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to establish user session"
+          });
         }
+        
+        // Save the session to ensure it's properly stored
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to save user session"
+            });
+          }
+          
+          // Return user info (tokens still included for backward compatibility)
+          return res.json({
+            success: true,
+            message: "Login successful",
+            user: { 
+              ...userWithoutPassword, 
+              accessToken,
+              refreshToken,
+              isAuthorized: true
+            }
+          });
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -548,55 +570,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Token refresh endpoint
+  // Modified to use session-based authentication
   app.post("/api/auth/refresh-token", async (req: Request, res: Response) => {
     try {
-      // Validate the request
-      const refreshSchema = z.object({
-        refreshToken: z.string().min(10)
-      });
+      // Get the user from the session
+      const user = (req as any).user;
       
-      const { refreshToken } = refreshSchema.parse(req.body);
-      
-      // Find the user associated with this refresh token
-      const user = await storage.getUserByRefreshToken(refreshToken);
-      
+      // If no user in session, authentication is required
       if (!user) {
         return res.status(401).json({
           success: false,
-          message: "Invalid refresh token"
+          message: "Authentication required. Please log in again."
         });
       }
       
-      // Check if the refresh token is expired
-      if (!user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
-        return res.status(401).json({
-          success: false,
-          message: "Refresh token has expired, please login again"
+      // Regenerate the session to prevent session fixation attacks
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error("Session regeneration error:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Error refreshing session"
+          });
+        }
+
+        // Store the user in the session
+        (req.session as any).passport = { user: user.id };
+        
+        // Save the session
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({
+              success: false,
+              message: "Error saving session"
+            });
+          }
+          
+          // Return success
+          return res.status(200).json({
+            success: true,
+            message: "Session refreshed successfully",
+            user: {
+              id: user.id,
+              username: user.username,
+              email: user.email,
+              isVip: user.isVip,
+              casinoId: user.casinoId,
+              casinoUsername: user.casinoUsername,
+              casinoClientId: user.casinoClientId,
+              topManager: user.topManager,
+              immediateManager: user.immediateManager,
+              casinoUserType: user.casinoUserType,
+              balance: user.balance,
+              pendingBalance: user.pendingBalance,
+              casinoBalance: user.casinoBalance,
+              createdAt: user.createdAt,
+              updatedAt: user.updatedAt
+            }
+          });
         });
-      }
-      
-      // Generate a new access token
-      const newAccessToken = generateAccessToken();
-      await storage.updateUserAccessToken(user.id, newAccessToken, 3600); // 1 hour
-      
-      // Return the new access token
-      return res.json({
-        success: true,
-        message: "Token refreshed successfully",
-        accessToken: newAccessToken
       });
     } catch (error) {
-      console.error("Token refresh error:", error);
-      if (error instanceof ZodError) {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Validation error", 
-          errors: error.errors 
-        });
-      }
+      console.error("Session refresh error:", error);
       return res.status(500).json({ 
         success: false, 
-        message: "Server error during token refresh" 
+        message: "Server error during session refresh" 
       });
     }
   });
@@ -847,10 +886,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Authorization middleware
+  // Authorization middleware - prioritizes session auth, falls back to token
   async function authMiddleware(req: Request, res: Response, next: Function) {
     try {
       console.log("[AUTH MIDDLEWARE] Checking authentication for path:", req.path);
+      
+      // First check if user is authenticated via session (Passport)
+      if (req.isAuthenticated && req.isAuthenticated()) {
+        console.log("[AUTH MIDDLEWARE] User authenticated via session");
+        // User is already attached to req.user by Passport
+        return next();
+      }
+      
+      console.log("[AUTH MIDDLEWARE] No session authentication, checking for token");
+      
+      // Fall back to token-based auth for backward compatibility
       // Get the access token from the authorization header
       const authHeader = req.headers.authorization;
       console.log("[AUTH MIDDLEWARE] Authorization header present:", !!authHeader);
@@ -858,7 +908,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ 
           success: false, 
-          message: "Authorization token is required" 
+          message: "Authentication required" 
         });
       }
       
@@ -897,11 +947,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Attach the user to the request object
-      (req as any).user = user;
-      
-      // Continue to the next middleware or route handler
-      next();
+      // For token auth, also establish a session
+      req.login(user, (err) => {
+        if (err) {
+          console.warn("[AUTH MIDDLEWARE] Failed to establish session for token user:", err);
+          // Continue anyway with the token auth
+        } else {
+          console.log("[AUTH MIDDLEWARE] Established session for token-authenticated user");
+        }
+        
+        // Attach the user to the request object
+        (req as any).user = user;
+        
+        // Continue to the next middleware or route handler
+        next();
+      });
     } catch (error) {
       console.error("Auth middleware error:", error);
       return res.status(500).json({ 
@@ -946,10 +1006,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // User info and balance
-  app.get("/api/user/info", authMiddleware, async (req: Request, res: Response) => {
+  // Modified to directly use session authentication
+  app.get("/api/user/info", async (req: Request, res: Response) => {
     try {
-      // Get the authenticated user from the request
-      const user = (req as any).user;
+      // Check for authenticated user using Passport's isAuthenticated method
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        console.log("[USER INFO] User not authenticated");
+        return res.status(401).json({ 
+          success: false, 
+          message: "Authentication required. Please log in." 
+        });
+      }
+      
+      // User is authenticated, get from Passport's req.user
+      const user = req.user;
+      console.log("[USER INFO] Retrieved user from session:", user ? `${user.username} (ID: ${user.id})` : "No user found");
+      
+      if (!user) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "User session invalid. Please log in again." 
+        });
+      }
       
       // Don't send the password to the client
       const { password: _, ...userWithoutPassword } = user;

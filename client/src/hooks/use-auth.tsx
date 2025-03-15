@@ -64,32 +64,36 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
-  // Token refresh function - to be called when an access token expires
-  const refreshAccessToken = async (refreshToken: string) => {
+  // Session refresh function - using Passport.js sessions
+  const refreshAccessToken = async (_: string = '') => {
     try {
+      console.log("Attempting to refresh session...");
+      // Request with credentials included for session cookies
       const res = await fetch("/api/auth/refresh-token", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refreshToken }),
+        credentials: 'include',
+        // No body needed - session is used for authentication
       });
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.message || "Failed to refresh token");
+        console.error("Session refresh failed:", data.message);
+        throw new Error(data.message || "Failed to refresh session");
       }
       
-      // No need to get user data from localStorage
-      // The server will return the updated user data
-      const userData = { user: data.user };
+      console.log("Session refreshed successfully");
+      // Update the query cache with returned user data
+      if (data.user) {
+        queryClient.setQueryData(["/api/user/info"], { user: data.user });
+      }
       
-      // Update the query cache
-      queryClient.setQueryData(["/api/user/info"], userData);
-      
-      return data.accessToken;
+      // Return empty string as we're not using tokens anymore
+      return '';
     } catch (error) {
-      console.error("Token refresh failed:", error);
+      console.error("Session refresh failed:", error);
       // If refresh fails, we need to log the user out
       queryClient.setQueryData(["/api/user/info"], { user: null });
       

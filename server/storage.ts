@@ -1248,7 +1248,8 @@ export class MemStorage implements IStorage {
       return this.createUserPreference({
         userId,
         key,
-        value: JSON.stringify(value)
+        value: JSON.stringify(value),
+        lastUpdated: new Date().toISOString()
       });
     }
   }
@@ -1597,6 +1598,7 @@ export class DbStorage extends MemStorage {
         user_id: preference.userId,
         key: preference.key,
         value: preference.value,
+        last_updated: preference.lastUpdated || new Date().toISOString(),
         created_at: preference.createdAt,
         updated_at: preference.updatedAt
       });

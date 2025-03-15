@@ -16,8 +16,15 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   try {
-    // Use the more robust apiRequest that handles token refresh
+    console.log(`Making API request: ${method} ${url}`);
+    // Use the more robust apiRequest that handles session auth
     const res = await authApiRequest(method, url, data);
+    
+    // If we get a 401, log it for debugging
+    if (res.status === 401) {
+      console.log(`Authentication required for: ${method} ${url}`);
+    }
+    
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
@@ -33,16 +40,24 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     try {
-      // Use our enhanced apiRequest that handles tokens and refreshes
+      console.log(`Making query request: GET ${queryKey[0]}`);
+      
+      // Use our enhanced apiRequest that handles session auth
       const res = await authApiRequest("GET", queryKey[0] as string);
       
+      // If 401 and configured to return null, do so silently
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        console.log(`Silently handling 401 for: GET ${queryKey[0]}`);
         return null;
       }
       
       // For consistency, still use our error handler
       await throwIfResNotOk(res);
-      return await res.json();
+      
+      // Parse and return the JSON response
+      const data = await res.json();
+      console.log(`Query successful: GET ${queryKey[0]}`);
+      return data;
     } catch (error) {
       // If this is a 401 and we're configured to just return null, do that
       if (
@@ -50,10 +65,12 @@ export const getQueryFn: <T>(options: {
         error.message.startsWith("401:") && 
         unauthorizedBehavior === "returnNull"
       ) {
+        console.log(`Handling 401 error for: GET ${queryKey[0]}`);
         return null;
       }
       
-      // Otherwise, rethrow
+      // Otherwise, log and rethrow
+      console.error(`Query error: GET ${queryKey[0]}`, error);
       throw error;
     }
   };

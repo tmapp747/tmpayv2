@@ -74,29 +74,13 @@ export default function PaymentThankYou() {
           return;
         }
 
-        // Get user token from localStorage
-        const userData = localStorage.getItem('userData');
-        let token = '';
-        
-        if (userData) {
-          try {
-            const parsedUserData = JSON.parse(userData);
-            if (parsedUserData?.user?.accessToken) {
-              token = parsedUserData.user.accessToken;
-            }
-          } catch (e) {
-            console.error("Error parsing userData:", e);
-          }
-        }
-
-        // Make authenticated request
+        // Make authenticated request using server-side session
         const response = await fetch(`/api/payments/status/${reference}`, {
           method: 'GET',
           headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            'Content-Type': 'application/json'
           },
-          credentials: 'include',
+          credentials: 'include', // Important for session cookies
         });
 
         if (!response.ok) {

@@ -14,9 +14,19 @@ export function ProtectedAdminRoute({
   useEffect(() => {
     const checkAdminAuth = async () => {
       try {
-        const response = await fetch("/api/admin/auth");
+        // Use the new server-side authentication check endpoint
+        const response = await fetch("/api/admin/auth-status", {
+          method: 'GET',
+          credentials: 'include', // Important for session cookies
+        });
+        
         if (response.ok) {
-          setIsAdmin(true);
+          const data = await response.json();
+          if (data.success && data.isAdmin) {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
         } else {
           setIsAdmin(false);
         }

@@ -32,16 +32,32 @@ export default function AdminAuth() {
     },
   });
 
-  // Handle admin login with static credentials
+  // Handle admin login using the server-side authentication
   const onSubmit = async (data: AdminLoginFormValues) => {
     setIsLoading(true);
     
     try {
-      // Static admin credentials check
-      if (data.username === "admin" && data.password === "Bossmarc@747live") {
-        // Store admin session in localStorage or sessionStorage
-        localStorage.setItem("admin_auth", "true");
-        
+      // Call the admin login API endpoint
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.username,
+          password: data.password,
+        }),
+        credentials: 'include', // Important for session cookies
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Authentication failed');
+      }
+      
+      const responseData = await response.json();
+      
+      if (responseData.success) {
         toast({
           title: "Login successful",
           description: "Welcome to the admin dashboard",
@@ -50,7 +66,7 @@ export default function AdminAuth() {
         // Redirect to admin dashboard
         setLocation("/admin/dashboard");
       } else {
-        throw new Error("Invalid admin credentials");
+        throw new Error(responseData.message || 'Authentication failed');
       }
     } catch (error) {
       console.error("Admin login error:", error);
