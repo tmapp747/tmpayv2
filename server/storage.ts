@@ -1220,7 +1220,7 @@ export class DbStorage extends MemStorage {
     try {
       console.log('Initializing storage from database...');
       // Load existing users from database
-      const dbUsers = await this.dbInstance.select().from(schema.users);
+      const dbUsers = await this.dbInstance.select().from(users);
       
       if (dbUsers && dbUsers.length > 0) {
         console.log(`Found ${dbUsers.length} users in database`);
@@ -1351,7 +1351,7 @@ export class DbStorage extends MemStorage {
       };
       
       // Insert with explicit fields
-      await this.dbInstance.insert(schema.users).values(dbUser);
+      await this.dbInstance.insert(users).values(dbUser);
 
       console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;
@@ -1415,13 +1415,13 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           refresh_token: token,
           refresh_token_expiry: user.refreshTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user refresh token in database:', error);
       // Continue with memory update even if DB fails
@@ -1436,12 +1436,12 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           password: password,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user password in database:', error);
       // Continue with memory update even if DB fails
@@ -1456,7 +1456,7 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           top_manager: topManager,
           immediate_manager: immediateManager,
@@ -1464,7 +1464,7 @@ export class DbStorage extends MemStorage {
           hierarchy_level: user.hierarchyLevel,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
       
       console.log(`Persisted hierarchy info for user ${id} to database: topManager=${topManager}, immediateManager=${immediateManager}, userType=${userType}`);
     } catch (error) {
@@ -1481,12 +1481,12 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           allowed_top_managers: allowedTopManagers,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
       
       console.log(`Persisted allowed top managers for user ${id} to database: ${allowedTopManagers.join(', ')}`);
     } catch (error) {
@@ -1503,13 +1503,13 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.update(schema.users)
+      await this.dbInstance.update(users)
         .set({
           casino_auth_token: token,
           casino_auth_token_expiry: expiryDate,
           updated_at: user.updatedAt
         })
-        .where(eq(schema.users.id, id));
+        .where(eq(users.id, id));
       
       console.log(`Persisted casino auth token for user ${id} to database, expires: ${expiryDate.toISOString()}`);
     } catch (error) {
@@ -1523,8 +1523,6 @@ export class DbStorage extends MemStorage {
 
 // Import database connection
 import { db } from './db';
-import { eq } from 'drizzle-orm';
-import * as schema from '../shared/schema';
 
 // Export storage instance
 export const storage = new DbStorage(db);
