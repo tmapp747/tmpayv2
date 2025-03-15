@@ -1080,6 +1080,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // User preferences endpoints
+  app.get("/api/user/preferences/:key", async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      
+      // First try to get user from session (preferred method)
+      let userId: number | null = null;
+      if (req.session && (req.session as any).userId) {
+        userId = (req.session as any).userId;
+        console.log(`[USER INFO] Retrieved user ID from session: ${userId}`);
+      } else {
+        // Fallback to token auth for backward compatibility
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
+          const user = await storage.getUserByAccessToken(token);
+          if (user) {
+            userId = user.id;
+          }
+        }
+      }
+      
+      if (!userId) {
+        console.log('[USER INFO] User not authenticated');
+        return res.status(200).json({ 
+          success: true, 
+          exists: false, 
+          value: null, 
+          default: true 
+        });
+      }
+      
+      const preference = await storage.getUserPreference(userId, key);
+      if (!preference) {
+        return res.status(200).json({ 
+          success: true, 
+          exists: false, 
+          value: null, 
+          default: true 
+        });
+      }
+      
+      return res.status(200).json({ 
+        success: true, 
+        exists: true, 
+        value: preference.value,
+        default: false
+      });
+    } catch (error) {
+      console.error(`Error fetching user preference for key ${req.params.key}:`, error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error fetching user preference", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
+  app.post("/api/user/preferences/:key", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { key } = req.params;
+      const { value } = req.body;
+      const user = (req as any).user;
+      
+      if (!user) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+      
+      const updatedPreference = await storage.updateUserPreference(user.id, key, value);
+      
+      return res.status(200).json({ 
+        success: true, 
+        message: "Preference updated successfully",
+        preference: updatedPreference
+      });
+    } catch (error) {
+      console.error(`Error updating user preference for key ${req.params.key}:`, error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Error updating user preference", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
   app.post("/api/user/preferred-currency", authMiddleware, async (req: Request, res: Response) => {
     try {
       const { currency } = updatePreferredCurrencySchema.parse(req.body);
@@ -2990,7 +3075,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topManager: mockCasinoDetails.topManager,
         immediateManager: mockCasinoDetails.immediateManager,
         casinoUserType: mockCasinoDetails.casinoUserType,
-        currencyBalances: { PHP: "0", PHPT: "0", USDT: "0" }, // Using proper field name
+        balances: { PHP: "0", PHPT: "0", USDT: "0" }, // Using proper field name
         preferredCurrency: "PHP",
         allowedTopManagers: ["TestManager"]
       });
