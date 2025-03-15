@@ -512,7 +512,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Logout endpoint
+  // Token refresh endpoint
+  app.post("/api/auth/refresh-token", async (req: Request, res: Response) => {
+    try {
+      // Validate the request
+      const refreshSchema = z.object({
+        refreshToken: z.string().min(10)
+      });
+      
+      const { refreshToken } = refreshSchema.parse(req.body);
+      
+      // Find the user associated with this refresh token
+      const user = await storage.getUserByRefreshToken(refreshToken);
+      
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid refresh token"
+        });
+      }
+      
+      // Check if the refresh token is expired
+      if (!user.refreshTokenExpiry || user.refreshTokenExpiry < new Date()) {
+        return res.status(401).json({
+          success: false,
+          message: "Refresh token has expired, please login again"
+        });
+      }
+      
+      // Generate a new access token
+      const newAccessToken = generateAccessToken();
+      await storage.updateUserAccessToken(user.id, newAccessToken, 3600); // 1 hour
+      
+      // Return the new access token
+      return res.json({
+        success: true,
+        message: "Token refreshed successfully",
+        accessToken: newAccessToken
+      });
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      if (error instanceof ZodError) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      return res.status(500).json({ 
+        success: false, 
+        message: "Server error during token refresh" 
+      });
+    }
+  });
+
   app.post("/api/auth/logout", async (req: Request, res: Response) => {
     try {
       // Try to get the authenticated user, but don't require it
@@ -678,10 +731,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.setUserAllowedTopManagers(newUser.id, ALLOWED_TOP_MANAGERS);
         console.log("[REGISTER] Set allowed top managers for user");
         
-        // Generate access token
+        // Generate access token with expiration (1 hour)
         const accessToken = generateAccessToken();
-        await storage.updateUserAccessToken(newUser.id, accessToken);
-        console.log("[REGISTER] Access token generated and saved");
+        await storage.updateUserAccessToken(newUser.id, accessToken, 3600); // 1 hour
+        
+        // Generate refresh token with longer expiration (30 days)
+        const refreshToken = generateAccessToken();
+        await storage.updateUserRefreshToken(newUser.id, refreshToken, 2592000); // 30 days
+        console.log("[REGISTER] Access and refresh tokens generated and saved");
         
         // Verify user was saved - get all users from storage
         const allUsers = storage.getAllUsers();
@@ -696,7 +753,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Registration successful",
           user: {
             ...userWithoutPassword,
-            accessToken
+            accessToken,
+            refreshToken
           }
         });
       } catch (apiError) {
