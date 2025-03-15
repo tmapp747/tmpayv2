@@ -30,7 +30,7 @@ import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
 import { paygramApi } from "./paygramApi";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword, comparePasswords } from "./auth";
 
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
@@ -1359,10 +1359,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Old password format: ${user.password.includes('$2') ? 'hashed' : 'plaintext'}`);
       console.log(`New password will be properly hashed`);
       
-      // Create SQL query to update the user's password directly in the database
-      const query = `UPDATE users SET password = '${hashedPassword}' WHERE id = ${user.id}`;
-      await db.execute(query);
-      console.log("Password updated successfully in database");
+      // Use the updateUserCasinoDetails method to update just the password field
+      try {
+        // This method is designed to update specific fields of a user
+        const updatedUser = await storage.updateUserCasinoDetails(user.id, {
+          password: hashedPassword
+        });
+        console.log("Password updated successfully in database");
+      } catch (dbError) {
+        console.error("Database error during password update:", dbError);
+        throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : String(dbError)}`);
+      }
       
       return res.json({
         success: true,
