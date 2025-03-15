@@ -213,6 +213,8 @@ export default function AuthPage() {
   };
 
   const onRegisterSubmit = (data: RegisterFormValues) => {
+    // Debug log to see what values are being submitted
+    console.log("Submitting registration form with data:", JSON.stringify(data, null, 2));
     registerMutation.mutate(data);
   };
   
@@ -539,6 +541,39 @@ export default function AuthPage() {
                         )}
                       />
 
+                      {/* Hidden fields - not visible to users but included in form submission */}
+                      <FormField
+                        control={registerForm.control}
+                        name="clientId"
+                        render={({ field }) => (
+                          <input type="hidden" {...field} />
+                        )}
+                      />
+                      
+                      <FormField
+                        control={registerForm.control}
+                        name="topManager"
+                        render={({ field }) => (
+                          <input type="hidden" {...field} />
+                        )}
+                      />
+                      
+                      <FormField
+                        control={registerForm.control}
+                        name="immediateManager"
+                        render={({ field }) => (
+                          <input type="hidden" {...field} />
+                        )}
+                      />
+                      
+                      <FormField
+                        control={registerForm.control}
+                        name="casinoUserType"
+                        render={({ field }) => (
+                          <input type="hidden" {...field} />
+                        )}
+                      />
+                      
                       <FormField
                         control={registerForm.control}
                         name="email"

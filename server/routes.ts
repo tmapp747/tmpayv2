@@ -688,6 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
       console.log("[REGISTER] Registration attempt with data:", JSON.stringify(req.body, null, 2));
+      console.log("[REGISTER] Request body includes clientId?", req.body.clientId !== undefined);
       
       // Create a register schema based on the user schema with required fields
       const registerSchema = z.object({
@@ -739,14 +740,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("[REGISTER] Top manager:", topManager, "Immediate manager:", immediateManager);
       
       try {
-        // Get client ID 
-        console.log("[REGISTER] Getting user hierarchy for:", username);
-        const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
-        console.log("[REGISTER] Got hierarchy data:", JSON.stringify(hierarchyData, null, 2));
-        const casinoClientId = hierarchyData.user.clientId;
+        // If clientId was provided by the frontend, use it
+        // Otherwise, fetch it from the casino API
+        let casinoClientId: number;
+        
+        if (providedClientId) {
+          console.log("[REGISTER] Using client ID provided by frontend:", providedClientId);
+          casinoClientId = providedClientId;
+        } else {
+          // Get client ID from casino API
+          console.log("[REGISTER] Getting user hierarchy for:", username);
+          const hierarchyData = await casino747Api.getUserHierarchy(username, isAgent);
+          console.log("[REGISTER] Got hierarchy data:", JSON.stringify(hierarchyData, null, 2));
+          casinoClientId = hierarchyData.user.clientId;
+        }
+        
+        // Use provided casino data if available, fall back to API data if not
+        const finalTopManager = providedTopManager || topManager;
+        const finalImmediateManager = providedImmediateManager || immediateManager;
+        const finalCasinoUserType = providedCasinoUserType || (isAgent ? 'agent' : 'player');
         
         // Create new user in our system
-        console.log("[REGISTER] Creating user in storage...");
+        console.log("[REGISTER] Creating user in storage with client ID:", casinoClientId);
         const newUser = await storage.createUser({
           username,
           password: await hashPassword(password), // Always hash the password
@@ -757,9 +772,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           isVip: false,
           casinoUsername: username,
           casinoClientId: casinoClientId,
-          topManager: topManager,
-          immediateManager: immediateManager,
-          casinoUserType: isAgent ? 'agent' : 'player',
+          topManager: finalTopManager,
+          immediateManager: finalImmediateManager,
+          casinoUserType: finalCasinoUserType,
           isAuthorized: true // Pre-authorized since we checked the hierarchy
         });
         console.log("[REGISTER] User created with ID:", newUser.id);
