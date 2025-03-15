@@ -1267,6 +1267,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Debug endpoint to test casino balance API directly with a specific user
+  app.get("/api/debug/casino-balance-test", async (req: Request, res: Response) => {
+    try {
+      // Use Marcthepogi as a hardcoded test case
+      const username = "Marcthepogi";
+      
+      console.log(`DEBUG: Testing balance API for ${username}`);
+      console.log(`DEBUG: Getting user details for ${username}`);
+      
+      try {
+        const userDetails = await casino747Api.getUserDetails(username);
+        console.log(`DEBUG: User details:`, JSON.stringify(userDetails));
+        
+        if (!userDetails || !userDetails.clientId) {
+          return res.status(404).json({
+            success: false,
+            message: `User ${username} not found or clientId missing`
+          });
+        }
+        
+        console.log(`DEBUG: Testing balance API for ${username} with clientId ${userDetails.clientId}`);
+        
+        try {
+          const balanceResult = await casino747Api.getUserBalance(userDetails.clientId, username);
+          console.log(`DEBUG: Balance result:`, JSON.stringify(balanceResult));
+          
+          return res.json({
+            success: true,
+            message: "Casino balance test successful",
+            userDetails: userDetails,
+            balanceResult: balanceResult
+          });
+        } catch (balanceError) {
+          console.error("Error fetching balance:", balanceError);
+          return res.status(500).json({ 
+            success: false, 
+            message: "Casino balance test failed", 
+            error: balanceError instanceof Error ? balanceError.message : String(balanceError),
+            userDetails: userDetails
+          });
+        }
+      } catch (userError) {
+        console.error("Error fetching user details:", userError);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Failed to get user details", 
+          error: userError instanceof Error ? userError.message : String(userError)
+        });
+      }
+    } catch (error) {
+      console.error("Error in casino balance test:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Casino balance test failed", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
 
   // Endpoint to create manual payment with receipt
   app.post("/api/payments/manual/create", authMiddleware, async (req: Request, res: Response) => {
