@@ -20,9 +20,14 @@ export async function apiRequest(
     // Use the more robust apiRequest that handles session auth
     const res = await authApiRequest(method, url, data);
     
-    // If we get a 401, log it for debugging
+    // If we get a 401, log it for debugging but don't throw if it's expected
     if (res.status === 401) {
       console.log(`Authentication required for: ${method} ${url}`);
+      // For specific endpoints that are always called when not logged in, 
+      // we don't want to throw an error
+      if (url === '/api/user/info' || url === '/api/auth/refresh-token') {
+        return res;
+      }
     }
     
     await throwIfResNotOk(res);
@@ -48,15 +53,39 @@ export const getQueryFn: <T>(options: {
       // If 401 and configured to return null, do so silently
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
         console.log(`Silently handling 401 for: GET ${queryKey[0]}`);
-        return null;
+        
+        // For user info and other auth-related endpoints, just return null on 401
+        if (queryKey[0] === '/api/user/info') {
+          return null;
+        }
+        
+        // For other endpoints with 401, try to refresh the session first
+        try {
+          // Attempt to refresh the session
+          await authApiRequest("POST", "/api/auth/refresh-token");
+          
+          // Retry the original request
+          const retryRes = await authApiRequest("GET", queryKey[0] as string);
+          
+          // If still 401, return null
+          if (retryRes.status === 401) {
+            return null;
+          }
+          
+          // Otherwise parse and return the data
+          const retryData = await retryRes.json();
+          return retryData;
+        } catch (refreshError) {
+          console.error("Error checking intro video status:", refreshError);
+          return null;
+        }
       }
       
-      // For consistency, still use our error handler
+      // For consistency, still use our error handler for non-401 errors
       await throwIfResNotOk(res);
       
       // Parse and return the JSON response
       const data = await res.json();
-      console.log(`Query successful: GET ${queryKey[0]}`);
       return data;
     } catch (error) {
       // If this is a 401 and we're configured to just return null, do that

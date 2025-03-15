@@ -71,18 +71,27 @@ async function refreshAccessToken(): Promise<string> {
     });
     
     if (!res.ok) {
+      console.error('Token refresh failed with status:', res.status);
+      // Don't throw for expected 401 errors during session validation
+      if (res.status === 401) {
+        return '';
+      }
       throw new Error('Failed to refresh token');
     }
     
     const data = await res.json();
     
     // No need to update localStorage - sessions are handled by the server
+    console.log('Session refreshed successfully');
     
-    return data.accessToken;
+    return data.accessToken || '';
   } catch (error) {
     console.error('Token refresh failed:', error);
-    // No need to clear localStorage - redirect to login
-    window.location.href = '/auth';
+    // Don't redirect on failed refresh during regular API calls
+    // Only redirect if user explicitly attempts to access a protected route
+    if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+      window.location.href = '/auth';
+    }
     throw error;
   } finally {
     isRefreshing = false;

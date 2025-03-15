@@ -77,11 +77,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
         // No body needed - session is used for authentication
       });
-      const data = await res.json();
       
+      // Handle 401 errors gracefully - user is simply not logged in
+      if (res.status === 401) {
+        console.log("Session refresh 401 - user not authenticated");
+        
+        // Don't update state if we're on the auth page already
+        if (window.location.pathname !== '/auth') {
+          // Clear user data from cache
+          queryClient.setQueryData(["/api/user/info"], { user: null });
+        }
+        
+        // Return empty string without throwing for expected 401s
+        return '';
+      }
+      
+      // For other non-2xx responses, handle as errors
       if (!res.ok) {
-        console.error("Session refresh failed:", data.message);
-        throw new Error(data.message || "Failed to refresh session");
+        const errorData = await res.json().catch(() => ({}));
+        console.error("Session refresh failed:", errorData.message || res.statusText);
+        throw new Error(errorData.message || "Failed to refresh session");
+      }
+      
+      // Parse response data
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        console.log("Empty response from refresh endpoint");
+        return '';
       }
       
       console.log("Session refreshed successfully");
@@ -94,11 +118,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return '';
     } catch (error) {
       console.error("Session refresh failed:", error);
-      // If refresh fails, we need to log the user out
-      queryClient.setQueryData(["/api/user/info"], { user: null });
       
-      // Redirect to login page
-      window.location.href = '/auth';
+      // Only clear user data and redirect if not already on auth page
+      if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+        // If refresh fails, we need to log the user out
+        queryClient.setQueryData(["/api/user/info"], { user: null });
+        
+        // Redirect to login page
+        window.location.href = '/auth';
+      }
+      
+      // Always throw for unexpected errors
       throw error;
     }
   };
