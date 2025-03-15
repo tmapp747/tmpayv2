@@ -4,6 +4,7 @@ import {
   qrPayments,
   telegramPayments,
   manualPayments,
+  userPreferences,
   supportedCurrencies,
   type User, 
   type InsertUser,
@@ -15,6 +16,8 @@ import {
   type InsertTelegramPayment,
   type ManualPayment,
   type InsertManualPayment,
+  type UserPreference,
+  type InsertUserPreference,
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
@@ -102,6 +105,13 @@ export interface IStorage {
   getActiveManualPaymentByUserId(userId: number): Promise<ManualPayment | undefined>;
   updateManualPayment(id: number, updates: Partial<ManualPayment>): Promise<ManualPayment>;
   getAllManualPayments(): Map<number, ManualPayment>;
+  
+  // User Preferences operations
+  createUserPreference(preference: InsertUserPreference): Promise<UserPreference>;
+  getUserPreference(userId: number, key: string): Promise<UserPreference | undefined>;
+  updateUserPreference(userId: number, key: string, value: any): Promise<UserPreference>;
+  deleteUserPreference(userId: number, key: string): Promise<boolean>;
+  getUserPreferences(userId: number): Promise<UserPreference[]>;
 }
 
 // In-memory storage implementation
@@ -111,12 +121,14 @@ export class MemStorage implements IStorage {
   private qrPayments: Map<number, QrPayment>;
   private telegramPayments: Map<number, TelegramPayment>;
   private manualPayments: Map<number, ManualPayment>;
+  private userPreferences: Map<number, UserPreference>;
   
   private userIdCounter: number;
   private transactionIdCounter: number;
   private qrPaymentIdCounter: number;
   private telegramPaymentIdCounter: number;
   private manualPaymentIdCounter: number;
+  private userPreferenceIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -124,12 +136,14 @@ export class MemStorage implements IStorage {
     this.qrPayments = new Map();
     this.telegramPayments = new Map();
     this.manualPayments = new Map();
+    this.userPreferences = new Map();
     
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
     this.qrPaymentIdCounter = 1;
     this.telegramPaymentIdCounter = 1;
     this.manualPaymentIdCounter = 1;
+    this.userPreferenceIdCounter = 1;
     
     console.log('MemStorage initialized without test users');
   }
@@ -1191,6 +1205,66 @@ export class MemStorage implements IStorage {
   getAllManualPayments(): Map<number, ManualPayment> {
     return this.manualPayments;
   }
+
+  // User Preferences operations
+  async createUserPreference(preferenceData: InsertUserPreference): Promise<UserPreference> {
+    const id = this.userPreferenceIdCounter++;
+    const now = new Date();
+    
+    // Create the preference with all required fields
+    const preference: UserPreference = {
+      ...preferenceData,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.userPreferences.set(id, preference);
+    return preference;
+  }
+  
+  async getUserPreference(userId: number, key: string): Promise<UserPreference | undefined> {
+    return Array.from(this.userPreferences.values()).find(
+      (pref) => pref.userId === userId && pref.key === key
+    );
+  }
+  
+  async updateUserPreference(userId: number, key: string, value: any): Promise<UserPreference> {
+    // First, try to find an existing preference
+    const existingPref = await this.getUserPreference(userId, key);
+    
+    if (existingPref) {
+      // Update the existing preference
+      const updatedPref: UserPreference = {
+        ...existingPref,
+        value: JSON.stringify(value),
+        updatedAt: new Date()
+      };
+      
+      this.userPreferences.set(existingPref.id, updatedPref);
+      return updatedPref;
+    } else {
+      // Create a new preference if it doesn't exist
+      return this.createUserPreference({
+        userId,
+        key,
+        value: JSON.stringify(value)
+      });
+    }
+  }
+  
+  async deleteUserPreference(userId: number, key: string): Promise<boolean> {
+    const preference = await this.getUserPreference(userId, key);
+    if (!preference) return false;
+    
+    return this.userPreferences.delete(preference.id);
+  }
+  
+  async getUserPreferences(userId: number): Promise<UserPreference[]> {
+    return Array.from(this.userPreferences.values()).filter(
+      (pref) => pref.userId === userId
+    );
+  }
 }
 
 // Create a singleton instance of the storage
@@ -1509,6 +1583,94 @@ export class DbStorage extends MemStorage {
     }
     
     return user;
+  }
+
+  // Override user preference methods to persist to database
+  async createUserPreference(preferenceData: InsertUserPreference): Promise<UserPreference> {
+    // First create in memory
+    const preference = await super.createUserPreference(preferenceData);
+    
+    // Then persist to database
+    try {
+      await this.dbInstance.insert(userPreferences).values({
+        id: preference.id,
+        user_id: preference.userId,
+        key: preference.key,
+        value: preference.value,
+        created_at: preference.createdAt,
+        updated_at: preference.updatedAt
+      });
+      
+      console.log(`Persisted user preference to database: userId=${preference.userId}, key=${preference.key}`);
+    } catch (error) {
+      console.error('Error creating user preference in database:', error);
+      // Continue with memory version even if DB fails
+    }
+    
+    return preference;
+  }
+  
+  async updateUserPreference(userId: number, key: string, value: any): Promise<UserPreference> {
+    // First update in memory
+    const preference = await super.updateUserPreference(userId, key, value);
+    
+    // Then persist to database
+    try {
+      // Check if this preference already exists in the database
+      const existingPrefs = await this.dbInstance
+        .select()
+        .from(userPreferences)
+        .where(sql`user_id = ${userId} AND key = ${key}`);
+      
+      if (existingPrefs && existingPrefs.length > 0) {
+        // Update existing preference
+        await this.dbInstance.update(userPreferences)
+          .set({
+            value: preference.value,
+            updated_at: preference.updatedAt
+          })
+          .where(sql`id = ${preference.id}`);
+        
+        console.log(`Updated user preference in database: userId=${userId}, key=${key}`);
+      } else {
+        // Insert new preference
+        await this.dbInstance.insert(userPreferences).values({
+          id: preference.id,
+          user_id: userId,
+          key: key,
+          value: preference.value,
+          created_at: preference.createdAt,
+          updated_at: preference.updatedAt
+        });
+        
+        console.log(`Inserted new user preference to database: userId=${userId}, key=${key}`);
+      }
+    } catch (error) {
+      console.error('Error updating user preference in database:', error);
+      // Continue with memory version even if DB fails
+    }
+    
+    return preference;
+  }
+  
+  async deleteUserPreference(userId: number, key: string): Promise<boolean> {
+    // First delete from memory
+    const result = await super.deleteUserPreference(userId, key);
+    
+    // Then delete from database if memory operation was successful
+    if (result) {
+      try {
+        await this.dbInstance.delete(userPreferences)
+          .where(sql`user_id = ${userId} AND key = ${key}`);
+        
+        console.log(`Deleted user preference from database: userId=${userId}, key=${key}`);
+      } catch (error) {
+        console.error('Error deleting user preference from database:', error);
+        // Continue with memory result even if DB fails
+      }
+    }
+    
+    return result;
   }
 }
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, numeric, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, numeric, json, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -152,6 +152,17 @@ export const manualPayments = pgTable("manual_payments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// User preferences for client-side settings stored server-side
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  key: text("key").notNull(), // preference key (e.g., 'intro_video_shown')
+  value: json("value").notNull(), // preference value as JSON
+  lastUpdated: date("last_updated").notNull(), // When the preference was last updated
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
   id: true,
   createdAt: true,
@@ -165,6 +176,12 @@ export const insertTelegramPaymentSchema = createInsertSchema(telegramPayments).
 });
 
 export const insertManualPaymentSchema = createInsertSchema(manualPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserPreferenceSchema = createInsertSchema(userPreferences).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -263,6 +280,17 @@ export const authSchema = z.object({
 
 export const allowedTopManagersSchema = z.array(z.string()).min(1);
 
+export const updateUserPreferenceSchema = z.object({
+  userId: z.number(), 
+  key: z.string(),
+  value: z.any(),
+});
+
+export const getUserPreferenceSchema = z.object({
+  userId: z.number(),
+  key: z.string()
+});
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -278,6 +306,9 @@ export type InsertTelegramPayment = z.infer<typeof insertTelegramPaymentSchema>;
 
 export type ManualPayment = typeof manualPayments.$inferSelect;
 export type InsertManualPayment = z.infer<typeof insertManualPaymentSchema>;
+
+export type UserPreference = typeof userPreferences.$inferSelect;
+export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
 
 // Add schema for Telegram payment requests
 export const generateTelegramPaymentSchema = z.object({
@@ -318,3 +349,7 @@ export type CasinoGetUserDetailsRequest = z.infer<typeof casinoGetUserDetailsSch
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type AuthRequest = z.infer<typeof authSchema>;
 export type AllowedTopManagers = z.infer<typeof allowedTopManagersSchema>;
+
+// User preferences types
+export type UpdateUserPreferenceRequest = z.infer<typeof updateUserPreferenceSchema>;
+export type GetUserPreferenceRequest = z.infer<typeof getUserPreferenceSchema>;

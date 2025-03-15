@@ -1,19 +1,36 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { apiRequest } from '../lib/api-client';
 
 export function VideoIntro() {
-  const [showVideo, setShowVideo] = useState<boolean>(() => {
-    // Check if the intro has already been shown today
-    const lastShownDate = localStorage.getItem('introVideoLastShown');
-    const today = new Date().toDateString();
+  const [showVideo, setShowVideo] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Check the server for intro video status on component mount
+  useEffect(() => {
+    const checkIntroStatus = async () => {
+      try {
+        const response = await apiRequest('GET', '/api/user/preferences/intro-video');
+        if (response.ok) {
+          const data = await response.json();
+          // If the intro hasn't been shown today, show it
+          setShowVideo(!data.shownToday);
+          
+          // If we're showing the video, mark it as shown
+          if (!data.shownToday) {
+            await apiRequest('POST', '/api/user/preferences/intro-video', {
+              shown: true
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking intro video status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    if (lastShownDate === today) {
-      return false; // Don't show if already shown today
-    }
-    
-    // Update the last shown date
-    localStorage.setItem('introVideoLastShown', today);
-    return true;
-  });
+    checkIntroStatus();
+  }, []);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   
