@@ -19,29 +19,41 @@ const SALT_ROUNDS = 10;
 
 /**
  * Hashes a password using bcrypt
- * In development mode, can be configured to use plaintext for easier testing
+ * Always uses bcrypt regardless of environment for security
  */
 export async function hashPassword(password: string) {
-  // Check if we're in development mode and if plaintext passwords are allowed
-  if (process.env.NODE_ENV !== "production" && process.env.ALLOW_PLAINTEXT_PASSWORDS === "true") {
-    console.warn("WARNING: Using plaintext passwords in development mode");
-    return password;
+  // Always use proper bcrypt hashing for security
+  try {
+    console.log("Hashing password with bcrypt...");
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    console.log("Password hashed successfully with bcrypt");
+    return hashedPassword;
+  } catch (error) {
+    console.error("Error hashing password with bcrypt:", error);
+    throw new Error("Failed to hash password securely");
   }
-  
-  // Otherwise use proper bcrypt hashing even in development
-  return await bcrypt.hash(password, SALT_ROUNDS);
+}
+
+/**
+ * Checks if a password is already hashed with bcrypt
+ * Used to determine if migration is needed
+ */
+export function isPasswordHashed(password: string): boolean {
+  return password.startsWith('$2b$') || password.startsWith('$2a$');
 }
 
 /**
  * Compares a supplied password with a stored password
- * Handles both bcrypt hashed passwords and plaintext passwords (for development)
- * Uses constant-time comparison to prevent timing attacks
+ * Handles both bcrypt hashed passwords and plaintext passwords during migration period
+ * Uses constant-time comparison to prevent timing attacks where needed
+ * 
+ * @returns An object containing the comparison result and whether migration is needed
  */
-export async function comparePasswords(supplied: string, stored: string) {
+export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   // Log password comparison attempt with more details but keeping security in mind
   console.log(`Password comparison attempt details:`);
   console.log(`- Supplied password length: ${supplied ? supplied.length : 0}`);
-  console.log(`- Stored password type: ${stored ? (stored.startsWith('$2') ? 'bcrypt hash' : 'plaintext') : 'missing'}`);
+  console.log(`- Stored password type: ${stored ? (isPasswordHashed(stored) ? 'bcrypt hash' : 'plaintext') : 'missing'}`);
   console.log(`- Stored password preview: ${stored ? stored.substring(0, 3) + '...' + stored.substring(stored.length - 3) : 'none'}`);
   
   // Immediately fail if either value is missing
@@ -51,7 +63,7 @@ export async function comparePasswords(supplied: string, stored: string) {
   }
   
   // If the stored password appears to be a bcrypt hash, use bcrypt.compare
-  if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
+  if (isPasswordHashed(stored)) {
     try {
       console.log("Using bcrypt.compare for password validation");
       const result = await bcrypt.compare(supplied, stored);
@@ -64,46 +76,41 @@ export async function comparePasswords(supplied: string, stored: string) {
     }
   }
   
-  // Fallback for plaintext passwords (development only)
-  if (process.env.NODE_ENV !== "production" && process.env.ALLOW_PLAINTEXT_PASSWORDS === "true") {
-    console.warn("Using plaintext password comparison in development mode");
-    
-    // Use a constant-time comparison for plaintext too
-    // This prevents timing attacks even in development
-    let result = true;
-    const suppliedBuffer = Buffer.from(supplied);
-    const storedBuffer = Buffer.from(stored);
-    
-    // If lengths differ, result will be false, but continue to prevent timing attacks
-    if (suppliedBuffer.length !== storedBuffer.length) {
-      console.log(`Password length mismatch: ${suppliedBuffer.length} vs ${storedBuffer.length}`);
+  // Special case for legacy accounts with plaintext passwords that need migration
+  console.warn("⚠️ SECURITY NOTICE: Plaintext password detected. Password migration required.");
+  console.log("Comparing plaintext password for legacy account");
+  
+  // Use a constant-time comparison for plaintext to mitigate timing attacks
+  let result = true;
+  const suppliedBuffer = Buffer.from(supplied);
+  const storedBuffer = Buffer.from(stored);
+  
+  // If lengths differ, result will be false, but continue to prevent timing attacks
+  if (suppliedBuffer.length !== storedBuffer.length) {
+    console.log(`Password length mismatch: ${suppliedBuffer.length} vs ${storedBuffer.length}`);
+    result = false;
+  }
+  
+  // Constant-time comparison
+  let differences = 0;
+  for (let i = 0; i < Math.min(suppliedBuffer.length, storedBuffer.length); i++) {
+    if (suppliedBuffer[i] !== storedBuffer[i]) {
+      differences++;
       result = false;
     }
-    
-    // Constant-time comparison
-    let differences = 0;
-    for (let i = 0; i < Math.min(suppliedBuffer.length, storedBuffer.length); i++) {
-      if (suppliedBuffer[i] !== storedBuffer[i]) {
-        differences++;
-        result = false;
-      }
-    }
-    
-    console.log(`Plaintext comparison result: ${result ? 'Success' : `Failed with ${differences} differences`}`);
-    return result;
   }
   
-  // If we're not in production, allow direct comparison as final fallback
-  if (process.env.NODE_ENV !== "production") {
-    console.warn("Using direct plaintext comparison for password (development only)");
-    const result = supplied === stored;
-    console.log(`Direct comparison result: ${result ? 'Success' : 'Failed'}`);
-    return result;
+  console.log(`Legacy password comparison result: ${result ? 'Success' : `Failed with ${differences} differences`}`);
+  
+  // Log a prominent warning about password migration
+  if (result) {
+    console.warn("==================================================");
+    console.warn("⚠️ CRITICAL SECURITY WARNING: Legacy plaintext password was used successfully");
+    console.warn("Password migration should be performed immediately");
+    console.warn("==================================================");
   }
   
-  // If we're in production and the password doesn't look like a hash, always fail
-  console.error("SECURITY ISSUE: Non-hashed password found when comparing");
-  return false;
+  return result;
 }
 
 export function setupAuth(app: Express) {
@@ -135,13 +142,45 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // Look up the user - use case-insensitive search
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          console.log(`Login failed: no user found with username "${username}"`);
           return done(null, false);
-        } else {
-          return done(null, user);
         }
+        
+        // Compare passwords using our enhanced function that handles both hashed and plaintext passwords
+        const isPasswordValid = await comparePasswords(password, user.password);
+        
+        if (!isPasswordValid) {
+          console.log(`Login failed: invalid password for user "${username}"`);
+          return done(null, false);
+        }
+        
+        // If login successful and password is not hashed (plaintext), perform automatic migration
+        if (!isPasswordHashed(user.password)) {
+          console.log(`Automatically migrating plaintext password to bcrypt hash for user "${username}"`);
+          try {
+            // Hash the password and update the user record
+            const hashedPassword = await hashPassword(password);
+            await storage.updateUserCasinoDetails(user.id, { password: hashedPassword });
+            console.log(`Password migration completed successfully for user "${username}"`);
+            
+            // Get the updated user with the new hashed password
+            const updatedUser = await storage.getUser(user.id);
+            if (updatedUser) {
+              return done(null, updatedUser);
+            }
+          } catch (migrationError) {
+            console.error(`Failed to migrate password for user "${username}":`, migrationError);
+            // Continue with login even if migration fails - we can try again next time
+          }
+        }
+        
+        return done(null, user);
       } catch (error) {
+        console.error("Authentication error:", error);
         return done(error);
       }
     }),
