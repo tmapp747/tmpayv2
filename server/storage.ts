@@ -1333,7 +1333,7 @@ export class DbStorage extends MemStorage {
         balances: createdUser.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
         preferred_currency: createdUser.preferredCurrency || 'PHP',
         is_vip: createdUser.isVip || false,
-        casino_id: createdUser.casinoId || `user-${createdUser.id}-${Date.now()}`, // Ensure casinoId is never null
+        casino_id: createdUser.casinoClientId ? `747-${createdUser.casinoClientId}` : `user-${createdUser.id}-${Date.now()}`, // Ensure casinoId is never null
         casino_username: createdUser.casinoUsername,
         casino_client_id: createdUser.casinoClientId,
         top_manager: createdUser.topManager,
@@ -1489,7 +1489,7 @@ export class DbStorage extends MemStorage {
           allowed_top_managers: allowedTopManagers,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
       
       console.log(`Persisted allowed top managers for user ${id} to database: ${allowedTopManagers.join(', ')}`);
     } catch (error) {
@@ -1512,7 +1512,7 @@ export class DbStorage extends MemStorage {
           casino_auth_token_expiry: expiryDate,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
       
       console.log(`Persisted casino auth token for user ${id} to database, expires: ${expiryDate.toISOString()}`);
     } catch (error) {
