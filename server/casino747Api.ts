@@ -535,6 +535,11 @@ export class Casino747Api {
       switch (topManager) {
         case 'Marcthepogi':
           token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+          console.log(`DEBUG: Attempting to fetch token for Marcthepogi: ${token ? 'Token found' : 'No token in env'}`);
+          // For debugging - show limited part of token if available
+          if (token) {
+            console.log(`Marcthepogi token starts with: ${token.substring(0, 5)}... and ends with: ...${token.substring(token.length - 5)}`);
+          }
           break;
         case 'bossmarc747':
           token = process.env.CASINO_TOKEN_BOSSMARC747;
