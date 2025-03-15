@@ -1,3 +1,4 @@
+import { eq, sql } from "drizzle-orm";
 import { 
   users, 
   transactions, 
@@ -21,7 +22,6 @@ import {
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
 
 // Storage interface for all database operations
 export interface IStorage {
@@ -1466,7 +1466,7 @@ export class DbStorage extends MemStorage {
           access_token_expiry: user.accessTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(sql`users.id = ${id}`);
+        .where(eq(users.id, id));
     } catch (error) {
       console.error('Error updating user access token in database:', error);
       // Continue with memory update even if DB fails
