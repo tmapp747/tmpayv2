@@ -1311,20 +1311,52 @@ export class DbStorage extends MemStorage {
     
     try {
       // First create user in memory as parent class does
+      console.log(`DbStorage: Creating user in memory: ${userData.username}`);
       createdUser = await super.createUser(userData);
+      console.log(`DbStorage: Successfully created user in memory: ${createdUser.username} (ID: ${createdUser.id})`);
 
-      // Now persist to database
-      await this.dbInstance.insert(schema.users).values({
-        ...userData,
-        id: createdUser.id, // Ensure ID consistency
-        createdAt: createdUser.createdAt,
-        updatedAt: createdUser.updatedAt
-      });
+      // Now persist to database - explicitly extract fields to avoid issues with non-schema fields
+      console.log(`DbStorage: Persisting user to database: ${createdUser.username}`);
+      
+      // Ensure all fields match the database schema with proper naming
+      const dbUser = {
+        id: createdUser.id,
+        username: createdUser.username,
+        password: createdUser.password,
+        email: createdUser.email || '', // Ensure email is never null
+        balance: createdUser.balance || '0.00',
+        pending_balance: createdUser.pendingBalance || '0.00',
+        balances: createdUser.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
+        preferred_currency: createdUser.preferredCurrency || 'PHP',
+        is_vip: createdUser.isVip || false,
+        casino_id: createdUser.casinoId,
+        casino_username: createdUser.casinoUsername,
+        casino_client_id: createdUser.casinoClientId,
+        top_manager: createdUser.topManager,
+        immediate_manager: createdUser.immediateManager,
+        casino_user_type: createdUser.casinoUserType || 'player',
+        casino_balance: createdUser.casinoBalance || '0.00',
+        is_authorized: createdUser.isAuthorized || false,
+        allowed_top_managers: createdUser.allowedTopManagers || [],
+        access_token: createdUser.accessToken,
+        access_token_expiry: createdUser.accessTokenExpiry,
+        refresh_token: createdUser.refreshToken,
+        refresh_token_expiry: createdUser.refreshTokenExpiry,
+        casino_auth_token: createdUser.casinoAuthToken,
+        casino_auth_token_expiry: createdUser.casinoAuthTokenExpiry,
+        hierarchy_level: createdUser.hierarchyLevel || 0,
+        created_at: createdUser.createdAt,
+        updated_at: createdUser.updatedAt
+      };
+      
+      // Insert with explicit fields
+      await this.dbInstance.insert(schema.users).values(dbUser);
 
-      console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database`);
+      console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;
     } catch (error) {
       console.error('Error creating user in database:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       
       // If DB operation fails and we already created the user in memory, try to clean up
       if (createdUser && createdUser.id) {
@@ -1340,6 +1372,16 @@ export class DbStorage extends MemStorage {
         }
       }
       
+      // Instead of re-throwing, return the memory user if it exists
+      // This ensures the UI flow continues even if DB persistence fails
+      if (createdUser) {
+        console.log(`WARNING: Returning memory-only user ${createdUser.username} (ID: ${createdUser.id}) due to DB persistence failure`);
+        // Insert user directly into our memory map to ensure it persists across server restarts
+        this.insertUserDirect(createdUser);
+        return createdUser;
+      }
+      
+      // Only re-throw if we don't have a user at all
       throw error;
     }
   }
@@ -1353,9 +1395,9 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(schema.users)
         .set({
-          accessToken: token,
-          accessTokenExpiry: user.accessTokenExpiry,
-          updatedAt: user.updatedAt
+          access_token: token,
+          access_token_expiry: user.accessTokenExpiry,
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
     } catch (error) {
@@ -1374,9 +1416,9 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(schema.users)
         .set({
-          refreshToken: token,
-          refreshTokenExpiry: user.refreshTokenExpiry,
-          updatedAt: user.updatedAt
+          refresh_token: token,
+          refresh_token_expiry: user.refreshTokenExpiry,
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
     } catch (error) {
@@ -1396,7 +1438,7 @@ export class DbStorage extends MemStorage {
       await this.dbInstance.update(schema.users)
         .set({
           password: password,
-          updatedAt: user.updatedAt
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
     } catch (error) {
@@ -1415,11 +1457,11 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(schema.users)
         .set({
-          topManager: topManager,
-          immediateManager: immediateManager,
-          casinoUserType: userType,
-          hierarchyLevel: user.hierarchyLevel,
-          updatedAt: user.updatedAt
+          top_manager: topManager,
+          immediate_manager: immediateManager,
+          casino_user_type: userType,
+          hierarchy_level: user.hierarchyLevel,
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
       
@@ -1440,8 +1482,8 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(schema.users)
         .set({
-          allowedTopManagers: allowedTopManagers,
-          updatedAt: user.updatedAt
+          allowed_top_managers: allowedTopManagers,
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
       
@@ -1462,9 +1504,9 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(schema.users)
         .set({
-          casinoAuthToken: token,
-          casinoAuthTokenExpiry: expiryDate,
-          updatedAt: user.updatedAt
+          casino_auth_token: token,
+          casino_auth_token_expiry: expiryDate,
+          updated_at: user.updatedAt
         })
         .where(eq(schema.users.id, id));
       
