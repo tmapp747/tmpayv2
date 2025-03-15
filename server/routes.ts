@@ -396,9 +396,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth and user management routes
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
+      console.log("[LOGIN] Login attempt with data:", JSON.stringify(req.body, null, 2));
+      
       // Validate the request with loginSchema
       const loginData = loginSchema.parse(req.body);
       const { username, password } = loginData;
+      console.log("[LOGIN] Valid login data for username:", username);
       
       // Determine if user is requesting access as agent or player
       // Default to player if not specified
@@ -847,8 +850,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authorization middleware
   async function authMiddleware(req: Request, res: Response, next: Function) {
     try {
+      console.log("[AUTH MIDDLEWARE] Checking authentication for path:", req.path);
       // Get the access token from the authorization header
       const authHeader = req.headers.authorization;
+      console.log("[AUTH MIDDLEWARE] Authorization header present:", !!authHeader);
       
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ 
@@ -858,11 +863,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const token = authHeader.split(' ')[1];
+      console.log("[AUTH MIDDLEWARE] Extracted token:", token.substring(0, 5) + "..." + token.substring(token.length - 5));
       
       // Validate the token format using authSchema
       try {
         authSchema.parse({ token });
+        console.log("[AUTH MIDDLEWARE] Token format is valid");
       } catch (validationError) {
+        console.log("[AUTH MIDDLEWARE] Token format validation failed:", validationError);
         return res.status(401).json({
           success: false,
           message: "Invalid token format"
@@ -870,7 +878,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find the user with this access token
+      console.log("[AUTH MIDDLEWARE] Looking for user with this access token");
       const user = await storage.getUserByAccessToken(token);
+      console.log("[AUTH MIDDLEWARE] User found:", !!user);
       
       if (!user) {
         return res.status(401).json({ 
