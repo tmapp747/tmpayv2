@@ -1403,7 +1403,7 @@ export class DbStorage extends MemStorage {
           access_token_expiry: user.accessTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
     } catch (error) {
       console.error('Error updating user access token in database:', error);
       // Continue with memory update even if DB fails
@@ -1424,7 +1424,7 @@ export class DbStorage extends MemStorage {
           refresh_token_expiry: user.refreshTokenExpiry,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
     } catch (error) {
       console.error('Error updating user refresh token in database:', error);
       // Continue with memory update even if DB fails
@@ -1444,7 +1444,7 @@ export class DbStorage extends MemStorage {
           password: password,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
     } catch (error) {
       console.error('Error updating user password in database:', error);
       // Continue with memory update even if DB fails
@@ -1467,7 +1467,7 @@ export class DbStorage extends MemStorage {
           hierarchy_level: user.hierarchyLevel,
           updated_at: user.updatedAt
         })
-        .where(sql`id = ${id}`);
+        .where(sql`users.id = ${id}`);
       
       console.log(`Persisted hierarchy info for user ${id} to database: topManager=${topManager}, immediateManager=${immediateManager}, userType=${userType}`);
     } catch (error) {
