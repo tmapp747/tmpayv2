@@ -9,6 +9,7 @@ let refreshPromise: Promise<string> | null = null;
 
 /**
  * Make an authenticated API request with automatic token refresh
+ * Now uses server-side session cookies for authentication
  */
 export async function apiRequest(
   method: string,
@@ -17,57 +18,14 @@ export async function apiRequest(
   headers?: Record<string, string>,
   retry = true
 ): Promise<Response> {
-  // Get auth token from localStorage if available
-  const userData = localStorage.getItem('userData');
-  let accessToken = '';
-  let refreshToken = '';
-  let tokenExpiry: Date | null = null;
-  
-  if (userData) {
-    try {
-      const parsed = JSON.parse(userData);
-      if (parsed.user) {
-        accessToken = parsed.user.accessToken || '';
-        refreshToken = parsed.user.refreshToken || '';
-        
-        // Check if we have an expiry date for the access token
-        if (parsed.user.accessTokenExpiry) {
-          tokenExpiry = new Date(parsed.user.accessTokenExpiry);
-        }
-      }
-    } catch (e) {
-      console.error('Error parsing user data from localStorage', e);
-    }
-  }
-  
-  // Check if token is expired or will expire in the next minute
-  const isTokenExpired = tokenExpiry && tokenExpiry < new Date(Date.now() + 60 * 1000);
-  
-  // If token is expired and we have a refresh token, refresh it
-  if (isTokenExpired && refreshToken && retry) {
-    // Use a single refresh request if multiple API calls happen simultaneously
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = refreshAccessToken(refreshToken);
-    }
-    
-    // Wait for the refresh promise to resolve
-    try {
-      accessToken = await refreshPromise || '';
-    } catch (error) {
-      console.error('Error waiting for token refresh:', error);
-    }
-  }
-  
-  // Build request options
+  // Build request options using session cookies
   const options: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
       ...(headers || {}),
     },
-    credentials: 'include',
+    credentials: 'include', // Include cookies for session-based auth
   };
   
   // Add body for non-GET requests
@@ -78,12 +36,17 @@ export async function apiRequest(
   // Make the request
   const res = await fetch(endpoint, options);
   
-  // If unauthorized and we haven't retried yet, try refreshing token and retrying
-  if (res.status === 401 && retry && refreshToken) {
+  // If unauthorized and we haven't retried yet, try refreshing token via server
+  if (res.status === 401 && retry) {
     try {
-      // Clear our existing refresh promise to force a new refresh
-      isRefreshing = false;
-      refreshPromise = null;
+      // Attempt server-side token refresh
+      if (!isRefreshing) {
+        isRefreshing = true;
+        refreshPromise = refreshAccessToken();
+      }
+      
+      // Wait for the refresh token and retry
+      await refreshPromise;
       
       // Retry the request (without allowing further retries to prevent loops)
       return await apiRequest(method, endpoint, body, headers, false);
@@ -97,13 +60,14 @@ export async function apiRequest(
 
 /**
  * Helper function to refresh an access token
+ * Uses server session-based authentication instead of localStorage
  */
-async function refreshAccessToken(refreshToken: string): Promise<string> {
+async function refreshAccessToken(): Promise<string> {
   try {
     const res = await fetch('/api/auth/refresh-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
+      credentials: 'include', // Include cookies for session auth
     });
     
     if (!res.ok) {
@@ -112,21 +76,12 @@ async function refreshAccessToken(refreshToken: string): Promise<string> {
     
     const data = await res.json();
     
-    // Update local storage
-    const storedData = localStorage.getItem('userData');
-    if (storedData) {
-      const userData = JSON.parse(storedData);
-      if (userData.user) {
-        userData.user.accessToken = data.accessToken;
-        localStorage.setItem('userData', JSON.stringify(userData));
-      }
-    }
+    // No need to update localStorage - sessions are handled by the server
     
     return data.accessToken;
   } catch (error) {
     console.error('Token refresh failed:', error);
-    // Clear user data and redirect to login
-    localStorage.removeItem('userData');
+    // No need to clear localStorage - redirect to login
     window.location.href = '/auth';
     throw error;
   } finally {
