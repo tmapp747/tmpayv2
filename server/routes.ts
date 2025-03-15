@@ -375,7 +375,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Username is eligible for registration/login",
         topManager: eligibilityCheck.topManager,
         immediateManager: eligibilityCheck.immediateManager,
-        userType: eligibilityCheck.userType
+        userType: eligibilityCheck.userType,
+        clientId: eligibilityCheck.casinoClientId
       });
     } catch (error) {
       if (error instanceof ZodError) {
