@@ -1599,12 +1599,12 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.insert(userPreferences).values({
         id: preference.id,
-        user_id: preference.userId,
+        userId: preference.userId,
         key: preference.key,
         value: preference.value,
-        last_updated: preference.lastUpdated || new Date().toISOString(),
-        created_at: preference.createdAt,
-        updated_at: preference.updatedAt
+        lastUpdated: preference.lastUpdated || new Date(),
+        createdAt: preference.createdAt,
+        updatedAt: preference.updatedAt
       });
       
       console.log(`Persisted user preference to database: userId=${preference.userId}, key=${preference.key}`);
@@ -1626,7 +1626,7 @@ export class DbStorage extends MemStorage {
       const existingPrefs = await this.dbInstance
         .select()
         .from(userPreferences)
-        .where(eq(userPreferences.user_id, userId))
+        .where(eq(userPreferences.userId, userId))
         .where(eq(userPreferences.key, key));
       
       if (existingPrefs && existingPrefs.length > 0) {
@@ -1634,7 +1634,8 @@ export class DbStorage extends MemStorage {
         await this.dbInstance.update(userPreferences)
           .set({
             value: preference.value,
-            updated_at: preference.updatedAt
+            lastUpdated: new Date(),
+            updatedAt: preference.updatedAt
           })
           .where(eq(userPreferences.id, preference.id));
         
@@ -1643,11 +1644,12 @@ export class DbStorage extends MemStorage {
         // Insert new preference
         await this.dbInstance.insert(userPreferences).values({
           id: preference.id,
-          user_id: userId,
+          userId: userId,
           key: key,
           value: preference.value,
-          created_at: preference.createdAt,
-          updated_at: preference.updatedAt
+          lastUpdated: preference.lastUpdated || new Date(),
+          createdAt: preference.createdAt,
+          updatedAt: preference.updatedAt
         });
         
         console.log(`Inserted new user preference to database: userId=${userId}, key=${key}`);
