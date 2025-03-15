@@ -486,13 +486,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Don't return the password to the client
       const { password: _, ...userWithoutPassword } = updatedUser;
       
-      // Return updated user info
+      // Return updated user info with both tokens
       return res.json({
         success: true,
         message: "Login successful",
         user: { 
           ...userWithoutPassword, 
           accessToken,
+          refreshToken,
           isAuthorized: true
         }
       });

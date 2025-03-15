@@ -727,8 +727,9 @@ export class MemStorage implements IStorage {
     };
     
     // Add initial status history entry
-    if (!transaction.metadata.statusHistory) {
-      transaction.metadata.statusHistory = [{
+    const metadata = transaction.metadata as Record<string, any> || {};
+    if (!metadata.statusHistory) {
+      metadata.statusHistory = [{
         status: transaction.status,
         timestamp: now,
         note: 'Transaction created'
@@ -797,8 +798,8 @@ export class MemStorage implements IStorage {
     };
     
     // Create or update the status history array in metadata
-    const metadata = transaction.metadata || {};
-    const statusHistory = metadata.statusHistory || [];
+    const metadata = transaction.metadata as Record<string, any> || {};
+    const statusHistory = (metadata.statusHistory || []) as any[];
     statusHistory.push(statusEntry);
     
     const updatedMetadata = {
@@ -842,13 +843,14 @@ export class MemStorage implements IStorage {
     
     // Add status history entry for completion
     if (updatedTransaction.metadata) {
-      const statusHistory = updatedTransaction.metadata.statusHistory || [];
+      const metadata = updatedTransaction.metadata as Record<string, any>;
+      const statusHistory = (metadata.statusHistory || []) as any[];
       statusHistory.push({
         status: 'completed',
         timestamp: now,
         note: 'Transaction completed successfully'
       });
-      updatedTransaction.metadata.statusHistory = statusHistory;
+      metadata.statusHistory = statusHistory;
     }
     
     this.transactions.set(id, updatedTransaction);

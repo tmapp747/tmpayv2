@@ -24,6 +24,10 @@ interface User {
   casinoBalance?: string | number;
   isAuthorized: boolean;
   allowedTopManagers?: string[];
+  accessToken?: string;
+  refreshToken?: string;
+  accessTokenExpiry?: Date | string;
+  refreshTokenExpiry?: Date | string;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
