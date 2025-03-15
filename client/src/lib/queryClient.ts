@@ -1,5 +1,8 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+/**
+ * Throw an error if the response is not OK (not 2xx status)
+ */
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -10,6 +13,10 @@ async function throwIfResNotOk(res: Response) {
 // Import the robust apiRequest from api-client.ts
 import { apiRequest as authApiRequest } from './api-client';
 
+/**
+ * Enhanced API request function for React Query
+ * This handles session-based authentication and proper error handling
+ */
 export async function apiRequest(
   method: string,
   url: string,
@@ -17,19 +24,21 @@ export async function apiRequest(
 ): Promise<Response> {
   try {
     console.log(`Making API request: ${method} ${url}`);
-    // Use the more robust apiRequest that handles session auth
+    
+    // Use the enhanced apiRequest that handles session cookies
     const res = await authApiRequest(method, url, data);
     
-    // If we get a 401, log it for debugging but don't throw if it's expected
+    // Special handling for 401 responses
     if (res.status === 401) {
       console.log(`Authentication required for: ${method} ${url}`);
-      // For specific endpoints that are always called when not logged in, 
-      // we don't want to throw an error
+      
+      // These endpoints are expected to sometimes return 401, so don't throw
       if (url === '/api/user/info' || url === '/api/auth/refresh-token') {
         return res;
       }
     }
     
+    // Check for other error responses
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
@@ -38,7 +47,15 @@ export async function apiRequest(
   }
 }
 
+/**
+ * Behavior types for 401 unauthorized responses
+ */
 type UnauthorizedBehavior = "returnNull" | "throw";
+
+/**
+ * Query function factory for React Query
+ * This creates a query function with specified behavior for 401 responses
+ */
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -50,11 +67,11 @@ export const getQueryFn: <T>(options: {
       // Use our enhanced apiRequest that handles session auth
       const res = await authApiRequest("GET", queryKey[0] as string);
       
-      // If 401 and configured to return null, do so silently
+      // Handle 401 unauthorized responses based on configuration
       if (unauthorizedBehavior === "returnNull" && res.status === 401) {
         console.log(`Silently handling 401 for: GET ${queryKey[0]}`);
         
-        // For user info and other auth-related endpoints, just return null on 401
+        // For user info endpoint, just return null on 401 (user not logged in)
         if (queryKey[0] === '/api/user/info') {
           return null;
         }
@@ -62,33 +79,40 @@ export const getQueryFn: <T>(options: {
         // For other endpoints with 401, try to refresh the session first
         try {
           // Attempt to refresh the session
-          await authApiRequest("POST", "/api/auth/refresh-token");
+          const refreshRes = await authApiRequest("POST", "/api/auth/refresh-token");
           
-          // Retry the original request
+          // If refresh failed with 401, return null (session expired)
+          if (refreshRes.status === 401) {
+            console.log("Token refresh failed with status:", refreshRes.status);
+            return null;
+          }
+          
+          // Retry the original request after successful refresh
           const retryRes = await authApiRequest("GET", queryKey[0] as string);
           
-          // If still 401, return null
+          // If still 401 after refresh, return null
           if (retryRes.status === 401) {
             return null;
           }
           
-          // Otherwise parse and return the data
+          // Parse and return the data from successful retry
+          await throwIfResNotOk(retryRes);
           const retryData = await retryRes.json();
           return retryData;
         } catch (refreshError) {
-          console.error("Error checking intro video status:", refreshError);
+          console.error("Session refresh error:", refreshError);
           return null;
         }
       }
       
-      // For consistency, still use our error handler for non-401 errors
+      // For non-401 errors or when configured to throw, check response status
       await throwIfResNotOk(res);
       
       // Parse and return the JSON response
       const data = await res.json();
       return data;
     } catch (error) {
-      // If this is a 401 and we're configured to just return null, do that
+      // Special handling for 401 errors when configured to return null
       if (
         error instanceof Error && 
         error.message.startsWith("401:") && 
