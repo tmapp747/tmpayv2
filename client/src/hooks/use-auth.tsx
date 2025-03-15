@@ -80,22 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || "Failed to refresh token");
       }
       
-      // Get the current user data from localStorage
-      const storedData = localStorage.getItem('userData');
-      if (!storedData) {
-        throw new Error("No user data found in storage");
-      }
-      
-      const userData = JSON.parse(storedData);
-      if (!userData.user) {
-        throw new Error("Invalid user data in storage");
-      }
-      
-      // Update the access token
-      userData.user.accessToken = data.accessToken;
-      
-      // Save updated user data back to localStorage
-      localStorage.setItem('userData', JSON.stringify(userData));
+      // No need to get user data from localStorage
+      // The server will return the updated user data
+      const userData = { user: data.user };
       
       // Update the query cache
       queryClient.setQueryData(["/api/user/info"], userData);
@@ -104,7 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Token refresh failed:", error);
       // If refresh fails, we need to log the user out
-      localStorage.removeItem('userData');
       queryClient.setQueryData(["/api/user/info"], { user: null });
       
       // Redirect to login page
@@ -113,20 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Initialize user from localStorage if available
-  const initialUserData = (() => {
-    try {
-      const storedData = localStorage.getItem('userData');
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        return parsedData;
-      }
-    } catch (e) {
-      console.error("Error parsing userData from localStorage:", e);
-    }
-    return null;
-  })();
-
+  // Fetch user data from server on initial load
   const {
     data: userData,
     error,
@@ -136,7 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    initialData: initialUserData,
   });
 
   const user = userData?.user || null;
@@ -153,8 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
 
-      // Save user data to localStorage for token persistence
-      localStorage.setItem('userData', JSON.stringify({ user: data.user }));
+      // No need to save to localStorage - auth handled by server session
 
       toast({
         title: "Login successful",
@@ -182,8 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
 
-      // Save user data to localStorage for token persistence
-      localStorage.setItem('userData', JSON.stringify({ user: data.user }));
+      // No need to save to localStorage - auth handled by server session
 
       toast({
         title: "Registration successful",
@@ -219,9 +189,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       queryClient.setQueryData(["/api/user/info"], { user: null });
 
-      // Clear user data from localStorage
-      localStorage.removeItem('userData');
-
       // Redirect to login page after logout
       window.location.href = '/auth';
 
@@ -239,11 +206,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       // Force logout on frontend even if API call fails
       queryClient.setQueryData(["/api/user/info"], { user: null });
-      localStorage.removeItem('userData');
-      sessionStorage.removeItem('userData');
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
       window.location.href = '/auth';
     },
   });
