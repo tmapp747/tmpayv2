@@ -131,9 +131,12 @@ const RadiantBalanceCard = () => {
   const numericPendingBalance = typeof pendingBalance === 'string' ? parseFloat(pendingBalance) : pendingBalance;
   
   return (
-    <div className="rounded-xl shadow-lg overflow-hidden mb-6 border dark:border-gray-700/30 border-gray-200/70 hover:shadow-xl transition-all duration-300">
+    <div className="rounded-xl shadow-lg overflow-hidden mb-6 border dark:border-gray-700/30 border-gray-200/70 hover:shadow-xl transition-all duration-300 backdrop-blur-sm relative">
+      {/* Background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-emerald-500/5 dark:from-blue-500/10 dark:via-purple-500/10 dark:to-emerald-500/10 z-0"></div>
+      
       {/* Main Balance Section with Gradient Background */}
-      <div className="bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 from-white to-gray-50 p-6">
+      <div className="bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-900/90 from-white/90 to-gray-50/90 p-6 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="flex items-center text-lg font-semibold dark:text-white text-gray-800">
             <Wallet className="h-5 w-5 mr-2 text-emerald-500" /> Total Balance
@@ -207,8 +210,11 @@ const RadiantBalanceCard = () => {
       </div>
       
       {/* Casino Balance Section with Gradient */}
-      <div className="bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 from-white to-gray-50 p-4">
-        <div className="flex justify-between items-center mb-2">
+      <div className="bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-900/90 from-white/90 to-gray-50/90 p-4 relative">
+        {/* Background glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-yellow-500/5 to-orange-500/5 dark:from-amber-500/10 dark:via-yellow-500/10 dark:to-orange-500/10 z-0"></div>
+        
+        <div className="flex justify-between items-center mb-2 relative z-10">
           <h3 className="text-md font-semibold flex items-center dark:text-white text-gray-800">
             <Coins className="h-4 w-4 mr-2 text-yellow-500" /> Casino Balance
           </h3>
@@ -226,7 +232,7 @@ const RadiantBalanceCard = () => {
             {/* Refresh Button */}
             <Button 
               size="sm"
-              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-sm"
+              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-sm backdrop-blur-sm"
               onClick={fetchCasinoBalance}
               disabled={isCasinoBalanceLoading}
             >
@@ -235,7 +241,7 @@ const RadiantBalanceCard = () => {
           </div>
         </div>
         
-        <div className="bg-gradient-to-br dark:from-amber-900/30 dark:to-amber-800/20 from-amber-100/50 to-amber-200/30 rounded-lg p-3 border border-amber-500/20">
+        <div className="bg-gradient-to-br dark:from-amber-900/30 dark:to-amber-800/20 from-amber-100/50 to-amber-200/30 rounded-lg p-3 border border-amber-500/20 shadow-inner backdrop-blur-sm relative z-10">
           <div className="flex justify-between items-center">
             <div className="dark:text-amber-200 text-amber-900 font-medium">Username: {username}</div>
             <div className="text-xs dark:text-amber-300/70 text-amber-700/70">Last Updated: {lastUpdated}</div>
