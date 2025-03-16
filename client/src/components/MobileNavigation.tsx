@@ -33,20 +33,20 @@ const MobileNavigation = () => {
     <>
       {showLogoutConfirm && (
         <div className="lg:hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-          <div className="bg-primary p-5 m-4 rounded-lg shadow-lg mobile-safe-area border border-secondary/30">
+          <div className="bg-[#1a2b47] p-5 m-4 rounded-lg shadow-lg mobile-safe-area border border-[#3a4c67]/40">
             <h3 className="font-bold text-lg text-white mb-3">Confirm Logout</h3>
-            <p className="text-white/90 mb-4">Are you sure you want to logout?</p>
+            <p className="text-white mb-4">Are you sure you want to logout?</p>
             <div className="flex justify-end gap-3">
               <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="px-3 py-2 rounded-md bg-gray-700 text-white font-medium native-button mobile-clickable hover:bg-gray-600 transition-colors"
+                className="px-3 py-2 rounded-md bg-[#3a4c67] text-white font-medium native-button mobile-clickable hover:bg-[#4a5c77] transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
-                className="px-3 py-2 rounded-md bg-error text-white font-medium native-button mobile-clickable hover:bg-error/90 transition-colors"
+                className="px-3 py-2 rounded-md bg-red-600 text-white font-medium native-button mobile-clickable hover:bg-red-500 transition-colors"
               >
                 {logoutMutation.isPending ? (
                   <div className="flex items-center">
@@ -61,7 +61,7 @@ const MobileNavigation = () => {
           </div>
         </div>
       )}
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-primary border-t border-secondary/30 z-40 shadow-lg mobile-safe-area" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-[#1a2b47] border-t border-[#3a4c67]/40 z-40 shadow-lg mobile-safe-area" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div className="flex items-center justify-around p-2">
           {navLinks.map((link) => {
             const isActive = location === link.path;
@@ -71,26 +71,20 @@ const MobileNavigation = () => {
                 href={link.path}
                 className={cn(
                   "flex flex-col items-center p-2 text-white mobile-clickable",
-                  isActive && "bg-secondary/30 rounded-lg"
+                  isActive && "bg-[#2a3b57] rounded-lg"
                 )}
               >
-                <link.icon className={cn(
-                  "h-5 w-5",
-                  isActive ? "text-white" : "text-gray-200"
-                )} />
-                <span className={cn(
-                  "text-xs mt-1 font-medium",
-                  isActive ? "text-white" : "text-gray-200"
-                )}>{link.label}</span>
+                <link.icon className="h-5 w-5 text-white" />
+                <span className="text-xs mt-1 font-medium text-white">{link.label}</span>
               </Link>
             );
           })}
           <button 
             onClick={() => setShowLogoutConfirm(true)}
-            className="flex flex-col items-center p-2 text-gray-200 hover:text-white mobile-clickable"
+            className="flex flex-col items-center p-2 text-white hover:text-white mobile-clickable"
           >
-            <LogOut className="h-5 w-5" />
-            <span className="text-xs mt-1 font-medium">Logout</span>
+            <LogOut className="h-5 w-5 text-white" />
+            <span className="text-xs mt-1 font-medium text-white">Logout</span>
           </button>
         </div>
       </div>

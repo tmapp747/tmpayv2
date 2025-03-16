@@ -75,9 +75,9 @@ const Layout = ({ children }: LayoutProps) => {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-x-hidden max-w-full relative">
-        {/* Header with solid color background */}
+        {/* Header with solid dark blue color background */}
         <header className={cn(
-          "bg-primary p-4 lg:py-4 lg:px-6 border-b border-secondary/40",
+          "bg-[#1a2b47] p-4 lg:py-4 lg:px-6 border-b border-[#3a4c67]/40",
           "flex items-center justify-between shadow-lg sticky top-0 z-20",
           "w-full max-w-[100vw]" // Ensure header doesn't overflow
         )}>
@@ -127,8 +127,8 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </div>
       
-      {/* Mobile Navigation - Fixed at bottom with solid color */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-background shadow-lg border-t border-gray-200 dark:border-gray-800">
+      {/* Mobile Navigation - Fixed at bottom with solid dark blue color */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#1a2b47] shadow-lg border-t border-[#3a4c67]/40">
         <MobileNavigation />
       </div>
     </div>
