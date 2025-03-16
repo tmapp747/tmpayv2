@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
 
 const app = express();
 app.use(express.json());
@@ -38,6 +39,14 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Serve static files from the public directory
+  app.use(express.static(path.join(process.cwd(), 'public')));
+
+  // Serve the auth-test.html file directly
+  app.get('/auth-test.html', (req, res) => {
+    res.sendFile(path.join(process.cwd(), '/public/auth-test.html'));
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
