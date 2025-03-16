@@ -7,13 +7,43 @@ export function VideoIntro() {
   const [showVideo, setShowVideo] = useState<boolean>(true);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
-  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const [useGif, setUseGif] = useState(true); // Start with GIF for guaranteed autoplay
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const gifRef = useRef<HTMLImageElement>(null);
   
-  // Attempt to play the video automatically when the component mounts
+  // Close the intro after playback
+  const handleClose = () => {
+    // Add a small delay before closing to let any final frame stay visible
+    setTimeout(() => setShowVideo(false), 300);
+    
+    // Update the server that we've shown the intro
+    try {
+      apiRequest('POST', '/api/user/preferences/intro-video', {
+        shown: true
+      });
+    } catch (error) {
+      console.error('Error updating intro video status:', error);
+    }
+  };
+  
+  // Handle GIF timing (simulate video end event)
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (!useGif) return;
+    
+    // GIF plays for about 6 seconds, then we auto-close
+    const timeout = setTimeout(() => {
+      handleClose();
+    }, 6500); // Slightly longer than the GIF to ensure it completes
+    
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [useGif]);
+  
+  // Try to play the video if we're not using the GIF
+  useEffect(() => {
+    if (useGif || !videoRef.current) return;
     
     // Force immediate play attempt
     const playVideo = async () => {
@@ -30,26 +60,18 @@ export function VideoIntro() {
             .then(() => {
               console.log('Video autoplay started successfully');
               setVideoLoaded(true);
-              setAutoplayBlocked(false);
-              
-              // Update the server that we've shown the intro
-              try {
-                apiRequest('POST', '/api/user/preferences/intro-video', {
-                  shown: true
-                });
-              } catch (error) {
-                console.error('Error updating intro video status:', error);
-              }
             })
             .catch(error => {
               console.error('Autoplay was prevented:', error);
-              setAutoplayBlocked(true); // Set autoplay blocked state
-              setVideoLoaded(true); // Still consider the video as loaded
+              // If video fails to play, switch back to GIF
+              setUseGif(true);
             });
         }
       } catch (error) {
         console.error('Error playing video:', error);
         setVideoError(true);
+        // If video errors, switch back to GIF
+        setUseGif(true);
       }
     };
     
@@ -61,50 +83,32 @@ export function VideoIntro() {
         videoRef.current.pause();
       }
     };
-  }, []);
-  
-  // Handle manual play
-  const handleManualPlay = () => {
-    if (!videoRef.current) return;
-    
-    // User has interacted with the page, so we can try to play the video again
-    videoRef.current.play()
-      .then(() => {
-        setAutoplayBlocked(false);
-      })
-      .catch((error) => {
-        console.error('Manual play failed:', error);
-        setVideoError(true);
-      });
-  };
+  }, [useGif]);
   
   // Handle video end event
   useEffect(() => {
+    if (useGif) return; // Only for video element
+    
     // Set a timeout to hide the video after it's done playing
     const videoElement = videoRef.current;
     
-    const handleVideoEnd = () => {
-      // Add a small delay before closing to let any final frame stay visible
-      setTimeout(() => setShowVideo(false), 300);
-    };
-    
     if (videoElement) {
-      videoElement.addEventListener('ended', handleVideoEnd);
+      videoElement.addEventListener('ended', handleClose);
       
       // Fallback in case video doesn't play or there's an error
       const timeout = setTimeout(() => {
-        // Only auto-close if video isn't playing properly and autoplay isn't just blocked
-        if ((videoError || !videoLoaded) && !autoplayBlocked) {
-          setShowVideo(false);
+        // If video hasn't ended after reasonable time, just close it
+        if (videoElement.currentTime < videoElement.duration - 0.5) {
+          handleClose();
         }
-      }, 10000); // Longer timeout to allow for the video to fully play
+      }, 12000); // Max time to wait for video
       
       return () => {
-        videoElement.removeEventListener('ended', handleVideoEnd);
+        videoElement.removeEventListener('ended', handleClose);
         clearTimeout(timeout);
       };
     }
-  }, [videoLoaded, videoError, autoplayBlocked]);
+  }, [videoLoaded, videoError, useGif]);
   
   return (
     <AnimatePresence>
@@ -118,63 +122,49 @@ export function VideoIntro() {
           style={{ touchAction: 'none' }}
         >
           <button 
-            onClick={() => setShowVideo(false)}
+            onClick={handleClose}
             className="absolute top-4 right-4 text-white opacity-70 hover:opacity-100 text-sm px-3 py-1 rounded-full border border-white/30 hover:bg-white/10 transition-all z-10"
           >
             Skip
           </button>
           
-          {/* Video element with multiple sources for better compatibility */}
-          <video 
-            ref={videoRef}
-            className="max-w-full max-h-full object-contain w-full h-full"
-            autoPlay 
-            muted
-            playsInline
-            onError={() => setVideoError(true)}
-            onLoadedData={() => setVideoLoaded(true)}
-            controls={false}
-          >
-            <source src="/videos/intro.mp4" type="video/mp4" />
-            {/* Fallback message */}
-            Your browser does not support the video tag.
-          </video>
-          
-          {/* Play button overlay when autoplay is blocked */}
-          {autoplayBlocked && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="absolute inset-0 flex items-center justify-center bg-black/60 cursor-pointer"
-              onClick={handleManualPlay}
-            >
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex flex-col items-center"
-              >
-                <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center mb-4">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="40" 
-                    height="40" 
-                    viewBox="0 0 24 24" 
-                    fill="white" 
-                    stroke="white" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                </div>
-                <p className="text-white font-medium text-lg">Tap to play intro</p>
-              </motion.div>
-            </motion.div>
+          {/* GIF animation (guaranteed to autoplay) */}
+          {useGif && (
+            <div className="w-full h-full flex items-center justify-center">
+              <img 
+                ref={gifRef}
+                src="/videos/intro-small.gif" 
+                alt="Loading animation"
+                className="max-w-full max-h-full object-contain" 
+                onError={() => setVideoError(true)}
+              />
+            </div>
           )}
           
-          {/* Error message if video fails to load */}
-          {videoError && (
+          {/* Video element as fallback */}
+          {!useGif && (
+            <video 
+              ref={videoRef}
+              className="max-w-full max-h-full object-contain w-full h-full"
+              autoPlay 
+              muted
+              playsInline
+              preload="auto"
+              onError={() => setVideoError(true)}
+              onLoadedData={() => setVideoLoaded(true)}
+              controls={false}
+              poster="/videos/intro-small.gif" // Use GIF as poster image while video loads
+            >
+              {/* Multiple formats for compatibility */}
+              <source src="/videos/intro-mobile.mp4" type="video/mp4" />
+              <source src="/videos/intro-autoplay.mp4" type="video/mp4" />
+              {/* Fallback message */}
+              Your browser does not support the video tag.
+            </video>
+          )}
+          
+          {/* Error message if both video and GIF fail to load */}
+          {videoError && !useGif && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
               <div className="text-center p-6 max-w-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4">
@@ -185,7 +175,7 @@ export function VideoIntro() {
                 <h3 className="text-white text-lg font-medium mb-2">Video playback error</h3>
                 <p className="text-white/80 mb-4">We couldn't play the intro video. You can continue to the app.</p>
                 <button 
-                  onClick={() => setShowVideo(false)}
+                  onClick={handleClose}
                   className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-md transition-colors"
                 >
                   Continue to App
