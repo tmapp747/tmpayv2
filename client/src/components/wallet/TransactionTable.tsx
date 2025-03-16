@@ -30,7 +30,7 @@ const TransactionTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<{ transactions: Transaction[] }>({
     queryKey: ['/api/transactions'],
   });
   
@@ -269,7 +269,7 @@ const TransactionTable = () => {
                         <div className="flex items-center">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${getTransactionTypeColor(transaction.type)}`}
                                style={{boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1)'}}>
-                            {getTransactionTypeIcon(transaction.type, { className: "h-4 w-4", style: {filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'} })}
+                            {getTransactionTypeIcon(transaction.type)}
                           </div>
                           <span className="font-medium text-sm" style={{textShadow: '0 1px 1px rgba(0, 0, 0, 0.2)'}}>
                             {transaction.type.split('_').map(word => 

@@ -56,12 +56,27 @@ const Home = () => {
   const [showNotification, setShowNotification] = useState(false);
   
   // Use React Query to fetch user data
-  const { data: userData, isLoading: isUserLoading } = useQuery({
+  const { data: userData, isLoading: isUserLoading } = useQuery<{ user: { 
+    username: string;
+    balance: number | string;
+    pendingBalance: number | string;
+    casinoBalance?: number | string;
+    isVip: boolean;
+    casinoUsername?: string;
+  } }>({
     queryKey: ['/api/user/info'],
   });
   
   // Recent transaction data
-  const { data: transactionsData, isLoading: isTransactionsLoading } = useQuery({
+  const { data: transactionsData, isLoading: isTransactionsLoading } = useQuery<{ 
+    transactions: Array<{
+      id: number;
+      type: string;
+      amount: string | number;
+      status: string;
+      createdAt: string | Date;
+    }>
+  }>({
     queryKey: ['/api/transactions'],
   });
   

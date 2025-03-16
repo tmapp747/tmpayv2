@@ -19,7 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 
 const RecentTransactions = () => {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<{ transactions: Transaction[] }>({
     queryKey: ['/api/transactions'],
   });
   
