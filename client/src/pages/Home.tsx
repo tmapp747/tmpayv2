@@ -208,244 +208,247 @@ const Home = () => {
         
         {/* Dashboard tabs for different views */}
         <motion.div variants={itemVariants}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-            <TabsList className="mb-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="market">Market</TabsTrigger>
-            </TabsList>
+          <EmeraldTabs 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="mb-8"
+            tabs={[
+              { value: "overview", label: "Overview", icon: <Wallet className="h-4 w-4" /> },
+              { value: "activity", label: "Activity", icon: <BarChart3 className="h-4 w-4" /> },
+              { value: "market", label: "Market", icon: <ArrowUpDown className="h-4 w-4" /> }
+            ]}
+          >
             
             {/* Overview tab content */}
             <TabsContent value="overview">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Account summary card */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center">
-                      <Wallet className="h-5 w-5 mr-2 text-primary" />
-                      Account Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <dl className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <dt className="text-sm text-muted-foreground">Wallet Balance</dt>
-                        <dd className="font-semibold">{formatCurrency(userData?.user?.balance || 0)}</dd>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <dt className="text-sm text-muted-foreground">Pending Balance</dt>
-                        <dd className="font-semibold">{formatCurrency(userData?.user?.pendingBalance || 0)}</dd>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <dt className="text-sm text-muted-foreground">Casino Balance</dt>
-                        <dd className="font-semibold">
-                          {isUserLoading ? 
-                            <CircleDashed className="h-4 w-4 animate-spin" /> : 
-                            formatCurrency(userData?.user?.casinoBalance || 0)
-                          }
-                        </dd>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <dt className="text-sm text-muted-foreground">Account Status</dt>
-                        <dd className="inline-flex items-center bg-green-500/10 text-green-500 px-2 py-1 rounded-full text-xs">
-                          <Check className="h-3 w-3 mr-1" /> Active
-                        </dd>
-                      </div>
-                    </dl>
-                  </CardContent>
-                  <CardFooter className="pt-0">
-                    <Button variant="outline" size="sm" className="w-full" onClick={goToWallet}>
-                      <DollarSign className="h-4 w-4 mr-2" /> 
+                {/* Account summary card with emerald theme */}
+                <EmeraldCard title="Account Summary" headerClassName="border-emerald-700/40">
+                  <dl className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <dt className="text-sm text-emerald-200">Wallet Balance</dt>
+                      <dd className="font-semibold text-yellow-300 text-shadow-sm">{formatCurrency(userData?.user?.balance || 0)}</dd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <dt className="text-sm text-emerald-200">Pending Balance</dt>
+                      <dd className="font-semibold text-yellow-300 text-shadow-sm">{formatCurrency(userData?.user?.pendingBalance || 0)}</dd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <dt className="text-sm text-emerald-200">Casino Balance</dt>
+                      <dd className="font-semibold text-yellow-300 text-shadow-sm">
+                        {isUserLoading ? 
+                          <CircleDashed className="h-4 w-4 animate-spin" /> : 
+                          formatCurrency(userData?.user?.casinoBalance || 0)
+                        }
+                      </dd>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <dt className="text-sm text-emerald-200">Account Status</dt>
+                      <dd className="inline-flex items-center bg-emerald-600/30 border border-emerald-500/30 text-emerald-100 px-2 py-1 rounded-full text-xs">
+                        <Check className="h-3 w-3 mr-1 text-yellow-300" /> Active
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-4">
+                    <EmeraldButton
+                      icon={<DollarSign className="h-4 w-4" />}
+                      onClick={goToWallet}
+                      className="w-full text-sm"
+                    >
                       Manage Funds
-                    </Button>
-                  </CardFooter>
-                </Card>
+                    </EmeraldButton>
+                  </div>
+                </EmeraldCard>
                 
                 {/* Deposit promo card */}
-                <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary-foreground/5 to-background">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center">
-                      <CreditCard className="h-5 w-5 mr-2 text-primary" />
-                      Instant Deposits
-                    </CardTitle>
-                    <CardDescription>
-                      Fund your account quickly and safely
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-2">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                          <Check className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">Secure Payments</h4>
-                          <p className="text-xs text-muted-foreground">Using industry-standard encryption</p>
-                        </div>
+                <EmeraldCard 
+                  title="Instant Deposits" 
+                  className="backdrop-blur-md relative overflow-hidden"
+                  headerClassName="border-yellow-500/20"
+                >
+                  <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/10 rounded-full blur-3xl"></div>
+                  <div className="absolute top-20 left-10 w-24 h-24 bg-yellow-400/10 rounded-full blur-2xl"></div>
+                  
+                  <p className="text-sm text-emerald-200 mb-4">Fund your account quickly and safely</p>
+                  
+                  <div className="space-y-4 relative z-10">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-yellow-300">
+                        <Check className="h-5 w-5" />
                       </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-                          <Clock className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-medium">Instant Processing</h4>
-                          <p className="text-xs text-muted-foreground">Funds available within minutes</p>
-                        </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-emerald-100">Secure Payments</h4>
+                        <p className="text-xs text-emerald-300/80">Using industry-standard encryption</p>
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full" onClick={goToWallet}>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-yellow-300">
+                        <Clock className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-emerald-100">Instant Processing</h4>
+                        <p className="text-xs text-emerald-300/80">Funds available within minutes</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <EmeraldButton 
+                      variant="yellow"
+                      onClick={goToWallet}
+                      className="w-full"
+                    >
                       Deposit Now
-                    </Button>
-                  </CardFooter>
-                </Card>
+                    </EmeraldButton>
+                  </div>
+                </EmeraldCard>
               </div>
               
               {/* Recent Transactions Section */}
               <RecentTransactions />
             </TabsContent>
             
-            {/* Activity tab content */}
+            {/* Activity tab content with emerald theme */}
             <TabsContent value="activity">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <BarChart3 className="h-5 w-5 mr-2 text-primary" />
-                    Transaction Activity
-                  </CardTitle>
-                  <CardDescription>
-                    Your recent financial activity and patterns
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-8">
-                    {/* Activity metrics */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <div className="text-xs text-muted-foreground mb-1">Total Transactions</div>
-                        <div className="text-2xl font-semibold">
-                          {isTransactionsLoading ? 
-                            <CircleDashed className="h-4 w-4 animate-spin" /> : 
-                            transactionsData?.transactions?.length || 0
-                          }
-                        </div>
-                      </div>
-                      
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <div className="text-xs text-muted-foreground mb-1">Monthly Deposits</div>
-                        <div className="text-2xl font-semibold">
-                          {isTransactionsLoading ? 
-                            <CircleDashed className="h-4 w-4 animate-spin" /> : 
-                            formatCurrency(
-                              transactionsData?.transactions
-                                ?.filter((t: any) => t.type === 'deposit' && 
-                                  new Date(t.createdAt).getMonth() === new Date().getMonth())
-                                ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
-                            )
-                          }
-                        </div>
-                      </div>
-                      
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <div className="text-xs text-muted-foreground mb-1">Avg. Transaction</div>
-                        <div className="text-2xl font-semibold">
-                          {isTransactionsLoading ? 
-                            <CircleDashed className="h-4 w-4 animate-spin" /> : 
-                            formatCurrency(
-                              (transactionsData?.transactions?.reduce((sum: number, t: any) => 
-                                sum + parseFloat(t.amount), 0) || 0) / 
-                                (transactionsData?.transactions?.length || 1)
-                            )
-                          }
-                        </div>
+              <EmeraldCard title="Transaction Activity" headerClassName="border-emerald-700/40">
+                <p className="text-sm text-emerald-200 mb-6">Your recent financial activity and patterns</p>
+                
+                <div className="space-y-8">
+                  {/* Activity metrics with emerald styling */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-emerald-900/40 border border-emerald-700/40 rounded-lg p-3 transition-all duration-300 hover:border-yellow-500/30 hover:bg-emerald-800/50">
+                      <div className="text-xs text-emerald-300 mb-1">Total Transactions</div>
+                      <div className="text-2xl font-semibold text-yellow-300 text-shadow-sm">
+                        {isTransactionsLoading ? 
+                          <CircleDashed className="h-4 w-4 animate-spin" /> : 
+                          transactionsData?.transactions?.length || 0
+                        }
                       </div>
                     </div>
                     
-                    {/* Activity chart placeholder - would be a real chart in production */}
-                    <div className="h-48 bg-muted/30 rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <LineChart className="h-10 w-10 text-primary/30 mx-auto mb-2" />
-                        <p className="text-sm text-muted-foreground">Transaction activity visualization</p>
+                    <div className="bg-emerald-900/40 border border-emerald-700/40 rounded-lg p-3 transition-all duration-300 hover:border-yellow-500/30 hover:bg-emerald-800/50">
+                      <div className="text-xs text-emerald-300 mb-1">Monthly Deposits</div>
+                      <div className="text-2xl font-semibold text-yellow-300 text-shadow-sm">
+                        {isTransactionsLoading ? 
+                          <CircleDashed className="h-4 w-4 animate-spin" /> : 
+                          formatCurrency(
+                            transactionsData?.transactions
+                              ?.filter((t: any) => t.type === 'deposit' && 
+                                new Date(t.createdAt).getMonth() === new Date().getMonth())
+                              ?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0
+                          )
+                        }
+                      </div>
+                    </div>
+                    
+                    <div className="bg-emerald-900/40 border border-emerald-700/40 rounded-lg p-3 transition-all duration-300 hover:border-yellow-500/30 hover:bg-emerald-800/50">
+                      <div className="text-xs text-emerald-300 mb-1">Avg. Transaction</div>
+                      <div className="text-2xl font-semibold text-yellow-300 text-shadow-sm">
+                        {isTransactionsLoading ? 
+                          <CircleDashed className="h-4 w-4 animate-spin" /> : 
+                          formatCurrency(
+                            (transactionsData?.transactions?.reduce((sum: number, t: any) => 
+                              sum + parseFloat(t.amount), 0) || 0) / 
+                              (transactionsData?.transactions?.length || 1)
+                          )
+                        }
                       </div>
                     </div>
                   </div>
-                </CardContent>
-                <CardFooter>
-                  <Button variant="outline" size="sm" className="w-full" onClick={goToHistory}>
+                  
+                  {/* Activity chart placeholder with emerald styling */}
+                  <div className="h-48 bg-emerald-900/30 backdrop-blur-sm border border-emerald-700/40 rounded-lg flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-400/5 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-5 left-10 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl"></div>
+                    
+                    <div className="text-center relative z-10">
+                      <LineChart className="h-10 w-10 text-yellow-500/50 mx-auto mb-2" />
+                      <p className="text-sm text-emerald-200">Transaction activity visualization</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <EmeraldButton 
+                    icon={<ArrowUpRight className="h-4 w-4" />}
+                    onClick={goToHistory}
+                    className="w-full"
+                  >
                     View Detailed History
-                  </Button>
-                </CardFooter>
-              </Card>
+                  </EmeraldButton>
+                </div>
+              </EmeraldCard>
             </TabsContent>
             
-            {/* Market tab content */}
+            {/* Market tab content with emerald theme */}
             <TabsContent value="market">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center">
-                    <ArrowUpDown className="h-5 w-5 mr-2 text-primary" />
-                    Currency Exchange Rates
-                  </CardTitle>
-                  <CardDescription>
-                    Current rates for supported currencies
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {marketTrends.map((currency) => (
-                      <div key={currency.name} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg">
-                        <div className="flex items-center">
-                          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary mr-3">
-                            <Coins className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{currency.name}</h4>
-                            <p className="text-xs text-muted-foreground">Current value: {currency.value}</p>
-                          </div>
+              <EmeraldCard title="Currency Exchange Rates" headerClassName="border-emerald-700/40" className="relative overflow-hidden">
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-yellow-400/5 rounded-full blur-3xl"></div>
+                
+                <p className="text-sm text-emerald-200 mb-6">Current rates for supported currencies</p>
+                
+                <div className="space-y-4 relative z-10">
+                  {marketTrends.map((currency) => (
+                    <div 
+                      key={currency.name} 
+                      className="flex items-center justify-between p-3 bg-emerald-900/40 border border-emerald-700/40 rounded-lg transition-all duration-300 hover:border-yellow-500/30 hover:bg-emerald-800/50"
+                    >
+                      <div className="flex items-center">
+                        <div className="h-9 w-9 rounded-full bg-emerald-700/50 border border-emerald-600/50 flex items-center justify-center text-yellow-300 mr-3">
+                          <Coins className="h-5 w-5" />
                         </div>
-                        <div className={`flex items-center ${
-                          currency.trend === 'up' ? 'text-green-500' : 
-                          currency.trend === 'down' ? 'text-red-500' : 'text-blue-500'
-                        }`}>
-                          {currency.trend === 'up' ? (
-                            <TrendingUp className="h-4 w-4 mr-1" />
-                          ) : currency.trend === 'down' ? (
-                            <TrendingDown className="h-4 w-4 mr-1" />
-                          ) : (
-                            <ArrowUpDown className="h-4 w-4 mr-1" />
-                          )}
-                          <span>{currency.change > 0 ? '+' : ''}{currency.change}%</span>
+                        <div>
+                          <h4 className="font-medium text-emerald-100">{currency.name}</h4>
+                          <p className="text-xs text-emerald-300/80">Current value: {currency.value}</p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="flex items-center justify-between">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => navigate("/wallet?tab=exchange")}>
+                      <div className={`flex items-center ${
+                        currency.trend === 'up' ? 'text-green-400' : 
+                        currency.trend === 'down' ? 'text-red-400' : 'text-blue-400'
+                      }`}>
+                        {currency.trend === 'up' ? (
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                        ) : currency.trend === 'down' ? (
+                          <TrendingDown className="h-4 w-4 mr-1" />
+                        ) : (
+                          <ArrowUpDown className="h-4 w-4 mr-1" />
+                        )}
+                        <span>{currency.change > 0 ? '+' : ''}{currency.change}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 relative z-10">
+                  <EmeraldButton 
+                    variant="yellow"
+                    icon={<ArrowUpDown className="h-4 w-4" />}
+                    onClick={() => navigate("/wallet?tab=exchange")}
+                    className="w-full"
+                  >
                     Exchange Currency
-                  </Button>
-                </CardFooter>
-              </Card>
+                  </EmeraldButton>
+                </div>
+              </EmeraldCard>
             </TabsContent>
-          </Tabs>
+          </EmeraldTabs>
         </motion.div>
       </motion.div>
       
       {/* API Testing Section - For Development Only */}
       <div className="mt-6">
-        <Card className="border border-border/30">
-          <CardContent className="p-4">
-            <Button 
-              variant="outline" 
-              className="w-full border-dashed"
-              onClick={toggleApiTester}
-            >
-              {showApiTester ? "Hide API Testing Tools" : "Show API Testing Tools"}
-            </Button>
-          </CardContent>
-        </Card>
+        <EmeraldCard className="backdrop-blur-sm border-yellow-500/20">
+          <EmeraldButton 
+            variant={showApiTester ? "primary" : "yellow"}
+            icon={showApiTester ? <X className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
+            className="w-full"
+            onClick={toggleApiTester}
+          >
+            {showApiTester ? "Hide API Testing Tools" : "Show API Testing Tools"}
+          </EmeraldButton>
+        </EmeraldCard>
         
         <AnimatePresence>
           {showApiTester && (
