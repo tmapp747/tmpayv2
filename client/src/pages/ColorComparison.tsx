@@ -1,11 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import PurpleBalanceCard from "@/components/wallet/PurpleBalanceCard";
 import BlueBalanceCard from "@/components/wallet/BlueBalanceCard";
 import TransactionTable from "@/components/wallet/TransactionTable";
 import DepositForm from "@/components/wallet/DepositForm";
+import Profile from "@/pages/Profile";
+import EmeraldProfile from "@/pages/EmeraldProfile";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ColorComparison = () => {
+  const [profileTab, setProfileTab] = useState("default");
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -46,6 +51,41 @@ const ColorComparison = () => {
             <div>
               <h3 className="text-sm font-medium mb-2 text-slate-400">Slate/Azure with Gold Accents</h3>
               <TransactionTable />
+            </div>
+          </section>
+          
+          {/* Profile Comparison */}
+          <section>
+            <h2 className="text-xl font-medium mb-4 text-slate-300">Profile Page Themes</h2>
+            <div className="mb-4">
+              <Tabs value={profileTab} onValueChange={setProfileTab} className="w-72">
+                <TabsList className="grid grid-cols-2 bg-slate-800/70 border border-slate-700/40">
+                  <TabsTrigger 
+                    value="default" 
+                    className="data-[state=active]:bg-slate-600/60 data-[state=active]:text-white"
+                  >
+                    Default Theme
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="emerald" 
+                    className="data-[state=active]:bg-emerald-600/60 data-[state=active]:text-white"
+                  >
+                    Emerald Theme
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-slate-800/30">
+              <TabsContent value="default" className={profileTab === "default" ? "block" : "hidden"}>
+                <h3 className="text-sm font-medium mb-4 text-slate-400">Default Profile Theme</h3>
+                <Profile />
+              </TabsContent>
+              
+              <TabsContent value="emerald" className={profileTab === "emerald" ? "block" : "hidden"}>
+                <h3 className="text-sm font-medium mb-4 text-slate-400">Emerald Profile Theme</h3>
+                <EmeraldProfile />
+              </TabsContent>
             </div>
           </section>
         </div>
