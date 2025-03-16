@@ -3147,6 +3147,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Debug login endpoint for quick testing
+  app.post("/api/debug/login", async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      console.log("[DEBUG LOGIN] Attempting login with:", username);
+      
+      // Find the user
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        console.error("[DEBUG LOGIN] User not found:", username);
+        return res.status(401).json({ 
+          success: false, 
+          message: "User not found" 
+        });
+      }
+      
+      console.log("[DEBUG LOGIN] User found:", username);
+      console.log("[DEBUG LOGIN] Stored password format:", isPasswordHashed(user.password) ? "hashed" : "plaintext");
+      console.log("[DEBUG LOGIN] Stored password preview:", user.password.substring(0, 3) + "..." + user.password.substring(user.password.length - 3));
+      
+      // Check password
+      const passwordValid = await comparePasswords(password, user.password);
+      console.log("[DEBUG LOGIN] Password comparison result:", passwordValid);
+      
+      if (!passwordValid) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid password" 
+        });
+      }
+      
+      // Generate tokens
+      const accessToken = generateAccessToken();
+      const refreshToken = generateAccessToken();
+      
+      // Update tokens
+      await storage.updateUserAccessToken(user.id, accessToken, 3600);
+      await storage.updateUserRefreshToken(user.id, refreshToken, 2592000);
+      
+      // Setup session with Passport
+      req.login(user, async (err) => {
+        if (err) {
+          console.error("[DEBUG LOGIN] Session login error:", err);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to establish session"
+          });
+        }
+        
+        // Save session explicitly
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[DEBUG LOGIN] Session save error:", saveErr);
+          } else {
+            console.log("[DEBUG LOGIN] Session saved successfully");
+          }
+          
+          // Get the user again to return the most updated version
+          storage.getUser(user.id).then(updatedUser => {
+            if (!updatedUser) {
+              return res.status(500).json({
+                success: false,
+                message: "Failed to retrieve updated user"
+              });
+            }
+            
+            const { password: _, ...userWithoutPassword } = updatedUser;
+            
+            return res.status(200).json({
+              success: true,
+              message: "Debug login successful",
+              user: {
+                ...userWithoutPassword,
+                accessToken,
+                refreshToken,
+                isAuthorized: true
+              },
+              sessionId: req.sessionID
+            });
+          }).catch(getUserError => {
+            console.error("[DEBUG LOGIN] Error getting updated user:", getUserError);
+            
+            return res.status(500).json({
+              success: false,
+              message: "Error retrieving updated user"
+            });
+          });
+        });
+      });
+    } catch (error) {
+      console.error("[DEBUG LOGIN] Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Server error during debug login"
+      });
+    }
+  });
+  
   // Helper function to handle DirectPay webhook logic
   async function handleDirectPayWebhook(payload: any) {
     // Log the payload
