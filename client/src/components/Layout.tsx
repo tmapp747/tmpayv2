@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
 import { useTheme } from "@/hooks/use-theme";
+import teamMarcLogo from "../assets/Logo teammarc.png";
 
 interface LayoutProps {
   children: ReactNode;
