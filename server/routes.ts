@@ -194,32 +194,37 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
     // Create a detailed comment with nonce and DirectPay reference
     const comment = `An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${nonce}. TMPay Web App Transaction.`;
     
+    // Get the top manager for this user (use stored value or default to first allowed top manager)
+    const topManager = user.topManager || 'Marcthepogi';
+    console.log(`👑 Using top manager for transfer: ${topManager}`);
+    
     console.log(`📝 Preparing casino transfer with params:`, {
       amount,
       clientId: parseInt(casinoId),
       username: user.casinoUsername,
       currency: "PHP",
-      fromUser: "system",
+      fromUser: topManager, // Use top manager instead of system
       commentLength: comment.length,
       nonce
     });
     
     // Complete the topup using the Casino747 API's transfer funds function
-    // This will directly credit the user's casino account
+    // Transfer from top manager to user instead of from system
     const transferResult = await casino747Api.transferFunds(
       amount,
       parseInt(casinoId),
       user.casinoUsername,
       "PHP", // Use PHP currency for GCash deposits
-      "system", // System transfer initiated by e-wallet
+      topManager, // Use top manager account to transfer funds
       comment
     );
     
-    console.log(`✅ Casino747: Transfer completed successfully:`, {
+    console.log(`✅ Casino747: Transfer completed successfully from ${topManager} to ${user.casinoUsername}:`, {
       user: user.casinoUsername,
       clientId: casinoId,
       amount,
       nonce,
+      fromManager: topManager,
       transferResult: JSON.stringify(transferResult)
     });
     
@@ -227,7 +232,8 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       success: true,
       newBalance: transferResult.newBalance || amount,
       transactionId: transferResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`,
-      nonce: nonce
+      nonce: nonce,
+      fromManager: topManager
     };
   } catch (error) {
     console.error('❌ Error completing topup with Casino747 API:', error);
@@ -239,8 +245,55 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       errorStack: error instanceof Error ? error.stack : 'No stack trace'
     });
     
-    // Fallback for development/testing
-    console.log(`[FALLBACK] Casino747: Simulating completed topup for ${casinoId} with amount ${amount}`);
+    // Try fallback with different top managers if the first one failed
+    try {
+      console.log('🔄 Attempting fallback with alternative top managers');
+      const user = await storage.getUserByCasinoClientId(parseInt(casinoId));
+      
+      if (user && user.casinoUsername) {
+        // List of allowed top managers to try
+        const fallbackManagers = ['Marcthepogi', 'bossmarc747', 'teammarc'].filter(
+          manager => manager !== user.topManager
+        );
+        
+        for (const fallbackManager of fallbackManagers) {
+          console.log(`🔄 Attempting fallback transfer with manager: ${fallbackManager}`);
+          
+          try {
+            const fallbackNonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+            const fallbackComment = `FALLBACK: An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${fallbackNonce}.`;
+            
+            const fallbackResult = await casino747Api.transferFunds(
+              amount,
+              parseInt(casinoId),
+              user.casinoUsername,
+              "PHP",
+              fallbackManager,
+              fallbackComment
+            );
+            
+            console.log(`✅ Fallback transfer successful with manager ${fallbackManager}:`, fallbackResult);
+            
+            return {
+              success: true,
+              newBalance: fallbackResult.newBalance || amount,
+              transactionId: fallbackResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`,
+              nonce: fallbackNonce,
+              fromManager: fallbackManager,
+              fallback: true
+            };
+          } catch (fallbackError) {
+            console.error(`❌ Fallback with ${fallbackManager} failed:`, fallbackError);
+            // Continue to next fallback manager
+          }
+        }
+      }
+    } catch (fallbackError) {
+      console.error('❌ All fallback attempts failed:', fallbackError);
+    }
+    
+    // Last resort fallback for development/testing
+    console.log(`[LAST RESORT FALLBACK] Casino747: Simulating completed topup for ${casinoId} with amount ${amount}`);
     
     const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     
@@ -248,7 +301,9 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       success: true,
       newBalance: amount,
       transactionId: `TXN${Math.floor(Math.random() * 10000000)}`,
-      nonce: nonce
+      nonce: nonce,
+      fromManager: 'system',
+      simulated: true
     };
   }
 }
