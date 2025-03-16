@@ -127,10 +127,8 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </div>
       
-      {/* Mobile Navigation - Fixed at bottom with solid dark blue color */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#1a2b47] shadow-lg border-t border-[#3a4c67]/40">
-        <MobileNavigation />
-      </div>
+      {/* Mobile Navigation */}
+      <MobileNavigation />
     </div>
   );
 };
