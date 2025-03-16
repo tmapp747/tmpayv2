@@ -1,26 +1,38 @@
-import React from "react";
-import { Link } from "wouter";
+import React, { useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Shield, Wallet, TrendingUp, ArrowRight, Dice6 } from "lucide-react";
-import casinoLogo from "../assets/Logo teammarc.png";
+import { ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const [, setLocation] = useLocation();
+  
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (user) {
+      setLocation("/dashboard");
+    }
+  }, [user, setLocation]);
+  
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Header with logo and sign in button */}
-      <header className="relative w-full h-16 border-b shadow-sm flex items-center px-4 md:px-6 justify-between">
+    <div className={`min-h-screen flex flex-col ${theme === "dark" ? "dark" : "light"}`}>
+      {/* Header */}
+      <header className="h-16 border-b border-border shadow-sm flex items-center px-4 md:px-6 justify-between bg-card text-card-foreground">
         <div className="flex items-center space-x-2">
-          <img src={casinoLogo} alt="Casino Logo" className="w-8 h-8" />
-          <span className="font-medium text-lg">Casino E-Wallet</span>
+          <div className="w-10 h-10 overflow-hidden">
+            <svg viewBox="0 0 200 200" className="h-full w-full">
+              <circle cx="100" cy="100" r="90" fill="#1a2b47" />
+              <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#b78628" fontSize="60" fontWeight="bold">747</text>
+            </svg>
+          </div>
+          <span className="font-medium text-lg">747 E-Wallet</span>
         </div>
         <div className="flex items-center space-x-3">
           <ThemeToggle />
-          <Link href="/admin/auth">
-            <Button size="sm" variant="ghost">
-              Admin
-            </Button>
-          </Link>
           <Link href="/auth">
             <Button size="sm" variant="outline">
               Sign In
@@ -29,89 +41,33 @@ export default function LandingPage() {
         </div>
       </header>
       
-      {/* Main content - single section SPA */}
-      <main className="py-10 md:py-16 px-4 md:px-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Hero area */}
-          <div className="text-center mb-12 md:mb-16">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
-              Casino Financial Gateway
+      {/* Hero section that fills the screen */}
+      <main className="flex-1 flex items-center justify-center bg-background text-foreground px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-foreground">
+              747 E-Wallet
             </h1>
-            <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8">
-              The secure and efficient payment platform designed exclusively for casino players and agents
+            <p className="text-xl md:text-2xl max-w-2xl mx-auto mb-8 text-muted-foreground">
+              Secure and efficient payment platform for casino players
             </p>
-            <Link href="/auth">
-              <Button 
-                size="lg" 
-                className="text-sm sm:text-base shadow-md"
-              >
-                Get Started <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-          
-          {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-12 md:mb-16">
-            <div className="p-6 rounded-xl shadow-md border transition-all duration-300">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Shield className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Secure Transactions</h3>
-              <p>
-                State-of-the-art encryption and security measures to protect your financial operations
-              </p>
-            </div>
-            
-            <div className="p-6 rounded-xl shadow-md border transition-all duration-300">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <Wallet className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Deposits</h3>
-              <p>
-                Instant deposits and quick withdrawals to and from your casino account
-              </p>
-            </div>
-            
-            <div className="p-6 rounded-xl shadow-md border transition-all duration-300">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Real-time Updates</h3>
-              <p>
-                Monitor your transactions and balance in real-time with instant notifications
-              </p>
+            <div className="flex justify-center gap-4">
+              <Link href="/auth">
+                <Button 
+                  size="lg" 
+                  className="text-base shadow-md bg-primary hover:bg-primary/90 text-primary-foreground"
+                >
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
             </div>
           </div>
           
-          {/* CTA area */}
-          <div className="max-w-3xl mx-auto text-center p-8 rounded-2xl shadow-lg border">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-              Ready to manage your casino finances?
-            </h2>
-            <p className="mb-6">
-              Join the secure payment platform for trusted casino transactions
-            </p>
-            <Link href="/auth">
-              <Button size="lg">
-                Create Account
-              </Button>
-            </Link>
+          <div className="mt-16 opacity-70 text-sm">
+            &copy; {new Date().getFullYear()} 747 Casino. All rights reserved.
           </div>
         </div>
       </main>
-      
-      {/* Footer */}
-      <footer className="py-6 border-t mt-10">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <div className="flex justify-center items-center mb-2">
-            <img src={casinoLogo} alt="Casino Logo" className="w-6 h-6" />
-            <span className="ml-2 font-medium">Casino E-Wallet</span>
-          </div>
-          <p className="text-sm opacity-70">
-            &copy; {new Date().getFullYear()} Casino. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
