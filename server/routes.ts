@@ -370,13 +370,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check if user already exists in our system
+      const existingUser = await storage.getUserByUsername(username);
+      const accountExists = !!existingUser;
+      
       return res.status(200).json({
         success: true,
-        message: "Username is eligible for registration/login",
+        message: accountExists 
+          ? "Account already exists. Please sign in." 
+          : "Username is eligible for registration",
         topManager: eligibilityCheck.topManager,
         immediateManager: eligibilityCheck.immediateManager,
         userType: eligibilityCheck.userType,
-        clientId: eligibilityCheck.casinoClientId
+        clientId: eligibilityCheck.casinoClientId,
+        accountExists // Add this flag to indicate if the account already exists
       });
     } catch (error) {
       if (error instanceof ZodError) {

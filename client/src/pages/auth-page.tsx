@@ -69,6 +69,7 @@ interface CasinoVerificationResponse {
   immediateManager?: string;
   userType?: string;
   clientId?: number;
+  accountExists?: boolean; // Flag indicating if the account already exists in our database
 }
 
 // Username verification schema
@@ -152,12 +153,18 @@ export default function AuthPage() {
       // Show success message
       toast({
         title: "Username verified",
-        description: data.message || "Your username is eligible for this platform",
+        description: data.message,
         variant: "default",
       });
       
-      // Switch to login step
-      setStep("login");
+      // Direct to the appropriate step based on whether the account exists
+      if (data.accountExists) {
+        console.log("Account already exists, directing to login");
+        setStep("login");
+      } else {
+        console.log("New account, directing to registration");
+        setStep("register");
+      }
     },
     onError: (error: Error) => {
       toast({
