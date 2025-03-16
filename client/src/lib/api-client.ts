@@ -33,29 +33,45 @@ export async function apiRequest(
     options.body = JSON.stringify(body);
   }
   
-  // Make the request
-  const res = await fetch(endpoint, options);
-  
-  // If unauthorized and we haven't retried yet, try refreshing token via server
-  if (res.status === 401 && retry) {
-    try {
-      // Attempt server-side token refresh
-      if (!isRefreshing) {
-        isRefreshing = true;
-        refreshPromise = refreshAccessToken();
-      }
-      
-      // Wait for the refresh token and retry
-      await refreshPromise;
-      
-      // Retry the request (without allowing further retries to prevent loops)
-      return await apiRequest(method, endpoint, body, headers, false);
-    } catch (error) {
-      console.error('Failed to refresh token and retry request:', error);
-    }
+  // Log the request details for debugging
+  console.log(`API Request: ${method} ${endpoint}`);
+  if (body) {
+    console.log('Request body:', body);
   }
   
-  return res;
+  try {
+    // Make the request
+    const res = await fetch(endpoint, options);
+    
+    // Log response status for debugging
+    console.log(`API Response status: ${res.status} for ${method} ${endpoint}`);
+    
+    // If unauthorized and we haven't retried yet, try refreshing token via server
+    if (res.status === 401 && retry) {
+      console.log('Authentication required, attempting to refresh session');
+      
+      try {
+        // Attempt server-side token refresh
+        if (!isRefreshing) {
+          isRefreshing = true;
+          refreshPromise = refreshAccessToken();
+        }
+        
+        // Wait for the refresh token and retry
+        await refreshPromise;
+        
+        // Retry the request (without allowing further retries to prevent loops)
+        return await apiRequest(method, endpoint, body, headers, false);
+      } catch (error) {
+        console.error('Failed to refresh token and retry request:', error);
+      }
+    }
+    
+    return res;
+  } catch (error) {
+    console.error(`Network error during API request: ${method} ${endpoint}`, error);
+    throw error;
+  }
 }
 
 /**
