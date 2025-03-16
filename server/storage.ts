@@ -1597,17 +1597,46 @@ export class DbStorage extends MemStorage {
     
     // Then persist to database
     try {
-      await this.dbInstance.insert(userPreferences).values({
-        id: preference.id,
-        userId: preference.userId,
-        key: preference.key,
-        value: preference.value,
-        lastUpdated: preference.lastUpdated || new Date(),
-        createdAt: preference.createdAt,
-        updatedAt: preference.updatedAt
-      });
-      
-      console.log(`Persisted user preference to database: userId=${preference.userId}, key=${preference.key}`);
+      // Check if this preference already exists in the database to avoid ID conflicts
+      const existingPrefs = await this.dbInstance
+        .select()
+        .from(userPreferences)
+        .where(eq(userPreferences.userId, preference.userId))
+        .where(eq(userPreferences.key, preference.key));
+        
+      if (existingPrefs && existingPrefs.length > 0) {
+        // Update existing preference instead of creating a new one
+        await this.dbInstance.update(userPreferences)
+          .set({
+            value: preference.value,
+            lastUpdated: new Date(),
+            updatedAt: preference.updatedAt
+          })
+          .where(eq(userPreferences.userId, preference.userId))
+          .where(eq(userPreferences.key, preference.key));
+        
+        console.log(`Updated existing user preference in database: userId=${preference.userId}, key=${preference.key}`);
+        
+        // Return the database record ID instead of memory ID
+        preference.id = existingPrefs[0].id;
+      } else {
+        // Insert new preference without specifying ID (let DB auto-increment)
+        const result = await this.dbInstance.insert(userPreferences).values({
+          userId: preference.userId,
+          key: preference.key,
+          value: preference.value,
+          lastUpdated: preference.lastUpdated || new Date(),
+          createdAt: preference.createdAt,
+          updatedAt: preference.updatedAt
+        }).returning();
+        
+        if (result && result.length > 0) {
+          // Update the in-memory ID to match the database
+          preference.id = result[0].id;
+        }
+        
+        console.log(`Persisted new user preference to database: userId=${preference.userId}, key=${preference.key}`);
+      }
     } catch (error) {
       console.error('Error creating user preference in database:', error);
       // Continue with memory version even if DB fails
@@ -1637,20 +1666,28 @@ export class DbStorage extends MemStorage {
             lastUpdated: new Date(),
             updatedAt: preference.updatedAt
           })
-          .where(eq(userPreferences.id, preference.id));
+          .where(eq(userPreferences.userId, userId))
+          .where(eq(userPreferences.key, key));
+        
+        // Update the in-memory ID to match the database
+        preference.id = existingPrefs[0].id;
         
         console.log(`Updated user preference in database: userId=${userId}, key=${key}`);
       } else {
-        // Insert new preference
-        await this.dbInstance.insert(userPreferences).values({
-          id: preference.id,
+        // Insert new preference without specifying ID (let DB auto-increment)
+        const result = await this.dbInstance.insert(userPreferences).values({
           userId: userId,
           key: key,
           value: preference.value,
           lastUpdated: preference.lastUpdated || new Date(),
           createdAt: preference.createdAt,
           updatedAt: preference.updatedAt
-        });
+        }).returning();
+        
+        if (result && result.length > 0) {
+          // Update the in-memory ID to match the database
+          preference.id = result[0].id;
+        }
         
         console.log(`Inserted new user preference to database: userId=${userId}, key=${key}`);
       }
