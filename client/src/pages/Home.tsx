@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import BalanceCard from "@/components/BalanceCard";
-import SimplifiedBalanceCard from "@/components/SimplifiedBalanceCard";
+import RadiantBalanceCard from "@/components/RadiantBalanceCard";
 import QuickActions from "@/components/QuickActions";
 import RecentTransactions from "@/components/RecentTransactions";
 import CasinoApiTester from "@/components/CasinoApiTester";
@@ -168,9 +167,9 @@ const Home = () => {
         initial="hidden"
         animate="visible"
       >
-        {/* Balance card with animated effect */}
+        {/* Radiant Balance card with vibrant colors */}
         <motion.div variants={itemVariants} className="mb-6">
-          <BalanceCard />
+          <RadiantBalanceCard />
         </motion.div>
         
         {/* Quick Actions section */}
