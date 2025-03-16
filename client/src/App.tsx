@@ -19,7 +19,6 @@ import { ProtectedAdminRoute } from "@/lib/protected-admin-route";
 import AdminAuth from "@/pages/admin/admin-auth";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
 import EnhancedAdminDashboard from "@/pages/admin/enhanced-admin-dashboard";
-import VideoIntro from "@/components/VideoIntro";
 import { ThemeProvider } from "@/hooks/use-theme";
 
 function Router() {
@@ -76,7 +75,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark">
         <AuthProvider>
-          <VideoIntro />
+          {/* VideoIntro component removed */}
           <Router />
           <Toaster />
         </AuthProvider>
