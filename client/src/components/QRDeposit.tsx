@@ -264,86 +264,67 @@ const QRDeposit = () => {
           </div>
         </div>
         
-        {!user ? (
-          // Show login required message when user is not authenticated
-          <div className="bg-red-500/20 border border-red-500/40 rounded-md p-4 mb-4 text-center">
-            <LogIn className="h-6 w-6 text-yellow-300 mx-auto mb-2" />
-            <h3 className="font-medium text-white mb-1">Authentication Required</h3>
-            <p className="text-sm text-gray-300 mb-3">
-              You must be logged in to make a deposit. Please log in or create an account.
-            </p>
-            <Button 
-              onClick={() => window.location.href = '/auth'} 
-              className="bg-secondary/90 hover:bg-secondary text-white"
-            >
-              Log In Now
-            </Button>
+        {/* Always show the deposit form, even if not logged in - authentication will be handled on the server side */}
+        <div className="mb-4">
+          <label className="block text-gray-300 mb-2">Select Amount</label>
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+            {presetAmounts.map((amt) => (
+              <Button
+                key={amt}
+                type="button"
+                variant={selectedAmount === amt ? "default" : "outline"}
+                className={getPresetButtonClasses(amt)}
+                onClick={() => handlePresetAmountClick(amt)}
+              >
+                ₱{formatDisplayAmount(amt)}
+              </Button>
+            ))}
           </div>
-        ) : (
-          // Show deposit form for authenticated users
-          <>
-            <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Select Amount</label>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">
-                {presetAmounts.map((amt) => (
-                  <Button
-                    key={amt}
-                    type="button"
-                    variant={selectedAmount === amt ? "default" : "outline"}
-                    className={getPresetButtonClasses(amt)}
-                    onClick={() => handlePresetAmountClick(amt)}
-                  >
-                    ₱{formatDisplayAmount(amt)}
-                  </Button>
-                ))}
-              </div>
-            </div>
+        </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-white">
-                Or Enter Custom Amount
-              </label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 text-sm bg-secondary/20 border border-r-0 border-secondary/50 rounded-l-md text-white">
-                  ₱
-                </span>
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => {
-                    setAmount(e.target.value);
-                    setSelectedAmount(null);
-                  }}
-                  placeholder="Enter amount"
-                  className="rounded-l-none text-white placeholder-gray-400"
-                  min="100"
-                  max="50000"
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Min: ₱100 | Max: ₱50,000
-              </p>
-            </div>
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-white">
+            Or Enter Custom Amount
+          </label>
+          <div className="flex">
+            <span className="inline-flex items-center px-3 py-2 text-sm bg-secondary/20 border border-r-0 border-secondary/50 rounded-l-md text-white">
+              ₱
+            </span>
+            <Input
+              type="number"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setSelectedAmount(null);
+              }}
+              placeholder="Enter amount"
+              className="rounded-l-none text-white placeholder-gray-400"
+              min="100"
+              max="50000"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Min: ₱100 | Max: ₱50,000
+          </p>
+        </div>
 
-            <Button
-              onClick={() => generateQrMutation.mutate()}
-              disabled={generateQrMutation.isPending}
-              className="w-full bg-secondary hover:bg-secondary/90"
-            >
-              {generateQrMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating QR...
-                </>
-              ) : (
-                <>
-                  <QrCode className="mr-2 h-4 w-4" />
-                  Pay with GCash
-                </>
-              )}
-            </Button>
-          </>
-        )}
+        <Button
+          onClick={() => generateQrMutation.mutate()}
+          disabled={generateQrMutation.isPending}
+          className="w-full bg-secondary hover:bg-secondary/90"
+        >
+          {generateQrMutation.isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating QR...
+            </>
+          ) : (
+            <>
+              <QrCode className="mr-2 h-4 w-4" />
+              Pay with GCash
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Payment Modal - QR Code or Payment URL */}
