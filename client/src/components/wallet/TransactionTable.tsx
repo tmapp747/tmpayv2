@@ -13,7 +13,9 @@ import {
   History, 
   Loader2, 
   Search,
-  AlertCircle
+  AlertCircle,
+  Wallet,
+  ArrowRightLeft
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { 
@@ -269,10 +271,15 @@ const TransactionTable = () => {
                         <div className="flex items-center">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${getTransactionTypeColor(transaction.type)}`}
                                style={{boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1)'}}>
-                            {getTransactionTypeIcon(transaction.type)}
+                            {transaction.type.includes('deposit') ? 
+                              <Wallet className="h-4 w-4" style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'}} /> : 
+                              transaction.type.includes('withdraw') ? 
+                              <ArrowUpDown className="h-4 w-4" style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'}} /> : 
+                              <ArrowRightLeft className="h-4 w-4" style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'}} />
+                            }
                           </div>
                           <span className="font-medium text-sm" style={{textShadow: '0 1px 1px rgba(0, 0, 0, 0.2)'}}>
-                            {transaction.type.split('_').map(word => 
+                            {transaction.type.split('_').map((word: string) => 
                               word.charAt(0).toUpperCase() + word.slice(1)
                             ).join(' ')}
                           </span>
