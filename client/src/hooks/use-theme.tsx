@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLocalStorage } from "./use-local-storage";
-import { apiRequest } from "@/lib/api-client";
 
 type Theme = "dark" | "light" | "system";
 
@@ -37,24 +36,32 @@ export function ThemeProvider({
     async function syncWithDatabase() {
       try {
         // Get user's theme from server
-        const response = await apiRequest({
+        const response = await fetch('/api/user/preferences/theme', {
           method: 'GET',
-          url: '/api/user/preferences/theme'
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include'
         });
         
-        if (response.success && response.exists) {
+        const data = await response.json();
+        
+        if (data.success && data.exists) {
           // If theme is stored on server and is different from local, use that
-          const dbTheme = response.value as Theme;
+          const dbTheme = data.value as Theme;
           if (dbTheme !== theme) {
             setTheme(dbTheme);
           }
           setServerSyncedTheme(dbTheme);
         } else if (theme) {
           // If theme is not in database but we have a local theme, save to server
-          await apiRequest({
+          await fetch('/api/user/preferences/theme', {
             method: 'POST',
-            url: '/api/user/preferences/theme',
-            data: { value: theme }
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ value: theme })
           });
           setServerSyncedTheme(theme);
         }
@@ -72,10 +79,13 @@ export function ThemeProvider({
     async function updateDatabase() {
       if (serverSyncedTheme !== null && theme !== serverSyncedTheme) {
         try {
-          await apiRequest({
+          await fetch('/api/user/preferences/theme', {
             method: 'POST',
-            url: '/api/user/preferences/theme',
-            data: { value: theme }
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ value: theme })
           });
           setServerSyncedTheme(theme);
         } catch (error) {
@@ -120,11 +130,11 @@ export function ThemeProvider({
   );
 }
 
-export const useTheme = () => {
+export function useTheme() {
   const context = useContext(ThemeProviderContext);
   
   if (context === undefined)
     throw new Error("useTheme must be used within a ThemeProvider");
   
   return context;
-};
+}

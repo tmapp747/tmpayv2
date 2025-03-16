@@ -1148,7 +1148,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ success: false, message: "Unauthorized" });
       }
       
-      const updatedPreference = await storage.updateUserPreference(user.id, key, value);
+      // Ensure the value is not null (use empty string or JSON for storage)
+      const safeValue = value === null || value === undefined ? 
+        JSON.stringify({ empty: true }) : 
+        value;
+      
+      const updatedPreference = await storage.updateUserPreference(user.id, key, safeValue);
       
       return res.status(200).json({ 
         success: true, 

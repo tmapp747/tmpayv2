@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { useTheme } from "@/hooks/use-theme";
+import { useLocalStorage } from "../hooks/use-local-storage";
+import { useTheme } from "../hooks/use-theme";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
