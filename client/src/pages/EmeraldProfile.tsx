@@ -48,32 +48,42 @@ const EmeraldProfile = () => {
       transition={{ duration: 0.4 }}
       className="max-w-4xl mx-auto"
     >
-      {/* Header Card - Emerald Theme */}
-      <div className="rounded-xl shadow-lg overflow-hidden mb-6 border border-emerald-700/30 relative"
+      {/* Header Card - Enhanced Emerald Theme with Gold */}
+      <div className="rounded-xl shadow-lg overflow-hidden mb-6 border border-yellow-500/20 relative"
         style={{
           background: 'linear-gradient(145deg, rgba(4, 120, 87, 0.9), rgba(5, 150, 105, 0.8))',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2), 0 10px 10px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.25), 0 10px 10px rgba(0, 0, 0, 0.1), 0 0 40px rgba(16, 185, 129, 0.2)'
         }}
       >
-        {/* Background glow effects */}
+        {/* Enhanced background glow effects with gold */}
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-400/10 rounded-full blur-3xl"></div>
         <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-teal-300/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-20 w-24 h-24 bg-yellow-300/10 rounded-full blur-2xl"></div>
         
         <div className="p-6 flex flex-col md:flex-row gap-6 items-center md:items-start relative z-10">
           <div className="flex flex-col items-center">
-            <Avatar className="h-24 w-24 bg-white/10 ring-4 ring-emerald-300/30">
-              <AvatarFallback className="text-white text-2xl bg-emerald-800"
-                style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}
-              >
-                {user?.username?.substring(0, 2).toUpperCase() || "747"}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 via-yellow-300 to-emerald-500 blur-sm opacity-50 animate-pulse"></div>
+              <Avatar className="h-24 w-24 bg-white/10 ring-4 ring-yellow-400/30 relative z-10"
+                style={{ boxShadow: '0 0 20px rgba(250, 204, 21, 0.3)' }}>
+                <AvatarFallback className="text-white text-2xl bg-emerald-800 border-2 border-yellow-500/20"
+                  style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}
+                >
+                  {user?.username?.substring(0, 2).toUpperCase() || "747"}
+                </AvatarFallback>
+              </Avatar>
+            </div>
             
             <Button 
               variant="outline" 
               size="sm" 
-              className="mt-2 text-xs border-emerald-300/30 text-white bg-emerald-800/40 hover:bg-emerald-800/60"
-              style={{ backdropFilter: 'blur(4px)' }}
+              className="mt-2 text-xs border border-yellow-500/30 text-yellow-300 bg-emerald-900/70 hover:bg-emerald-800/80"
+              style={{ 
+                backdropFilter: 'blur(4px)',
+                boxShadow: '0 2px 10px rgba(250, 204, 21, 0.15)',
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+              }}
             >
               VIP Member
             </Button>
@@ -88,62 +98,84 @@ const EmeraldProfile = () => {
             <p className="text-emerald-100/80">Member since {new Date(user?.createdAt || Date.now()).toLocaleDateString()}</p>
             
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/20"
-                style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.2)' }}
-              >
-                <div className="flex items-center mb-1">
-                  <CreditCard className="h-3.5 w-3.5 mr-1.5 text-emerald-200" />
-                  <p className="text-emerald-100/90 text-sm">Current Balance</p>
-                </div>
-                <p className="text-white font-bold text-lg"
-                  style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
+              <div className="relative group overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-yellow-400/10 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="relative bg-gradient-to-br from-emerald-900/90 to-black/80 p-3 rounded-lg backdrop-blur-sm border border-yellow-500/20"
+                  style={{ 
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 0 15px rgba(16, 185, 129, 0.2)',
+                  }}
                 >
-                  {isLoading ? "Loading..." : formatCurrency(user?.balance || 0)}
-                </p>
+                  <div className="flex items-center mb-1">
+                    <CreditCard className="h-3.5 w-3.5 mr-1.5 text-yellow-300" style={{ filter: 'drop-shadow(0 0 3px rgba(250, 204, 21, 0.5))' }} />
+                    <p className="text-emerald-100/90 text-sm">Current Balance</p>
+                  </div>
+                  <p className="text-yellow-300 font-bold text-lg"
+                    style={{ textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)' }}
+                  >
+                    {isLoading ? "Loading..." : formatCurrency(user?.balance || 0)}
+                  </p>
+                </div>
               </div>
-              <div className="bg-white/10 p-3 rounded-lg backdrop-blur-sm border border-white/20"
-                style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.2)' }}
-              >
-                <div className="flex items-center mb-1">
-                  <BarChart className="h-3.5 w-3.5 mr-1.5 text-emerald-200" />
-                  <p className="text-emerald-100/90 text-sm">Casino ID</p>
-                </div>
-                <p className="text-white font-bold text-lg"
-                  style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
+              
+              <div className="relative group overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-yellow-400/10 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="relative bg-gradient-to-br from-emerald-900/90 to-black/80 p-3 rounded-lg backdrop-blur-sm border border-yellow-500/20"
+                  style={{ 
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 0 15px rgba(16, 185, 129, 0.2)',
+                  }}
                 >
-                  {isLoading ? "Loading..." : user?.casinoId || "Not linked"}
-                </p>
+                  <div className="flex items-center mb-1">
+                    <BarChart className="h-3.5 w-3.5 mr-1.5 text-yellow-300" style={{ filter: 'drop-shadow(0 0 3px rgba(250, 204, 21, 0.5))' }} />
+                    <p className="text-emerald-100/90 text-sm">Casino ID</p>
+                  </div>
+                  <p className="text-yellow-300 font-bold text-lg"
+                    style={{ textShadow: '0 1px 3px rgba(0, 0, 0, 0.5)' }}
+                  >
+                    {isLoading ? "Loading..." : user?.casinoId || "Not linked"}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Tabs - Emerald Theme */}
+      {/* Tabs - Enhanced Emerald Theme with Gold */}
       <Tabs value={tab} onValueChange={setTab} className="mb-6">
-        <TabsList className="grid grid-cols-3 bg-emerald-900/70 border border-emerald-700/40 p-1"
-          style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.05)' }}
+        <TabsList className="grid grid-cols-3 bg-gradient-to-r from-emerald-900/80 to-black/75 border border-yellow-500/20 p-1"
+          style={{ 
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 15px rgba(16, 185, 129, 0.15)',
+          }}
         >
           <TabsTrigger 
             value="profile" 
-            className="data-[state=active]:bg-emerald-600/60 data-[state=active]:text-white text-emerald-100/70"
-            style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-700/80 data-[state=active]:to-emerald-900/90 data-[state=active]:border-yellow-500/30 data-[state=active]:text-yellow-300 text-emerald-100/70 data-[state=active]:border"
+            style={{ 
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'data-[state=active]:0 0 10px rgba(16, 185, 129, 0.3)'
+            }}
           >
             <User className="h-4 w-4 mr-2" />
             Profile
           </TabsTrigger>
           <TabsTrigger 
             value="security" 
-            className="data-[state=active]:bg-emerald-600/60 data-[state=active]:text-white text-emerald-100/70"
-            style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-700/80 data-[state=active]:to-emerald-900/90 data-[state=active]:border-yellow-500/30 data-[state=active]:text-yellow-300 text-emerald-100/70 data-[state=active]:border"
+            style={{ 
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'data-[state=active]:0 0 10px rgba(16, 185, 129, 0.3)'
+            }}
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
             Security
           </TabsTrigger>
           <TabsTrigger 
             value="settings" 
-            className="data-[state=active]:bg-emerald-600/60 data-[state=active]:text-white text-emerald-100/70"
-            style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+            className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-700/80 data-[state=active]:to-emerald-900/90 data-[state=active]:border-yellow-500/30 data-[state=active]:text-yellow-300 text-emerald-100/70 data-[state=active]:border"
+            style={{ 
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+              boxShadow: 'data-[state=active]:0 0 10px rgba(16, 185, 129, 0.3)'
+            }}
           >
             <Cog className="h-4 w-4 mr-2" />
             Settings
@@ -226,14 +258,18 @@ const EmeraldProfile = () => {
                 
                 <div className="flex justify-end">
                   <Button 
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg"
+                    className="relative overflow-hidden group bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-lg border border-yellow-500/20"
                     style={{ 
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.15)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}
                     onClick={handleSaveChanges}
                   >
-                    Save Changes
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-300/0 via-yellow-300/30 to-yellow-300/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                    <span className="relative z-10 flex items-center">
+                      <span className="mr-1.5 text-yellow-300" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.5))' }}>✓</span>
+                      Save Changes
+                    </span>
                   </Button>
                 </div>
               </div>
@@ -308,9 +344,13 @@ const EmeraldProfile = () => {
                         Add an extra layer of security to your account by enabling two-factor authentication.
                       </p>
                       <Button 
-                        className="mt-3 bg-emerald-600/30 hover:bg-emerald-600/40 text-emerald-100 border border-emerald-500/30"
-                        style={{ boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2)' }}
+                        className="mt-3 bg-emerald-800/50 hover:bg-emerald-700/60 text-yellow-300 border border-yellow-500/30"
+                        style={{ 
+                          boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(16, 185, 129, 0.1)',
+                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+                        }}
                       >
+                        <Shield className="h-3.5 w-3.5 mr-1.5" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.4))' }} />
                         Enable 2FA
                       </Button>
                     </div>
@@ -319,14 +359,18 @@ const EmeraldProfile = () => {
                 
                 <div className="flex justify-end">
                   <Button 
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg"
+                    className="relative overflow-hidden group bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-lg border border-yellow-500/20"
                     style={{ 
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.15)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}
                     onClick={handleChangePassword}
                   >
-                    Update Password
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-300/0 via-yellow-300/30 to-yellow-300/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                    <span className="relative z-10 flex items-center">
+                      <span className="mr-1.5 text-yellow-300" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.5))' }}>🔒</span>
+                      Update Password
+                    </span>
                   </Button>
                 </div>
               </div>
