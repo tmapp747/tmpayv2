@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
   <meta name="theme-color" content="#000000" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <title>747 Casino E-Wallet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,6 +39,25 @@
         e.preventDefault();
       }
     }, { passive: false });
+    
+    // Prevent horizontal overflow
+    function preventHorizontalScroll() {
+      const width = window.innerWidth;
+      const elements = document.querySelectorAll('div, section, header, footer, main, nav');
+      
+      elements.forEach(el => {
+        if (el.scrollWidth > width) {
+          el.style.maxWidth = '100%';
+          el.style.overflowX = 'hidden';
+        }
+      });
+    }
+    
+    window.addEventListener('load', preventHorizontalScroll);
+    window.addEventListener('resize', preventHorizontalScroll);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(preventHorizontalScroll, 300); // After orientation change completes
+    });
   </script>
 </body>
 </html>
