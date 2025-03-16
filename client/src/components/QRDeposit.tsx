@@ -78,20 +78,54 @@ const QRDeposit = () => {
     },
     onSuccess: (data) => {
       if (data.qrPayment) {
+        // Store QR code data (which might be the payment URL)
         setQrData(data.qrPayment.qrCodeData);
         setReferenceId(data.qrPayment.directPayReference);
         
-        // Check if there's a payment URL in addition to QR code
+        console.log("QR Payment data received:", data.qrPayment);
+        
+        // Check if there's a payment URL in the QR payment data
         if (data.qrPayment.payUrl) {
+          console.log("Payment URL found:", data.qrPayment.payUrl);
           setPayUrl(data.qrPayment.payUrl);
+          
           // Open payment URL in new window
-          window.open(data.qrPayment.payUrl, '_blank');
+          try {
+            const newWindow = window.open(data.qrPayment.payUrl, '_blank');
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+              console.warn("Popup blocked - could not open payment URL in new window");
+              toast({
+                title: "Payment Link Ready",
+                description: "Please use the 'Open in New Window' button in the dialog to complete your payment.",
+                variant: "default",
+              });
+            } else {
+              console.log("Payment URL opened in new window");
+            }
+          } catch (e) {
+            console.error("Error opening payment URL:", e);
+          }
+        } else {
+          console.warn("No payment URL found in QR payment data");
+          toast({
+            title: "QR Code Generated",
+            description: "Please scan the QR code with your GCash app to complete payment",
+            variant: "default",
+          });
         }
         
+        // Show the payment modal with QR code or embedded payment URL
         setIsModalOpen(true);
 
         // Start polling for payment status
         pollPaymentStatus(data.qrPayment.directPayReference);
+      } else {
+        console.warn("No QR payment data received from server");
+        toast({
+          title: "Error",
+          description: "Failed to generate payment information",
+          variant: "destructive",
+        });
       }
     },
     onError: (error: Error) => {

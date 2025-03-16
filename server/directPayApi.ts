@@ -190,6 +190,7 @@ class DirectPayApi {
     expiresAt: Date;
   }> {
     try {
+      // First ensure we're authenticated
       const token = await this.authenticate();
 
       console.log('Generating GCash payment with params:', {
@@ -198,12 +199,22 @@ class DirectPayApi {
         redirectUrl
       });
 
-      // Use the exact endpoint from the curl example
+      // Use the correct endpoint for GCash cash-in
       const gcashEndpoint = `${this.baseUrl}/gcash_cashin`;
       console.log('GCash payment endpoint:', gcashEndpoint);
       
+      // Make sure amount is properly formatted as a float with 2 decimal places
+      const formattedAmount = parseFloat(amount.toFixed(2));
+      
+      console.log('Sending request to DirectPay API with the following data:');
+      console.log(`- Amount: ${formattedAmount}`);
+      console.log(`- Webhook URL: ${webhookUrl}`);
+      console.log(`- Redirect URL: ${redirectUrl}`);
+      console.log(`- Authorization: Bearer ${token.substring(0, 5)}...${token.substring(token.length - 5)}`);
+      console.log(`- PHP Session ID: ${this.phpSessionId ? this.phpSessionId.substring(0, 5) + '...' : 'null'}`);
+      
       const response = await axios.post(gcashEndpoint, {
-        amount: parseFloat(amount.toFixed(2)),
+        amount: formattedAmount,
         webhook: webhookUrl,
         redirectUrl: redirectUrl
       }, {
@@ -211,68 +222,78 @@ class DirectPayApi {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'Cookie': `PHPSESSID=${this.phpSessionId}`
+          'Cookie': this.phpSessionId ? `PHPSESSID=${this.phpSessionId}` : ''
         },
         withCredentials: true,
         timeout: 30000 // 30 second timeout
       });
 
-      console.log('GCash payment response:', response.data);
-      console.log('Response type:', typeof response.data);
-      console.log('Response has link property:', 'link' in response.data);
-      console.log('Response has status property:', 'status' in response.data);
-      
-      // Check and extract data from different possible response structures
-      let payUrl = null;
-      let reference = null;
+      // Log detailed response information
+      console.log('GCash payment response status:', response.status);
+      console.log('GCash payment response data:', JSON.stringify(response.data, null, 2));
       
       // Ensure we have data to work with
       if (!response.data) {
         throw new Error('Empty response from DirectPay API');
       }
       
-      // Look for payment URL in all possible formats
-      if (response.data.pay_url) {
-        payUrl = response.data.pay_url;
-      } else if (response.data.payUrl) {
-        payUrl = response.data.payUrl;
-      } else if (response.data.link) {
-        payUrl = response.data.link;
-      } else if (response.data.data && response.data.data.pay_url) {
-        payUrl = response.data.data.pay_url;
-      } else if (response.data.data && response.data.data.payUrl) {
-        payUrl = response.data.data.payUrl;
-      } else if (response.data.data && response.data.data.link) {
-        payUrl = response.data.data.link;
-      }
+      // Deep inspect the response to find the payment URL and reference
+      const inspectResponseForKey = (obj: any, key: string): any => {
+        if (!obj || typeof obj !== 'object') return null;
+        
+        // Direct property match
+        if (key in obj) return obj[key];
+        
+        // Look for a property that contains the key as substring (case insensitive)
+        for (const prop in obj) {
+          if (prop.toLowerCase().includes(key.toLowerCase())) {
+            return obj[prop];
+          }
+        }
+        
+        // Check nested objects including arrays
+        for (const prop in obj) {
+          if (typeof obj[prop] === 'object') {
+            const result = inspectResponseForKey(obj[prop], key);
+            if (result) return result;
+          }
+        }
+        
+        return null;
+      };
       
-      // Look for reference in all possible formats
-      if (response.data.reference) {
-        reference = response.data.reference;
-      } else if (response.data.reference_id) {
-        reference = response.data.reference_id;
-      } else if (response.data.transactionId) {
-        reference = response.data.transactionId;
-      } else if (response.data.data && response.data.data.reference) {
-        reference = response.data.data.reference;
-      } else if (response.data.data && response.data.data.reference_id) {
-        reference = response.data.data.reference_id;
-      } else if (response.data.data && response.data.data.transactionId) {
-        reference = response.data.data.transactionId;
-      } else {
-        // Generate a fallback reference ID
+      // Look for payment URL using various possible keys
+      let payUrl = inspectResponseForKey(response.data, 'pay_url') || 
+                   inspectResponseForKey(response.data, 'payUrl') ||
+                   inspectResponseForKey(response.data, 'link') ||
+                   inspectResponseForKey(response.data, 'url');
+      
+      // Look for reference using various possible keys
+      let reference = inspectResponseForKey(response.data, 'reference') || 
+                     inspectResponseForKey(response.data, 'reference_id') ||
+                     inspectResponseForKey(response.data, 'transactionId') ||
+                     inspectResponseForKey(response.data, 'id');
+      
+      // If reference is still not found, generate a fallback
+      if (!reference) {
         reference = `dp_${Date.now()}`;
+        console.warn('No reference found in API response, generated fallback:', reference);
       }
       
-      // Verify we have the required data
+      // Log what we found
+      console.log('Extracted payment URL:', payUrl);
+      console.log('Extracted reference:', reference);
+      
+      // Verify we have the required payment URL
       if (!payUrl) {
+        console.error('Full API response:', response.data);
         throw new Error('No payment URL received from DirectPay API');
       }
 
       // Set expiry to 30 minutes from now
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-      // Generate QR code data from payUrl
+      // Use the payment URL as QR code data or generate QR code
       const qrCodeData = payUrl;
 
       return {
@@ -281,9 +302,14 @@ class DirectPayApi {
         payUrl,
         expiresAt
       };
-    } catch (error) {
+    } catch (err) {
+      const error = err as any; // Type casting for better error handling
       console.error('DirectPay GCash payment generation error:', error);
-      throw new Error('Failed to generate GCash payment link');
+      if (error.response) {
+        console.error('Response status:', error.response.status);
+        console.error('Response data:', error.response.data);
+      }
+      throw new Error('Failed to generate GCash payment link: ' + (error.message || 'Unknown error'));
     }
   }
 

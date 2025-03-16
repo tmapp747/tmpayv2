@@ -901,6 +901,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First check if user is authenticated via session (Passport)
       if (req.isAuthenticated && req.isAuthenticated()) {
         console.log("[AUTH MIDDLEWARE] User authenticated via session");
+        // Check if user object exists in the session
+        if (!req.user) {
+          console.warn("[AUTH MIDDLEWARE] req.isAuthenticated() is true but req.user is missing");
+          return res.status(401).json({ 
+            success: false, 
+            message: "Session exists but user data is missing, please login again" 
+          });
+        }
         // User is already attached to req.user by Passport
         return next();
       }
@@ -959,15 +967,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (err) {
           console.warn("[AUTH MIDDLEWARE] Failed to establish session for token user:", err);
           // Continue anyway with the token auth
+          // Attach the user to the request object directly for this request
+          (req as any).user = user;
+          next();
         } else {
           console.log("[AUTH MIDDLEWARE] Established session for token-authenticated user");
+          // Session established, user automatically attached to req.user by Passport
+          next();
         }
-        
-        // Attach the user to the request object
-        (req as any).user = user;
-        
-        // Continue to the next middleware or route handler
-        next();
       });
     } catch (error) {
       console.error("Auth middleware error:", error);
