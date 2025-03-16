@@ -65,12 +65,70 @@ const RecentTransactions = () => {
     
     if (!data?.transactions?.length) {
       return (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <SearchX className="h-12 w-12 text-muted-foreground/40 mb-3" />
-          <h3 className="text-base font-medium mb-1">No Transactions Found</h3>
-          <p className="text-muted-foreground text-sm max-w-xs">
-            Your transaction history will appear here once you start using your wallet.
-          </p>
+        <div className="flex flex-col items-center justify-center py-8 text-center relative">
+          {/* Background glow */}
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-70"></div>
+          
+          <div className="relative z-10">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 260,
+                damping: 20 
+              }}
+              className="mb-4 relative"
+            >
+              <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center relative"
+                  style={{
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1), inset 0 2px 5px rgba(255, 255, 255, 0.05)',
+                    transform: 'translateZ(20px)'
+                  }}>
+                <SearchX className="h-12 w-12 text-muted-foreground/40" 
+                        style={{ filter: 'drop-shadow(0 2px 5px rgba(0, 0, 0, 0.2))' }} />
+                
+                {/* Decorative animated ring */}
+                <div className="absolute inset-0 rounded-full border border-primary/20 animate-ping opacity-60"></div>
+              </div>
+            </motion.div>
+            
+            <h3 className="text-base font-medium mb-1" 
+                style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)' }}>
+              No Transactions Found
+            </h3>
+            
+            <motion.p 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-muted-foreground text-sm max-w-xs px-4 mx-auto"
+              style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+            >
+              Your transaction history will appear here once you start using your wallet.
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="mt-4"
+            >
+              <Button 
+                variant="outline" 
+                size="sm" 
+                asChild
+                className="border-2 border-secondary/30"
+                style={{
+                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+                  transform: 'translateZ(0)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                }}
+              >
+                <Link href="/wallet">Go to Wallet</Link>
+              </Button>
+            </motion.div>
+          </div>
         </div>
       );
     }
@@ -102,19 +160,35 @@ const RecentTransactions = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
-          className={`flex items-center justify-between p-3 ${index % 2 === 0 ? 'bg-muted/20' : 'bg-transparent'} border-b border-border/10 last:border-0 hover:bg-muted/30 transition-all duration-200`}
+          className={`flex items-center justify-between p-3 ${index % 2 === 0 ? 'bg-muted/20' : 'bg-transparent'} 
+                    border-b border-border/20 last:border-0 hover:bg-muted/30 transition-all duration-200 relative`}
+          style={{
+            boxShadow: index % 2 === 0 ? 'inset 0 1px 1px rgba(0, 0, 0, 0.05), inset 0 -1px 0 rgba(255, 255, 255, 0.05)' : ''
+          }}
         >
-          <div className="flex items-center">
-            <div className={`w-10 h-10 rounded-full ${typeColor} flex items-center justify-center mr-3`}>
+          {/* Hover highlight effect */}
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+          
+          <div className="flex items-center relative z-10">
+            <div 
+              className={`w-10 h-10 rounded-full ${typeColor} flex items-center justify-center mr-3 relative`}
+              style={{
+                boxShadow: '0 3px 6px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                transform: 'translateZ(5px)'
+              }}
+            >
+              {/* Subtle glow effect */}
+              <div className="absolute inset-0 rounded-full bg-white opacity-10"></div>
+              
               {transaction.type.includes('deposit') 
-                ? <Wallet className="h-5 w-5" />
+                ? <Wallet className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'}} />
                 : transaction.type.includes('withdraw')
-                  ? <ArrowUpDown className="h-5 w-5" />
-                  : <ArrowRightLeft className="h-5 w-5" />
+                  ? <ArrowUpDown className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'}} />
+                  : <ArrowRightLeft className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'}} />
               }
             </div>
             <div>
-              <p className="font-medium text-sm">
+              <p className="font-medium text-sm" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'}}>
                 {transaction.type.split('_').map(word => 
                   word.charAt(0).toUpperCase() + word.slice(1)
                 ).join(' ')}
@@ -125,13 +199,26 @@ const RecentTransactions = () => {
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className={`font-medium ${
-              isWithdraw ? 'text-red-500' : 'text-green-500'
-            }`}>
+          
+          <div className="text-right relative z-10">
+            <p 
+              className={`font-medium ${
+                isWithdraw ? 'text-red-500' : 'text-green-500'
+              }`}
+              style={{
+                textShadow: '0 1px 1px rgba(0, 0, 0, 0.2)',
+                filter: `drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1))`
+              }}
+            >
               {isWithdraw ? '-' : '+'}{formatCurrency(transaction.amount)}
             </p>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(transaction.status)}`}>
+            <span 
+              className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(transaction.status)}`}
+              style={{
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                textShadow: '0 1px 1px rgba(0, 0, 0, 0.2)'
+              }}
+            >
               {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
             </span>
           </div>
@@ -141,29 +228,53 @@ const RecentTransactions = () => {
   };
 
   return (
-    <Card className="mb-6 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
-      <CardHeader className="pb-2">
+    <Card className="mb-6 overflow-hidden border-2 border-secondary/20 relative" 
+         style={{
+           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 5px 10px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+           transform: 'translateZ(0)',
+           transition: 'all 0.3s ease',
+         }}>
+      {/* Subtle glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 opacity-50 pointer-events-none"></div>
+      
+      <CardHeader className="pb-2 relative">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg flex items-center">
-            <History className="h-5 w-5 mr-2 text-primary" />
+          <CardTitle className="text-lg flex items-center" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'}}>
+            <History className="h-5 w-5 mr-2 text-primary" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3))'}} />
             Recent Transactions
           </CardTitle>
           <Link 
             href="/history" 
-            className="text-primary text-sm group flex items-center hover:underline transition-all duration-200"
+            className="text-primary text-sm group flex items-center transition-all duration-200 px-3 py-1 rounded-full bg-primary/5 border border-primary/20"
+            style={{
+              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+            }}
           >
             <span>View All</span>
-            <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" 
+                         style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'}} />
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
+      
+      <CardContent className="p-0 relative">
         <div className="overflow-hidden">
           {renderTransactionRows()}
         </div>
       </CardContent>
-      <CardFooter className="py-3 px-4 flex justify-center border-t border-border/10">
-        <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+      
+      <CardFooter className="py-3 px-4 flex justify-center border-t border-border/20 relative"
+                 style={{
+                   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+                 }}>
+        <Button variant="outline" size="sm" className="w-full sm:w-auto relative border-2 border-secondary/30" 
+                asChild
+                style={{
+                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2), 0 2px 5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+                  transform: 'translateZ(0)',
+                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                }}>
           <Link href="/history">View Transaction History</Link>
         </Button>
       </CardFooter>

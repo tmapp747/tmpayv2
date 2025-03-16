@@ -75,53 +75,104 @@ const Layout = ({ children }: LayoutProps) => {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-x-hidden max-w-full relative">
-        {/* Header with solid dark blue color background */}
+        {/* Header with enhanced 3D styling */}
         <header className={cn(
-          "bg-[#1a2b47] p-4 lg:py-4 lg:px-6 border-b border-[#3a4c67]/40",
-          "flex items-center justify-between shadow-lg sticky top-0 z-20",
-          "w-full max-w-[100vw]" // Ensure header doesn't overflow
-        )}>
-          <div className="flex items-center lg:hidden mobile-clickable">
-            <div className="w-10 h-10 overflow-hidden">
+          "bg-[#1a2b47] p-4 lg:py-4 lg:px-6 border-b-2 border-[#3a4c67]/60",
+          "flex items-center justify-between sticky top-0 z-20",
+          "w-full max-w-[100vw] relative" // Ensure header doesn't overflow
+        )} style={{
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          background: 'linear-gradient(to bottom, #1f3459 0%, #1a2b47 100%)'
+        }}>
+          {/* Subtle gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-60"></div>
+          
+          <div className="flex items-center lg:hidden mobile-clickable relative z-10">
+            <div className="w-10 h-10 overflow-hidden" style={{
+              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
+              transform: 'translateZ(0)'
+            }}>
               <svg viewBox="0 0 200 200" className="h-full w-full">
+                <defs>
+                  <linearGradient id="headerGoldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#d4af37" />
+                    <stop offset="50%" stopColor="#f2d87f" />
+                    <stop offset="100%" stopColor="#b78628" />
+                  </linearGradient>
+                </defs>
                 <circle cx="100" cy="100" r="90" fill="#1a2b47" />
-                <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#b78628" stroke="#000000" strokeWidth="1.5" fontSize="60" fontWeight="bold">747</text>
+                <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="url(#headerGoldGradient)" stroke="#000000" strokeWidth="1" fontSize="60" fontWeight="bold">747</text>
               </svg>
             </div>
-            <h1 className="text-xl font-bold ml-2 text-white font-montserrat truncate">
-              747 <span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>E-Wallet</span>
+            <h1 className="text-xl font-bold ml-2 text-white font-montserrat truncate" style={{
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+            }}>
+              747 <span className="text-secondary" style={{ 
+                textShadow: '0 1px 2px rgba(0, 0, 0, 0.7)',
+                filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))'
+              }}>E-Wallet</span>
             </h1>
           </div>
           
-          <div className="hidden lg:block">
-            <h1 className="text-xl font-bold text-white">{getPageTitle()}</h1>
+          <div className="hidden lg:block relative z-10">
+            <h1 className="text-xl font-bold text-white" style={{
+              textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
+            }}>{getPageTitle()}</h1>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 relative z-10">
             <ThemeToggle />
             <div className="relative">
-              <button className="p-2 rounded-full text-white hover:bg-primary-foreground/10 transition-all duration-200 mobile-clickable">
-                <BellIcon className="h-5 w-5" />
-                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">3</span>
+              <button className="p-2 rounded-full text-white hover:bg-primary-foreground/20 transition-all duration-200 mobile-clickable"
+                     style={{
+                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                       transform: 'translateZ(0)'
+                     }}>
+                <BellIcon className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3))'}} />
+                <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full"
+                      style={{
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                      }}>3</span>
               </button>
             </div>
             <div className="lg:hidden">
-              <button className="p-2 rounded-full text-white hover:bg-primary-foreground/10 transition-all duration-200 mobile-clickable">
-                <UserIcon className="h-5 w-5" />
+              <button className="p-2 rounded-full text-white hover:bg-primary-foreground/20 transition-all duration-200 mobile-clickable"
+                     style={{
+                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                       transform: 'translateZ(0)'
+                     }}>
+                <UserIcon className="h-5 w-5" style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3))'}} />
               </button>
             </div>
           </div>
         </header>
         
-        {/* Background pattern/texture */}
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-5">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent"></div>
-          <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, gray 1px, transparent 0)', backgroundSize: '20px 20px' }}></div>
+        {/* Enhanced background pattern/texture with 3D feeling */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent opacity-60"></div>
+          <div className="absolute inset-0 opacity-5" style={{ 
+            backgroundImage: 'radial-gradient(circle at 1px 1px, gray 1px, transparent 0)', 
+            backgroundSize: '20px 20px',
+            boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.2)' 
+          }}></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-purple-500/5 opacity-30"></div>
         </div>
         
-        {/* Content Container - Using mobile-container for smooth scrolling */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch scrollbar-none max-w-full relative z-10">
-          <div className="mx-auto p-4 max-w-full overflow-x-hidden">
+        {/* Content Container with enhanced depth */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden -webkit-overflow-scrolling-touch scrollbar-none max-w-full relative z-10" 
+             style={{
+               perspective: '1000px',
+               perspectiveOrigin: 'center'
+             }}>
+          <div className="mx-auto p-4 max-w-full overflow-x-hidden relative">
+            {/* Subtle depth effect for content */}
+            <div className="absolute inset-0 pointer-events-none rounded-lg opacity-50"
+                 style={{
+                   background: 'radial-gradient(circle at center top, rgba(255,255,255,0.05) 0%, transparent 70%)',
+                   filter: 'blur(20px)'
+                 }}>
+            </div>
             {children}
           </div>
         </div>
