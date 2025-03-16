@@ -229,24 +229,24 @@ const TransactionTable = () => {
               </tr>
             </thead>
             
-            <tbody className="divide-y divide-green-900/20" style={{background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(2, 12, 8, 0.5))'}}>
+            <tbody className="divide-y divide-slate-700/20" style={{background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.6), rgba(30, 41, 59, 0.5))'}}>
               {isLoading ? (
                 Array(5).fill(0).map((_, i) => (
-                  <tr key={i} className="animate-pulse bg-black/30 backdrop-blur-sm">
-                    <td className="px-4 py-4"><div className="h-4 bg-green-900/30 rounded w-20"></div></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-green-900/30 rounded w-24"></div></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-green-900/30 rounded w-16"></div></td>
-                    <td className="px-4 py-4 text-right"><div className="h-4 bg-green-900/30 rounded w-16 ml-auto"></div></td>
-                    <td className="px-4 py-4 text-right"><div className="h-4 bg-green-900/30 rounded w-16 ml-auto"></div></td>
+                  <tr key={i} className="animate-pulse bg-slate-900/30 backdrop-blur-sm">
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-700/30 rounded w-20"></div></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-700/30 rounded w-24"></div></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-slate-700/30 rounded w-16"></div></td>
+                    <td className="px-4 py-4 text-right"><div className="h-4 bg-slate-700/30 rounded w-16 ml-auto"></div></td>
+                    <td className="px-4 py-4 text-right"><div className="h-4 bg-slate-700/30 rounded w-16 ml-auto"></div></td>
                   </tr>
                 ))
               ) : !filteredTransactions.length ? (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <AlertCircle className="h-10 w-10 text-green-500/40 mb-3" style={{filter: 'drop-shadow(0 0 5px rgba(34, 197, 94, 0.2))'}} />
-                      <p className="text-green-300/70">No transactions found</p>
-                      <p className="text-xs text-green-300/50 mt-1">
+                      <AlertCircle className="h-10 w-10 text-sky-500/40 mb-3" style={{filter: 'drop-shadow(0 0 5px rgba(56, 189, 248, 0.2))'}} />
+                      <p className="text-sky-300/70">No transactions found</p>
+                      <p className="text-xs text-sky-300/50 mt-1">
                         {filter !== 'all' 
                           ? `Try changing your filter or search criteria` 
                           : `Your transaction history will appear here when you make transactions`}
@@ -265,7 +265,7 @@ const TransactionTable = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className={`hover:bg-green-900/10 relative ${index % 2 === 0 ? 'bg-black/40' : 'bg-black/20'}`}
+                      className={`hover:bg-sky-900/10 relative ${index % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-900/20'}`}
                       style={{
                         boxShadow: index % 2 === 0 ? 'inset 0 1px 0 rgba(255, 255, 255, 0.02), inset 0 -1px 0 rgba(0, 0, 0, 0.1)' : '',
                         isolation: 'isolate',
@@ -273,7 +273,7 @@ const TransactionTable = () => {
                       }}
                     >
                       {/* Hover highlight effect */}
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"></div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-sky-500/5 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"></div>
                       
                       <td className="px-4 py-4 relative z-10">
                         <div className="flex items-center">
@@ -338,26 +338,28 @@ const TransactionTable = () => {
         </div>
         
         {/* Table footer with pagination */}
-        <div className="px-4 py-3 border-t border-green-900/30 flex items-center justify-between relative"
+        <div className="px-4 py-3 border-t border-slate-700/30 flex items-center justify-between relative"
              style={{
-               background: 'linear-gradient(0deg, rgba(4, 20, 12, 0.8), rgba(2, 12, 8, 0.7))',
+               background: 'linear-gradient(0deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.7))',
                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.02)'
              }}>
-          <div className="text-xs text-green-300/70">
-            Showing <span className="font-medium text-green-300">{filteredTransactions.length}</span> transactions
+          <div className="text-xs text-sky-300/70">
+            Showing <span className="font-medium text-sky-300">{filteredTransactions.length}</span> transactions
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" className="h-8 px-3 border-2 border-green-800/40 bg-black/50 text-green-400/70"
+            <Button variant="outline" size="sm" className="h-8 px-3 border-2 border-slate-600/30 bg-slate-800/50 text-sky-400/70"
                     style={{
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 5px rgba(16, 185, 129, 0.1)',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 5px rgba(56, 189, 248, 0.15)',
+                      background: 'linear-gradient(to right, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7))'
                     }}
                     disabled>
               Previous
             </Button>
-            <Button variant="outline" size="sm" className="h-8 px-3 border-2 border-green-800/40 bg-black/50 text-green-400/70"
+            <Button variant="outline" size="sm" className="h-8 px-3 border-2 border-slate-600/30 bg-slate-800/50 text-sky-400/70"
                     style={{
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 5px rgba(16, 185, 129, 0.1)',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 5px rgba(56, 189, 248, 0.15)',
+                      background: 'linear-gradient(to right, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7))'
                     }}
                     disabled>
               Next

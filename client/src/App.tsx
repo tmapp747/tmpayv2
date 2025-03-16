@@ -10,6 +10,7 @@ import Profile from "@/pages/Profile";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
+import ColorComparison from "@/pages/ColorComparison";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -47,6 +48,13 @@ function Router() {
       )} />
       {/* Payment routes */}
       <Route path="/payment/thank-you" component={PaymentThankYou} />
+      
+      {/* Color comparison route */}
+      <Route path="/color-comparison" component={() => (
+        <Layout>
+          <ColorComparison />
+        </Layout>
+      )} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
