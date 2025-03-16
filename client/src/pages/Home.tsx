@@ -208,16 +208,34 @@ const Home = () => {
         
         {/* Dashboard tabs for different views */}
         <motion.div variants={itemVariants}>
-          <EmeraldTabs 
+          <Tabs 
             value={activeTab} 
             onValueChange={setActiveTab} 
             className="mb-8"
-            tabs={[
-              { value: "overview", label: "Overview", icon: <Wallet className="h-4 w-4" /> },
-              { value: "activity", label: "Activity", icon: <BarChart3 className="h-4 w-4" /> },
-              { value: "market", label: "Market", icon: <ArrowUpDown className="h-4 w-4" /> }
-            ]}
           >
+            <TabsList className="mb-4 bg-emerald-900/60 border border-emerald-700/40 p-1 backdrop-blur-sm shadow-lg">
+              <TabsTrigger 
+                value="overview" 
+                className="flex items-center gap-1.5 data-[state=active]:bg-emerald-700/40 data-[state=active]:text-yellow-300 data-[state=active]:shadow-md"
+              >
+                <Wallet className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="activity"
+                className="flex items-center gap-1.5 data-[state=active]:bg-emerald-700/40 data-[state=active]:text-yellow-300 data-[state=active]:shadow-md"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Activity
+              </TabsTrigger>
+              <TabsTrigger 
+                value="market"
+                className="flex items-center gap-1.5 data-[state=active]:bg-emerald-700/40 data-[state=active]:text-yellow-300 data-[state=active]:shadow-md"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                Market
+              </TabsTrigger>
+            </TabsList>
             
             {/* Overview tab content */}
             <TabsContent value="overview">
@@ -433,7 +451,7 @@ const Home = () => {
                 </div>
               </EmeraldCard>
             </TabsContent>
-          </EmeraldTabs>
+          </Tabs>
         </motion.div>
       </motion.div>
       
