@@ -154,23 +154,48 @@ function AuthProvider({ children }: { children: ReactNode }) {
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
+      console.log("Initiating login request for user:", credentials.username);
+      
       const res = await apiRequest("POST", "/api/auth/login", credentials);
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Login failed");
+        console.error("Login failed with status:", res.status);
+        let errorMessage = "Login failed";
+        
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error("Login error details:", errorData);
+        } catch (e) {
+          console.error("Failed to parse error response:", e);
+        }
+        
+        throw new Error(errorMessage);
       }
-      return await res.json();
+      
+      console.log("Login response received successfully");
+      const responseData = await res.json();
+      console.log("Login successful, user data received");
+      
+      return responseData;
     },
     onSuccess: (data) => {
+      console.log("Login successful, updating application state");
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-
+      
       // No need to save to localStorage - auth handled by server session
       toast({
         title: "Login successful",
         description: "Welcome back to 747 Casino E-Wallet!",
       });
+      
+      // Immediately trigger a user info fetch to ensure we have the latest data
+      console.log("Refreshing user data after login");
+      queryClient.invalidateQueries({ queryKey: ["/api/user/info"] });
     },
     onError: (error: Error) => {
+      console.error("Login mutation error:", error);
+      
       toast({
         title: "Login failed",
         description: error.message,
@@ -182,14 +207,33 @@ function AuthProvider({ children }: { children: ReactNode }) {
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
+      console.log("Initiating registration for user:", userData.username);
+      
       const res = await apiRequest("POST", "/api/auth/register", userData);
+      
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Registration failed");
+        console.error("Registration failed with status:", res.status);
+        let errorMessage = "Registration failed";
+        
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.message || errorMessage;
+          console.error("Registration error details:", errorData);
+        } catch (e) {
+          console.error("Failed to parse error response:", e);
+        }
+        
+        throw new Error(errorMessage);
       }
-      return await res.json();
+      
+      console.log("Registration response received successfully");
+      const responseData = await res.json();
+      console.log("Registration successful, user data received");
+      
+      return responseData;
     },
     onSuccess: (data) => {
+      console.log("Registration successful, updating application state");
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
 
       // No need to save to localStorage - auth handled by server session
@@ -197,8 +241,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: "Your account has been created and you're now logged in!",
       });
+      
+      // Immediately trigger a user info fetch to ensure we have the latest data
+      console.log("Refreshing user data after registration");
+      queryClient.invalidateQueries({ queryKey: ["/api/user/info"] });
     },
     onError: (error: Error) => {
+      console.error("Registration mutation error:", error);
+      
       toast({
         title: "Registration failed",
         description: error.message,
@@ -210,24 +260,50 @@ function AuthProvider({ children }: { children: ReactNode }) {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
+      console.log("Initiating logout request");
+      
       const res = await apiRequest("POST", "/api/auth/logout");
+      console.log("Logout response status:", res.status);
+      
       // Handle cases where response might not be JSON
       try {
         if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "Logout failed");
+          console.error("Logout failed with status:", res.status);
+          let errorMessage = "Logout failed";
+          
+          try {
+            const errorData = await res.json();
+            errorMessage = errorData.message || errorMessage;
+            console.error("Logout error details:", errorData);
+          } catch (e) {
+            console.error("Failed to parse error response:", e);
+          }
+          
+          throw new Error(errorMessage);
         }
+        
+        console.log("Logout response received successfully");
         return await res.json();
       } catch (e) {
         // If the response isn't JSON, we'll still consider it a success if status is 2xx
-        if (res.ok) return { success: true };
+        if (res.ok) {
+          console.log("Logout successful (non-JSON response)");
+          return { success: true };
+        }
         if (e instanceof Error) throw e;
         throw new Error("Logout failed");
       }
     },
     onSuccess: () => {
+      console.log("Logout successful, clearing application state");
       queryClient.setQueryData(["/api/user/info"], { user: null });
 
+      // Clear query cache for user-specific data
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      queryClient.removeQueries({ queryKey: ["/api/transactions"] });
+      queryClient.removeQueries({ queryKey: ["/api/payments"] });
+      
+      console.log("Redirecting to login page after logout");
       // Redirect to login page after logout
       window.location.href = '/auth';
 
@@ -237,14 +313,23 @@ function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error) => {
-      console.error("Logout API error:", error);
+      console.error("Logout mutation error:", error);
+      
       toast({
         title: "Logout failed",
         description: "Error contacting server, but you've been logged out locally",
         variant: "destructive",
       });
+      
       // Force logout on frontend even if API call fails
+      console.log("Forcing client-side logout due to API error");
       queryClient.setQueryData(["/api/user/info"], { user: null });
+      
+      // Clear query cache for user-specific data
+      queryClient.removeQueries({ queryKey: ["/api/user"] });
+      queryClient.removeQueries({ queryKey: ["/api/transactions"] });
+      queryClient.removeQueries({ queryKey: ["/api/payments"] });
+      
       window.location.href = '/auth';
     },
   });

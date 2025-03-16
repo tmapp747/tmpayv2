@@ -80,19 +80,40 @@ export async function apiRequest(
  */
 async function refreshAccessToken(): Promise<string> {
   try {
+    console.log('Attempting to refresh authentication session...');
+    
     const res = await fetch('/api/auth/refresh-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Include cookies for session auth
     });
     
+    console.log('Refresh token response status:', res.status);
+    
     if (!res.ok) {
-      console.error('Token refresh failed with status:', res.status);
+      // Log detailed error information
+      let errorDetails = '';
+      try {
+        const errorData = await res.json();
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        // If response isn't JSON, try to get text
+        try {
+          errorDetails = await res.text();
+        } catch (e2) {
+          errorDetails = 'Could not parse error response';
+        }
+      }
+      
+      console.error('Token refresh failed with status:', res.status, errorDetails);
+      
       // Don't throw for expected 401 errors during session validation
       if (res.status === 401) {
+        console.log('User session has expired or is invalid. User needs to login again.');
         return '';
       }
-      throw new Error('Failed to refresh token');
+      
+      throw new Error(`Failed to refresh token: ${res.status} ${errorDetails}`);
     }
     
     const data = await res.json();
@@ -102,12 +123,15 @@ async function refreshAccessToken(): Promise<string> {
     
     return data.accessToken || '';
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    console.error('Token refresh failed with error:', error);
+    
     // Don't redirect on failed refresh during regular API calls
     // Only redirect if user explicitly attempts to access a protected route
     if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+      console.log('Redirecting to login page due to authentication failure');
       window.location.href = '/auth';
     }
+    
     throw error;
   } finally {
     isRefreshing = false;
