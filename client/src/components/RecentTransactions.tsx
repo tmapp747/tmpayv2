@@ -1,9 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { transactionsApi } from "@/lib/api";
 import { Link } from "wouter";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatDate, getStatusColor, getTransactionTypeIcon, getTransactionMethodIcon } from "@/lib/utils";
 import { Transaction } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion } from "framer-motion";
+import { 
+  Clock, 
+  ArrowRightLeft, 
+  ChevronRight, 
+  SearchX, 
+  AlertCircle,
+  Wallet,
+  History,
+  ArrowUpDown
+} from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 const RecentTransactions = () => {
   const { data, isLoading, error } = useQuery({
@@ -12,157 +25,149 @@ const RecentTransactions = () => {
   
   if (error) {
     return (
-      <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30 p-5">
-        <div className="text-center text-gray-300 py-8">
-          Error loading transactions. Please try again later.
-        </div>
-      </div>
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive/60 mb-3" />
+            <h3 className="text-lg font-medium mb-1">Error Loading Transactions</h3>
+            <p className="text-muted-foreground text-sm max-w-md">
+              There was a problem fetching your transaction history. Please try again later.
+            </p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
   
   const renderTransactionRows = () => {
     if (isLoading) {
       return Array(4).fill(0).map((_, i) => (
-        <tr key={i} className={`${i % 2 === 0 ? 'bg-dark/10' : 'bg-transparent'}`}>
-          <td className="px-4 py-4 text-sm">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-dark/20 rounded-full mr-2 animate-pulse"></div>
-              <div className="h-4 w-24 animate-shimmer rounded"></div>
+        <div key={i} className={`flex items-center justify-between p-3 ${i % 2 === 0 ? 'bg-muted/20' : 'bg-transparent'} border-b border-border/10 last:border-0`}>
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center mr-3">
+              <Skeleton className="h-6 w-6 rounded-full" />
             </div>
-          </td>
-          <td className="px-4 py-4 text-sm">
-            <div className="h-6 w-20 bg-dark/20 animate-shimmer rounded-md"></div>
-          </td>
-          <td className="px-4 py-4 text-sm">
-            <div className="h-6 w-28 bg-dark/20 animate-shimmer rounded-md"></div>
-          </td>
-          <td className="px-4 py-4 text-sm">
-            <div className="h-6 w-20 animate-shimmer rounded"></div>
-          </td>
-          <td className="px-4 py-4 text-sm">
-            <div className="h-6 w-20 animate-shimmer rounded-full"></div>
-          </td>
-        </tr>
+            <div>
+              <Skeleton className="h-4 w-24 mb-1" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+          <div>
+            <Skeleton className="h-5 w-16 mb-1" />
+            <Skeleton className="h-3 w-12" />
+          </div>
+        </div>
       ));
     }
     
     if (!data?.transactions?.length) {
       return (
-        <tr>
-          <td colSpan={5} className="px-4 py-8 text-center text-gray-300">
-            No transactions found.
-          </td>
-        </tr>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <SearchX className="h-12 w-12 text-muted-foreground/40 mb-3" />
+          <h3 className="text-base font-medium mb-1">No Transactions Found</h3>
+          <p className="text-muted-foreground text-sm max-w-xs">
+            Your transaction history will appear here once you start using your wallet.
+          </p>
+        </div>
       );
     }
     
-    return data.transactions.slice(0, 4).map((transaction: Transaction, index: number) => (
-      <tr 
-        key={transaction.id} 
-        className={`hover:bg-secondary/5 cursor-pointer transition-all duration-200 transform hover:scale-[1.01] ${index % 2 === 0 ? 'bg-dark/10' : 'bg-transparent'} animate-slideUp`}
-        style={{ animationDelay: `${index * 0.1}s` }}
-      >
-        <td className="px-4 py-4 text-sm text-gray-200">
+    return data.transactions.filter((transaction: Transaction) => {
+      // Make sure we have valid data before displaying
+      return transaction && transaction.id && transaction.type;
+    }).slice(0, 5).map((transaction: Transaction, index: number) => {
+      // Determine type colors and icons
+      const isDeposit = transaction.type.includes('deposit');
+      const isWithdraw = transaction.type.includes('withdraw');
+      const isCasino = transaction.type.includes('casino');
+      
+      const typeColor = isDeposit 
+        ? 'text-green-500 bg-green-500/10' 
+        : isWithdraw 
+          ? 'text-red-500 bg-red-500/10' 
+          : 'text-blue-500 bg-blue-500/10';
+      
+      const methodBg = transaction.method.includes('gcash') 
+        ? 'bg-blue-500/10 text-blue-500' 
+        : transaction.method.includes('crypto') 
+          ? 'bg-yellow-500/10 text-yellow-500' 
+          : 'bg-muted/20 text-muted-foreground';
+      
+      return (
+        <motion.div 
+          key={transaction.id} 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.05 }}
+          className={`flex items-center justify-between p-3 ${index % 2 === 0 ? 'bg-muted/20' : 'bg-transparent'} border-b border-border/10 last:border-0 hover:bg-muted/30 transition-all duration-200`}
+        >
           <div className="flex items-center">
-            <div className="w-8 h-8 flex items-center justify-center rounded-full bg-dark/30 mr-2">
-              {transaction.type.includes('deposit') ? (
-                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
-              ) : transaction.type.includes('withdraw') ? (
-                <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              )}
+            <div className={`w-10 h-10 rounded-full ${typeColor} flex items-center justify-center mr-3`}>
+              {transaction.type.includes('deposit') 
+                ? <Wallet className="h-5 w-5" />
+                : transaction.type.includes('withdraw')
+                  ? <ArrowUpDown className="h-5 w-5" />
+                  : <ArrowRightLeft className="h-5 w-5" />
+              }
             </div>
-            <span>{formatDate(transaction.createdAt)}</span>
+            <div>
+              <p className="font-medium text-sm">
+                {transaction.type.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
+              </p>
+              <p className="text-xs text-muted-foreground flex items-center">
+                <Clock className="h-3 w-3 mr-1 inline" />
+                {formatDate(transaction.createdAt)}
+              </p>
+            </div>
           </div>
-        </td>
-        <td className="px-4 py-4 text-sm text-gray-200 capitalize">
-          <span className="bg-dark/20 px-2 py-1 rounded-md">{transaction.type.replace('_', ' ')}</span>
-        </td>
-        <td className="px-4 py-4 text-sm font-medium">
-          <span className="text-white bg-dark/20 px-2 py-1 rounded-md flex items-center w-fit">
-            {transaction.method.includes('gcash') ? (
-              <span className="w-3 h-3 rounded-full bg-blue-400 mr-1.5"></span>
-            ) : transaction.method.includes('crypto') ? (
-              <span className="w-3 h-3 rounded-full bg-yellow-400 mr-1.5"></span>
-            ) : (
-              <span className="w-3 h-3 rounded-full bg-gray-400 mr-1.5"></span>
-            )}
-            {transaction.method.replace('_', ' ').toUpperCase()}
-          </span>
-        </td>
-        <td className="px-4 py-4 text-sm font-medium">
-          <span className={`${transaction.type === 'withdraw' || transaction.type === 'casino_withdraw' ? 'text-red-400' : 'text-green-400'} text-base`}>
-            {transaction.type === 'withdraw' || transaction.type === 'casino_withdraw'
-              ? '-' + formatCurrency(transaction.amount)
-              : '+' + formatCurrency(transaction.amount)
-            }
-          </span>
-        </td>
-        <td className="px-4 py-4 text-sm">
-          <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getStatusColor(transaction.status)} transition-all duration-300 hover:shadow-md hover:opacity-90`}>
-            {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-          </span>
-        </td>
-      </tr>
-    ));
+          <div className="text-right">
+            <p className={`font-medium ${
+              isWithdraw ? 'text-red-500' : 'text-green-500'
+            }`}>
+              {isWithdraw ? '-' : '+'}{formatCurrency(transaction.amount)}
+            </p>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${getStatusColor(transaction.status)}`}>
+              {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+            </span>
+          </div>
+        </motion.div>
+      );
+    });
   };
 
   return (
-    <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30 hover:shadow-xl hover:shadow-secondary/5 transition-all duration-300 transform hover:-translate-y-1">
-      <div className="p-5">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg text-white font-medium tracking-wide flex items-center">
-            <span className="inline-block w-2 h-8 bg-secondary rounded-r-md mr-2"></span>
+    <Card className="mb-6 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg flex items-center">
+            <History className="h-5 w-5 mr-2 text-primary" />
             Recent Transactions
-          </h2>
+          </CardTitle>
           <Link 
             href="/history" 
-            className="text-secondary text-sm font-medium group flex items-center hover:text-secondary/80 transition-colors duration-200"
+            className="text-primary text-sm group flex items-center hover:underline transition-all duration-200"
           >
             <span>View All</span>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="16" 
-              height="16" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="ml-1 transform group-hover:translate-x-1 transition-transform duration-200"
-            >
-              <path d="M5 12h14"></path>
-              <path d="M12 5l7 7-7 7"></path>
-            </svg>
+            <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
-        
-        <div className="overflow-x-auto rounded-lg bg-gradient-to-b from-dark/30 to-dark/10">
-          <table className="min-w-full divide-y divide-gray-700/50">
-            <thead className="bg-dark/40">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Method</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Amount</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700/30">
-              {renderTransactionRows()}
-            </tbody>
-          </table>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-hidden">
+          {renderTransactionRows()}
         </div>
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter className="py-3 px-4 flex justify-center border-t border-border/10">
+        <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+          <Link href="/history">View Transaction History</Link>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
