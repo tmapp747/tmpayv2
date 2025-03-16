@@ -536,9 +536,85 @@ export class Casino747Api {
    * @param username The username to get the auth token for
    * @private
    */
+  /**
+   * Helper method to get a token for a specific top manager
+   * @param topManager The top manager username
+   * @private
+   */
+  private async getTopManagerToken(topManager: string): Promise<string> {
+    console.log(`Getting token for top manager: ${topManager}`);
+    
+    // 1. Check if we have a cached token for this top manager that's not expired
+    if (this.tokenCacheMap.has(topManager)) {
+      const cachedData = this.tokenCacheMap.get(topManager)!;
+      if (cachedData.expiry > new Date()) {
+        console.log(`Using cached auth token for top manager: ${topManager}`);
+        return cachedData.token;
+      } else {
+        console.log(`Cached token expired for top manager: ${topManager}`);
+        this.tokenCacheMap.delete(topManager);
+      }
+    }
+    
+    // 2. Look for a user in storage with this top manager that has a valid token
+    const user = await storage.getUserByTopManager(topManager);
+    
+    if (user && user.casinoAuthToken && user.casinoAuthTokenExpiry && user.casinoAuthTokenExpiry > new Date()) {
+      console.log(`Using stored auth token for top manager: ${topManager} from user ${user.username}`);
+      // Cache the token
+      this.tokenCacheMap.set(topManager, {
+        token: user.casinoAuthToken,
+        expiry: user.casinoAuthTokenExpiry
+      });
+      return user.casinoAuthToken;
+    }
+    
+    // 3. If no valid token exists, get it from environment secrets
+    console.log(`Getting auth token from environment for top manager: ${topManager}`);
+    
+    // Make the comparison case-insensitive
+    const topManagerLower = topManager.toLowerCase();
+    let token: string | undefined;
+    
+    if (topManagerLower === 'marcthepogi') {
+      token = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf'; // Use the token from your curl example
+    } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
+      token = process.env.CASINO_TOKEN_BOSSMARC747;
+    } else if (topManagerLower === 'teammarc') {
+      token = process.env.CASINO_TOKEN_TEAMMARC;
+    }
+    
+    if (!token) {
+      throw new Error(`No auth token found in environment for manager: ${topManager}`);
+    }
+    
+    const expiryDate = new Date();
+    expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
+    
+    // 4. Store the new token in the database if we have a user
+    if (user) {
+      await storage.updateUserCasinoAuthToken(user.id, token, expiryDate);
+    }
+    
+    // 5. Cache the token
+    this.tokenCacheMap.set(topManager, {
+      token,
+      expiry: expiryDate
+    });
+    
+    return token;
+  }
+
   private async getAuthToken(username: string): Promise<string> {
     try {
-      // 1. First, get the user details to find the top manager
+      // Special handling for "system" user - use Marcthepogi as the default top manager
+      if (username.toLowerCase() === "system") {
+        const defaultTopManager = "Marcthepogi";
+        console.log(`🔑 Using default top manager (${defaultTopManager}) for system user`);
+        return this.getTopManagerToken(defaultTopManager);
+      }
+      
+      // 1. For regular users, get the user details to find the top manager
       const userDetails = await this.getUserDetails(username);
       const topManager = userDetails.topManager;
       
