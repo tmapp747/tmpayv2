@@ -39,29 +39,29 @@ function DepositForm() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="rounded-xl p-6 relative border-2 border-green-900/30"
+      className="rounded-xl p-6 relative border-2 border-blue-900/30"
       style={{
-        background: 'radial-gradient(circle at top right, rgba(20, 83, 45, 0.9), rgba(0, 0, 0, 0.85))',
+        background: 'radial-gradient(circle at top right, rgba(7, 89, 133, 0.9), rgba(12, 74, 110, 0.85))',
         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 5px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
         transform: 'translateZ(0)'
       }}
     >
-      {/* Subtle gradient overlay with green glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-black/10 opacity-80 rounded-xl pointer-events-none"></div>
+      {/* Subtle gradient overlay with cyan glow */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/15 via-blue-500/10 to-navy-900/20 opacity-80 rounded-xl pointer-events-none"></div>
       {/* Extra radiant effect */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
       
       <div className="mb-6 relative">
-        <h3 className="text-xl font-bold mb-2 flex items-center text-green-300" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>
-          <Wallet className="h-5 w-5 mr-2 text-green-400" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))'}} />
+        <h3 className="text-xl font-bold mb-2 flex items-center text-cyan-300" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>
+          <Wallet className="h-5 w-5 mr-2 text-cyan-400" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))'}} />
           Deposit Funds
         </h3>
-        <p className="text-green-300/80 text-sm">Add funds to your wallet securely and instantly.</p>
+        <p className="text-cyan-300/80 text-sm">Add funds to your wallet securely and instantly.</p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
         <div className="space-y-3">
-          <Label htmlFor="amount" className="text-sm font-medium text-green-300" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+          <Label htmlFor="amount" className="text-sm font-medium text-teal-300" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
             Amount (PHP)
           </Label>
           <Input
@@ -70,10 +70,11 @@ function DepositForm() {
             value={amount}
             onChange={handleAmountChange}
             placeholder="Enter amount"
-            className="w-full border-2 border-green-500/30 bg-black/50 text-white"
+            className="w-full border-2 border-teal-500/30 bg-indigo-950/60 text-white"
             style={{
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 10px rgba(74, 222, 128, 0.05)',
-              textShadow: '0 1px 1px rgba(0, 0, 0, 0.3)'
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 10px rgba(45, 212, 191, 0.15)',
+              textShadow: '0 1px 1px rgba(0, 0, 0, 0.3)',
+              background: 'linear-gradient(to right, rgba(30, 41, 59, 0.8), rgba(30, 58, 138, 0.7))'
             }}
           />
           
@@ -84,12 +85,15 @@ function DepositForm() {
                 type="button"
                 variant="outline"
                 onClick={() => handleQuickAmountClick(option.value)}
-                className={`border-2 ${amount === option.value ? 'border-green-500 bg-green-500/20 text-white' : 'border-green-800/30 bg-black/50 text-green-300/90'}`}
+                className={`border-2 ${amount === option.value ? 'border-orange-500 bg-teal-800/30 text-white' : 'border-indigo-800/30 bg-slate-900/70 text-teal-300/90'}`}
                 style={{
                   boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
                   transform: amount === option.value ? 'scale(1.05) translateZ(5px)' : 'translateZ(0)',
                   transition: 'all 0.2s ease',
-                  textShadow: '0 1px 1px rgba(0, 0, 0, 0.3)'
+                  textShadow: '0 1px 1px rgba(0, 0, 0, 0.3)',
+                  background: amount === option.value
+                    ? 'linear-gradient(to right, rgba(19, 78, 74, 0.7), rgba(15, 118, 110, 0.5))'
+                    : 'linear-gradient(to right, rgba(30, 41, 59, 0.6), rgba(49, 46, 129, 0.5))'
                 }}
               >
                 {option.label}
