@@ -3100,11 +3100,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserAccessToken(newUser.id, accessToken);
       await storage.updateUserRefreshToken(newUser.id, refreshToken);
       
-      // Setup session
-      if (req.session) {
-        // Explicitly type the session to include userId
-        (req.session as any).userId = newUser.id;
-        req.session.save();
+      // Setup session using Passport's req.login for proper authentication
+      if (req.login) {
+        req.login(newUser, (err) => {
+          if (err) {
+            console.error("Error during login after registration:", err);
+          } else {
+            console.log("[DEBUG] User session established successfully:", username);
+            
+            // Save session explicitly
+            if (req.session) {
+              req.session.save((saveErr) => {
+                if (saveErr) {
+                  console.error("Error saving session:", saveErr);
+                } else {
+                  console.log("[DEBUG] Session saved successfully");
+                }
+              });
+            }
+          }
+        });
+      } else {
+        console.warn("[DEBUG] req.login not available, session may not be established");
       }
       
       console.log("[DEBUG] User registered successfully with bypass:", username);
