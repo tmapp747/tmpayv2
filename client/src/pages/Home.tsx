@@ -13,6 +13,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/use-theme";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { emeraldTheme } from "@/lib/emerald-theme";
+import { 
+  EmeraldCard, 
+  EmeraldButton, 
+  EmeraldTabs, 
+  EmeraldFeatureHighlight, 
+  EmeraldPanel 
+} from "@/lib/theme-utils";
 
 // Icons
 import { 
