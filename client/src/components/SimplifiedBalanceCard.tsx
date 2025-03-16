@@ -133,10 +133,18 @@ const SimplifiedBalanceCard = () => {
   const username = data?.user?.casinoUsername || 'Unknown';
   const lastUpdated = new Date().toLocaleTimeString();
   
+  // Convert balance to number if it's a string
+  const numericTotalBalance = typeof totalBalance === 'string' ? parseFloat(totalBalance) : totalBalance;
+  const numericPendingBalance = typeof pendingBalance === 'string' ? parseFloat(pendingBalance) : pendingBalance;
+  
   return (
-    <div className="rounded-xl shadow-md overflow-hidden mb-6 border dark:border-gray-700 border-gray-200">
+    <div className="rounded-xl overflow-hidden mb-6 border-2 dark:border-gray-700/80 border-gray-200/90 transform hover:scale-[1.01] transition-all duration-300" 
+         style={{ 
+           boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 15px -6px rgba(0, 0, 0, 0.1), 0 -2px 5px rgba(255, 255, 255, 0.05) inset, 0 2px 3px rgba(0, 0, 0, 0.2)',
+           transform: 'translateZ(0)'
+         }}>
       {/* Main Balance Section */}
-      <div className="p-6">
+      <div className="p-6 relative z-10">
         <div className="flex justify-between items-center mb-4">
           <h2 className="flex items-center text-lg font-medium">
             <Wallet className="h-5 w-5 mr-2" /> Total Balance
@@ -165,23 +173,33 @@ const SimplifiedBalanceCard = () => {
         </div>
         
         <div className="flex space-x-4 pt-2">
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Button 
-              className="flex-1 dark:bg-black bg-slate-800 text-white font-medium py-2 px-4 rounded-lg w-full text-base"
+              className="flex-1 dark:bg-black bg-slate-800 text-white font-medium py-2 px-4 rounded-lg w-full text-base transition-all"
               onClick={handleDeposit}
+              style={{
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 2px rgba(0,0,0,0.3)'
+              }}
             >
-              <Plus className="h-4 w-4 mr-2" /> 
+              <Plus className="h-4 w-4 mr-2 drop-shadow-sm" /> 
               Deposit
             </Button>
           </motion.div>
           
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
             <Button 
               variant="outline"
-              className="flex-1 dark:bg-black/80 bg-slate-700 text-white font-medium py-2 px-4 rounded-lg w-full text-base"
+              className="flex-1 dark:bg-black/80 bg-slate-700 text-white font-medium py-2 px-4 rounded-lg w-full text-base transition-all"
               onClick={handleTransfer}
+              style={{
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 2px rgba(0,0,0,0.3)'
+              }}
             >
-              <ArrowRight className="h-4 w-4 mr-2" /> 
+              <ArrowRight className="h-4 w-4 mr-2 drop-shadow-sm" /> 
               Transfer
             </Button>
           </motion.div>
@@ -190,23 +208,38 @@ const SimplifiedBalanceCard = () => {
       
       {/* Secondary Balances (Available + Pending) */}
       <div className="grid grid-cols-2 gap-1 dark:bg-gray-600 bg-gray-300">
-        <div className="p-3">
-          <div className="text-sm text-gray-100 font-medium mb-1">Available for Play</div>
-          <div className="text-lg font-semibold text-white">
-            {formatCurrency(totalBalance - pendingBalance)}
+        <div className="p-4 relative overflow-hidden"
+             style={{
+               boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.15)'
+             }}>
+          {/* Decorative light effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+          
+          <div className="text-sm text-gray-100 font-medium mb-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Available for Play</div>
+          <div className="text-lg font-semibold text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+            {formatCurrency(numericTotalBalance - numericPendingBalance)}
           </div>
         </div>
-        <div className="p-3">
-          <div className="text-sm text-gray-100 font-medium mb-1">Pending Deposits</div>
-          <div className="text-lg font-semibold text-white">
-            {formatCurrency(pendingBalance)}
+        <div className="p-4 relative overflow-hidden"
+             style={{
+               boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.15)'
+             }}>
+          {/* Decorative light effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+          
+          <div className="text-sm text-gray-100 font-medium mb-1" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Pending Deposits</div>
+          <div className="text-lg font-semibold text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
+            {formatCurrency(numericPendingBalance)}
           </div>
         </div>
       </div>
       
       {/* Casino Balance Section */}
-      <div className="dark:bg-gray-800 bg-gray-200 p-4">
-        <div className="flex justify-between items-center mb-2">
+      <div className="dark:bg-gray-800 bg-gray-200 p-4 relative">
+        {/* Background subtle pattern */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-yellow-500/5 via-amber-500/5 to-orange-500/5 dark:from-yellow-500/10 dark:via-amber-500/10 dark:to-orange-500/10 z-0"></div>
+        
+        <div className="flex justify-between items-center mb-2 relative z-10">
           <h3 className="text-md font-medium flex items-center">
             <Coins className="h-4 w-4 mr-2 text-yellow-400 drop-shadow-[0_0_1px_rgba(0,0,0,0.8)]" /> Casino Balance
           </h3>
@@ -215,32 +248,49 @@ const SimplifiedBalanceCard = () => {
             <Button 
               variant="outline"
               size="sm"
-              className="h-8 px-2 py-0 text-xs rounded-lg dark:bg-gray-700 bg-gray-300"
+              className="h-8 px-2 py-0 text-xs rounded-lg dark:bg-gray-700 bg-gray-300 transition-all"
               onClick={handleSendMessage}
+              style={{
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 1px rgba(0,0,0,0.15)'
+              }}
             >
-              <MessageCircle className="h-3.5 w-3.5 mr-1" /> Message Support
+              <MessageCircle className="h-3.5 w-3.5 mr-1 drop-shadow-sm" /> Message Support
             </Button>
             
             <Button 
               variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 rounded-lg dark:bg-gray-700 bg-gray-300"
+              className="h-8 w-8 p-0 rounded-lg dark:bg-gray-700 bg-gray-300 transition-all"
               onClick={fetchCasinoBalance}
               disabled={isCasinoBalanceLoading}
+              style={{
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                transform: 'translateY(-1px)'
+              }}
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isCasinoBalanceLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isCasinoBalanceLoading ? 'animate-spin' : ''} drop-shadow-sm`} />
             </Button>
           </div>
         </div>
         
-        <div className="bg-gray-700/30 rounded-lg p-3">
+        <div className="bg-gray-700/30 rounded-lg p-3 border-2 dark:border-amber-700/20 border-amber-500/20 backdrop-blur-sm relative z-10 transition-all duration-300"
+             style={{ 
+               boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.05), inset 0 -2px 4px rgba(0, 0, 0, 0.1), 0 2px 3px rgba(0, 0, 0, 0.1)',
+               transform: 'translateZ(3px)'
+             }}>
           <div className="flex justify-between items-center">
-            <div>Username: {username}</div>
-            <div className="text-xs text-gray-400">Last Updated: {lastUpdated}</div>
+            <div className="dark:text-amber-200/90 text-amber-900/90 font-medium" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.4)' }}>
+              Username: {username}
+            </div>
+            <div className="text-xs dark:text-amber-300/60 text-amber-700/60" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.2)' }}>
+              Last Updated: {lastUpdated}
+            </div>
           </div>
           
           <div className="mt-1">
-            <span className="text-xl font-bold flex items-end">
+            <span className="text-xl font-bold flex items-end dark:text-amber-300 text-amber-800" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.6)' }}>
               {isCasinoBalanceLoading ? (
                 <div className="animate-pulse h-6 w-16 bg-gray-500 rounded"></div>
               ) : (
