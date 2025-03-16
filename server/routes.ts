@@ -258,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
   
   // The list of allowed top managers
-  const ALLOWED_TOP_MANAGERS = ['alpha1', 'omega2', 'sigma3'];
+  const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
 
   // Helper function to generate a unique access token
   function generateAccessToken(): string {
@@ -3061,8 +3061,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mockCasinoDetails = {
         casinoUsername: username,
         casinoClientId: Math.floor(1000000 + Math.random() * 9000000),
-        topManager: "TestManager",
-        immediateManager: "TestManager",
+        topManager: "Marcthepogi",
+        immediateManager: "bossmarc747",
         casinoUserType: "player"
       };
       
@@ -3089,7 +3089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         casinoUserType: mockCasinoDetails.casinoUserType,
         balances: { PHP: "0", PHPT: "0", USDT: "0" }, // Using proper field name
         preferredCurrency: "PHP",
-        allowedTopManagers: ["TestManager"]
+        allowedTopManagers: ["Marcthepogi", "bossmarc747", "teammarc"]
       });
       
       // Generate tokens
