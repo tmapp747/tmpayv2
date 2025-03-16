@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import BalanceCard from "@/components/BalanceCard";
+import SimplifiedBalanceCard from "@/components/SimplifiedBalanceCard";
 import QuickActions from "@/components/QuickActions";
 import RecentTransactions from "@/components/RecentTransactions";
 import CasinoApiTester from "@/components/CasinoApiTester";

@@ -10,18 +10,12 @@ import { motion } from "framer-motion";
 import { User } from "@/lib/types";
 
 /**
- * Simplified Balance Card component that closely matches the screenshots
- * with support for both light and dark themes
+ * Radiant Balance Card component with vibrant colors and appealing gradients
+ * Designed to match the screenshots while enhancing visual appeal
  */
-const SimplifiedBalanceCard = () => {
+const RadiantBalanceCard = () => {
   interface UserInfoResponse {
     user: User;
-  }
-  
-  interface CasinoBalanceResponse {
-    success: boolean;
-    balance: number;
-    currency: string;
   }
   
   const { data, isLoading, refetch } = useQuery<UserInfoResponse>({
@@ -31,7 +25,6 @@ const SimplifiedBalanceCard = () => {
   // State for casino balance
   const [casinoBalance, setCasinoBalance] = useState<number | null>(null);
   const [isCasinoBalanceLoading, setIsCasinoBalanceLoading] = useState(false);
-  const [previousBalance, setPreviousBalance] = useState(0);
   
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -133,21 +126,24 @@ const SimplifiedBalanceCard = () => {
   const username = data?.user?.casinoUsername || 'Unknown';
   const lastUpdated = new Date().toLocaleTimeString();
   
+  // Convert balance to number if it's a string
+  const numericTotalBalance = typeof totalBalance === 'string' ? parseFloat(totalBalance) : totalBalance;
+  const numericPendingBalance = typeof pendingBalance === 'string' ? parseFloat(pendingBalance) : pendingBalance;
+  
   return (
-    <div className="rounded-xl shadow-md overflow-hidden mb-6 border dark:border-gray-700 border-gray-200">
-      {/* Main Balance Section */}
-      <div className="p-6">
+    <div className="rounded-xl shadow-lg overflow-hidden mb-6 border dark:border-gray-700/30 border-gray-200/70 hover:shadow-xl transition-all duration-300">
+      {/* Main Balance Section with Gradient Background */}
+      <div className="bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 from-white to-gray-50 p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="flex items-center text-lg font-medium">
-            <Wallet className="h-5 w-5 mr-2" /> Total Balance
+          <h2 className="flex items-center text-lg font-medium dark:text-white text-gray-800">
+            <Wallet className="h-5 w-5 mr-2 text-primary" /> Total Balance
           </h2>
           
           <Button 
             variant="outline" 
             size="sm"
-            className="px-3 py-1 rounded-full dark:bg-black dark:text-white bg-slate-800 text-white hover:bg-black/80"
+            className="px-3 py-1 rounded-full bg-black text-white hover:bg-black/80 transition-colors"
             onClick={handleRefresh}
-            disabled={isLoading}
           >
             <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} /> 
             Refresh
@@ -155,9 +151,9 @@ const SimplifiedBalanceCard = () => {
         </div>
         
         <div className="mb-4">
-          <div className="text-4xl font-bold tracking-tight">
+          <div className="text-4xl font-bold tracking-tight dark:text-white text-gray-800">
             {isLoading ? (
-              <div className="animate-pulse h-10 w-24 bg-gray-300 dark:bg-gray-700 rounded"></div>
+              <div className="animate-pulse h-10 w-32 bg-gray-300 dark:bg-gray-700 rounded"></div>
             ) : (
               formatCurrency(totalBalance)
             )}
@@ -165,9 +161,10 @@ const SimplifiedBalanceCard = () => {
         </div>
         
         <div className="flex space-x-4 pt-2">
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          {/* Green Deposit Button */}
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
             <Button 
-              className="flex-1 dark:bg-black bg-slate-800 text-white font-medium py-2 px-4 rounded-lg w-full text-base"
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2 px-4 rounded-lg text-base shadow-md hover:shadow-lg transition-all"
               onClick={handleDeposit}
             >
               <Plus className="h-4 w-4 mr-2" /> 
@@ -175,10 +172,10 @@ const SimplifiedBalanceCard = () => {
             </Button>
           </motion.div>
           
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          {/* Blue Transfer Button */}
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
             <Button 
-              variant="outline"
-              className="flex-1 dark:bg-black/80 bg-slate-700 text-white font-medium py-2 px-4 rounded-lg w-full text-base"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg text-base shadow-md hover:shadow-lg transition-all"
               onClick={handleTransfer}
             >
               <ArrowRight className="h-4 w-4 mr-2" /> 
@@ -188,43 +185,43 @@ const SimplifiedBalanceCard = () => {
         </div>
       </div>
       
-      {/* Secondary Balances (Available + Pending) */}
-      <div className="grid grid-cols-2 gap-1 dark:bg-gray-600 bg-gray-300">
-        <div className="p-3">
+      {/* Secondary Balances (Available + Pending) with Gradient Background */}
+      <div className="grid grid-cols-2 gap-px bg-gray-500/30">
+        <div className="p-3 bg-gradient-to-b dark:from-gray-600 dark:to-gray-700 from-gray-200 to-gray-300">
           <div className="text-sm text-gray-100 font-medium mb-1">Available for Play</div>
           <div className="text-lg font-semibold text-white">
-            {formatCurrency(totalBalance - pendingBalance)}
+            {formatCurrency(numericTotalBalance - numericPendingBalance)}
           </div>
         </div>
-        <div className="p-3">
+        <div className="p-3 bg-gradient-to-b dark:from-gray-600 dark:to-gray-700 from-gray-200 to-gray-300">
           <div className="text-sm text-gray-100 font-medium mb-1">Pending Deposits</div>
           <div className="text-lg font-semibold text-white">
-            {formatCurrency(pendingBalance)}
+            {formatCurrency(numericPendingBalance)}
           </div>
         </div>
       </div>
       
-      {/* Casino Balance Section */}
-      <div className="dark:bg-gray-800 bg-gray-200 p-4">
+      {/* Casino Balance Section with Gradient */}
+      <div className="bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 from-white to-gray-50 p-4">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-md font-medium flex items-center">
+          <h3 className="text-md font-medium flex items-center dark:text-white text-gray-800">
             <Coins className="h-4 w-4 mr-2 text-yellow-400" /> Casino Balance
           </h3>
           
           <div className="flex gap-2">
+            {/* Support Message Button */}
             <Button 
-              variant="outline"
               size="sm"
-              className="h-8 px-2 py-0 text-xs rounded-lg dark:bg-gray-700 bg-gray-300"
+              className="h-8 px-2 py-0 text-xs rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white"
               onClick={handleSendMessage}
             >
               <MessageCircle className="h-3.5 w-3.5 mr-1" /> Message Support
             </Button>
             
+            {/* Refresh Button */}
             <Button 
-              variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 rounded-lg dark:bg-gray-700 bg-gray-300"
+              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white"
               onClick={fetchCasinoBalance}
               disabled={isCasinoBalanceLoading}
             >
@@ -233,16 +230,16 @@ const SimplifiedBalanceCard = () => {
           </div>
         </div>
         
-        <div className="bg-gray-700/30 rounded-lg p-3">
+        <div className="bg-gradient-to-br dark:from-gray-700/50 dark:to-gray-800/50 from-gray-200/50 to-gray-300/50 rounded-lg p-3">
           <div className="flex justify-between items-center">
-            <div>Username: {username}</div>
-            <div className="text-xs text-gray-400">Last Updated: {lastUpdated}</div>
+            <div className="dark:text-gray-300 text-gray-700">Username: {username}</div>
+            <div className="text-xs dark:text-gray-400 text-gray-500">Last Updated: {lastUpdated}</div>
           </div>
           
           <div className="mt-1">
-            <span className="text-xl font-bold flex items-end">
+            <span className="text-xl font-bold flex items-end dark:text-white text-gray-800">
               {isCasinoBalanceLoading ? (
-                <div className="animate-pulse h-6 w-16 bg-gray-500 rounded"></div>
+                <div className="animate-pulse h-6 w-16 bg-gray-500 dark:bg-gray-600 rounded"></div>
               ) : (
                 formatCurrency(casinoBalance || 0)
               )}
@@ -254,4 +251,4 @@ const SimplifiedBalanceCard = () => {
   );
 };
 
-export default SimplifiedBalanceCard;
+export default RadiantBalanceCard;

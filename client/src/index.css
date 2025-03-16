@@ -4,42 +4,60 @@
 
 /* Base styles for both light and dark modes */
 :root {
-  --color-lime: #AAFF00;
+  --color-lime: #BAFF00;
   --app-height: 100%;
   
-  /* Light mode variables */
-  --light-background: #F5F7FA;
+  /* Light mode variables - vibrant, attractive design */
+  --light-background: #F0F2F5;
   --light-foreground: #1A1A1A;
   --light-card: #FFFFFF;
   --light-card-foreground: #1A1A1A;
-  --light-primary: hsl(223, 68%, 28%);
+  --light-primary: hsl(142, 76%, 36%);
   --light-primary-foreground: #FFFFFF;
-  --light-secondary: #D4D4D8;
+  --light-secondary: #E5E7EB;
   --light-secondary-foreground: #18181B;
   --light-muted: #F4F4F5;
-  --light-muted-foreground: #71717A;
-  --light-accent: #F5F5F5;
+  --light-muted-foreground: #6B7280;
+  --light-accent: #F0F0F0;
   --light-accent-foreground: #18181B;
-  --light-border: #E4E4E7;
-  --light-input: #E4E4E7;
-  --light-ring: hsl(223, 68%, 28%);
+  --light-border: #E2E8F0;
+  --light-input: #F5F5F5;
+  --light-ring: hsl(142, 76%, 36%);
+  --light-section: #686F7A;
+  --light-section-foreground: #FFFFFF;
+  --light-button-green: #10b981;
+  --light-button-blue: #3b82f6;
+  --light-button-red: #ef4444;
+  --light-button-foreground: #FFFFFF;
+  --light-card-gradient-1: linear-gradient(135deg, #c7d2fe, #e0e7ff);
+  --light-card-gradient-2: linear-gradient(135deg, #bfdbfe, #dbeafe);
+  --light-card-gradient-3: linear-gradient(135deg, #a7f3d0, #d1fae5);
   
-  /* Dark mode variables */
-  --dark-background: #0A0A0A;
-  --dark-foreground: #FAFAFA;
-  --dark-card: #1A1A1A;
-  --dark-card-foreground: #FAFAFA;
-  --dark-primary: hsl(223, 68%, 28%);
+  /* Dark mode variables - vibrant, attractive design */
+  --dark-background: #0f172a;
+  --dark-foreground: #F9FAFB;
+  --dark-card: #1E293B;
+  --dark-card-foreground: #F9FAFB;
+  --dark-primary: hsl(142, 76%, 36%);
   --dark-primary-foreground: #FFFFFF;
-  --dark-secondary: #27272A;
-  --dark-secondary-foreground: #FAFAFA;
-  --dark-muted: #18181B;
-  --dark-muted-foreground: #A1A1AA;
-  --dark-accent: #2A2A2A;
-  --dark-accent-foreground: #FAFAFA;
-  --dark-border: #27272A;
-  --dark-input: #27272A;
-  --dark-ring: hsl(223, 68%, 28%);
+  --dark-secondary: #1F2937;
+  --dark-secondary-foreground: #F3F4F6;
+  --dark-muted: #1E293B;
+  --dark-muted-foreground: #9CA3AF;
+  --dark-accent: #212B3B;
+  --dark-accent-foreground: #F3F4F6;
+  --dark-border: #2D3748;
+  --dark-input: #1E293B;
+  --dark-ring: hsl(142, 76%, 36%);
+  --dark-section: #374151;
+  --dark-section-foreground: #F3F4F6;
+  --dark-button-green: #059669;
+  --dark-button-blue: #2563eb;
+  --dark-button-red: #dc2626;
+  --dark-button-foreground: #FFFFFF;
+  --dark-card-gradient-1: linear-gradient(135deg, #1e3a8a, #1e40af);
+  --dark-card-gradient-2: linear-gradient(135deg, #155e75, #0e7490);
+  --dark-card-gradient-3: linear-gradient(135deg, #065f46, #047857);
 }
 
 /* Light mode theme */
