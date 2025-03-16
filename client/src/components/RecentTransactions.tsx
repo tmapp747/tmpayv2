@@ -228,32 +228,35 @@ const RecentTransactions = () => {
   };
 
   return (
-    <Card className="mb-6 overflow-hidden border-2 border-secondary/20 relative" 
-         style={{
-           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 5px 10px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+    <Card className="mb-6 overflow-hidden border-2 border-emerald-700/30 relative" 
+         style={{ 
+           background: 'linear-gradient(145deg, rgba(5, 45, 35, 0.9), rgba(4, 50, 40, 0.8))',
+           boxShadow: '0 10px 25px rgba(16, 185, 129, 0.15), 0 10px 10px rgba(0, 0, 0, 0.1), 0 0 30px rgba(16, 185, 129, 0.1)',
            transform: 'translateZ(0)',
            transition: 'all 0.3s ease',
          }}>
-      {/* Subtle glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 opacity-50 pointer-events-none"></div>
+      {/* Enhanced background glow effects */}
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl"></div>
+      <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-400/5 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
       
       <CardHeader className="pb-2 relative">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg flex items-center" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'}}>
-            <History className="h-5 w-5 mr-2 text-primary" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3))'}} />
+          <CardTitle className="text-lg flex items-center text-emerald-200" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>
+            <History className="h-5 w-5 mr-2 text-yellow-400" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))'}} />
             Recent Transactions
           </CardTitle>
           <Link 
             href="/history" 
-            className="text-primary text-sm group flex items-center transition-all duration-200 px-3 py-1 rounded-full bg-primary/5 border border-primary/20"
+            className="text-emerald-300 hover:text-yellow-300 text-sm group flex items-center transition-all duration-200 px-3 py-1 rounded-full bg-emerald-800/50 border border-emerald-600/30"
             style={{
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-              textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+              textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
             }}
           >
             <span>View All</span>
             <ChevronRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" 
-                         style={{filter: 'drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2))'}} />
+                         style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4))'}} />
           </Link>
         </div>
       </CardHeader>
@@ -264,17 +267,20 @@ const RecentTransactions = () => {
         </div>
       </CardContent>
       
-      <CardFooter className="py-3 px-4 flex justify-center border-t border-border/20 relative"
+      <CardFooter className="py-3 px-4 flex justify-center border-t border-emerald-800/50 relative"
                  style={{
                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
                  }}>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto relative border-2 border-secondary/30" 
-                asChild
-                style={{
-                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2), 0 2px 5px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-                  transform: 'translateZ(0)',
-                  textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
-                }}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full sm:w-auto relative bg-emerald-800/50 border-emerald-600/30 text-emerald-100 hover:bg-emerald-700/60 hover:text-yellow-300" 
+          asChild
+          style={{
+            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 15px rgba(16, 185, 129, 0.1)',
+            transform: 'translateZ(0)',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
+          }}>
           <Link href="/history">View Transaction History</Link>
         </Button>
       </CardFooter>
