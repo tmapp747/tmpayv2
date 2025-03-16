@@ -4,6 +4,8 @@ import DesktopSidebar from "./DesktopSidebar";
 import { BellIcon, UserIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
+import { useTheme } from "@/hooks/use-theme";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +13,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [location] = useLocation();
+  const { theme } = useTheme();
   
   // Get the current page title based on location
   const getPageTitle = () => {
@@ -29,12 +32,18 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   return (
-    <div className="mobile-container flex min-h-screen pb-16 lg:pb-0 bg-dark text-neutral-100 font-inter mobile-safe-area" style={{ height: 'var(--app-height, 100vh)' }}>
+    <div className={cn(
+      "mobile-container flex min-h-screen pb-16 lg:pb-0 font-inter mobile-safe-area",
+      "text-foreground bg-background transition-colors duration-300",
+      theme === "dark" ? "dark" : "light"
+    )} 
+    style={{ height: 'var(--app-height, 100vh)' }}
+    data-theme={theme}>
       {/* Desktop Sidebar */}
       <DesktopSidebar />
       
       {/* Main Content */}
-      <div className="flex-1 bg-dark flex flex-col">
+      <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className={cn(
           "bg-primary p-4 lg:py-4 lg:px-6 border-b border-secondary/30",
@@ -57,6 +66,7 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
           
           <div className="flex items-center space-x-3">
+            <ThemeToggle />
             <div className="relative">
               <button className="p-2 rounded-full text-gray-300 hover:text-white hover:bg-primary/80 mobile-clickable">
                 <BellIcon className="h-5 w-5" />

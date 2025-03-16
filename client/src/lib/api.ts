@@ -39,6 +39,41 @@ export const userApi = {
   getUserInfo: async (): Promise<GetUserInfoResponse> => {
     const res = await apiRequest("GET", API_ENDPOINTS.USER.INFO);
     return await res.json();
+  },
+  
+  // User preferences
+  getPreference: async (key: string): Promise<{
+    success: boolean;
+    exists: boolean;
+    value?: any;
+    message?: string;
+  }> => {
+    try {
+      const res = await apiRequest("GET", API_ENDPOINTS.USER.PREFERENCES.GET(key));
+      return await res.json();
+    } catch (error) {
+      return { success: false, exists: false, message: "Failed to get preference" };
+    }
+  },
+  
+  updatePreference: async (key: string, value: any): Promise<{
+    success: boolean;
+    message?: string;
+  }> => {
+    try {
+      const res = await apiRequest("POST", API_ENDPOINTS.USER.PREFERENCES.SET(key), { value });
+      return await res.json();
+    } catch (error) {
+      return { success: false, message: "Failed to update preference" };
+    }
+  },
+  
+  updatePreferredCurrency: async (currency: string): Promise<{
+    success: boolean;
+    message?: string;
+  }> => {
+    const res = await apiRequest("POST", API_ENDPOINTS.USER.PREFERRED_CURRENCY, { currency });
+    return await res.json();
   }
 };
 

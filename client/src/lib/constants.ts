@@ -8,6 +8,11 @@ export const API_ENDPOINTS = {
   },
   USER: {
     INFO: '/api/user/info',
+    PREFERENCES: {
+      GET: (key: string) => `/api/user/preferences/${key}`,
+      SET: (key: string) => `/api/user/preferences/${key}`,
+    },
+    PREFERRED_CURRENCY: '/api/user/preferred-currency',
   },
   TRANSACTIONS: {
     LIST: '/api/transactions',

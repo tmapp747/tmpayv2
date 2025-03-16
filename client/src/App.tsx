@@ -18,6 +18,7 @@ import AdminAuth from "@/pages/admin/admin-auth";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
 import EnhancedAdminDashboard from "@/pages/admin/enhanced-admin-dashboard";
 import VideoIntro from "@/components/VideoIntro";
+import { ThemeProvider } from "@/hooks/use-theme";
 
 function Router() {
   return (
@@ -59,11 +60,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <VideoIntro />
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider defaultTheme="dark">
+        <AuthProvider>
+          <VideoIntro />
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
