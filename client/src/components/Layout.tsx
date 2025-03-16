@@ -85,11 +85,11 @@ const Layout = ({ children }: LayoutProps) => {
             <div className="w-10 h-10 overflow-hidden">
               <svg viewBox="0 0 200 200" className="h-full w-full">
                 <circle cx="100" cy="100" r="90" fill="#1a2b47" />
-                <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#b78628" fontSize="60" fontWeight="bold">747</text>
+                <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#b78628" stroke="#000000" strokeWidth="1.5" fontSize="60" fontWeight="bold">747</text>
               </svg>
             </div>
             <h1 className="text-xl font-bold ml-2 text-white font-montserrat truncate">
-              747 <span className="text-secondary">E-Wallet</span>
+              747 <span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>E-Wallet</span>
             </h1>
           </div>
           

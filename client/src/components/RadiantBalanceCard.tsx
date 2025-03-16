@@ -216,7 +216,7 @@ const RadiantBalanceCard = () => {
         
         <div className="flex justify-between items-center mb-2 relative z-10">
           <h3 className="text-md font-semibold flex items-center dark:text-white text-gray-800">
-            <Coins className="h-4 w-4 mr-2 text-yellow-500" /> Casino Balance
+            <Coins className="h-4 w-4 mr-2 text-yellow-500 drop-shadow-[0_0_1px_rgba(0,0,0,0.8)]" /> Casino Balance
           </h3>
           
           <div className="flex gap-2">
@@ -243,12 +243,12 @@ const RadiantBalanceCard = () => {
         
         <div className="bg-gradient-to-br dark:from-amber-900/30 dark:to-amber-800/20 from-amber-100/50 to-amber-200/30 rounded-lg p-3 border border-amber-500/20 shadow-inner backdrop-blur-sm relative z-10">
           <div className="flex justify-between items-center">
-            <div className="dark:text-amber-200 text-amber-900 font-medium">Username: {username}</div>
-            <div className="text-xs dark:text-amber-300/70 text-amber-700/70">Last Updated: {lastUpdated}</div>
+            <div className="dark:text-amber-200 text-amber-900 font-medium" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.5)' }}>Username: {username}</div>
+            <div className="text-xs dark:text-amber-300/70 text-amber-700/70" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.5)' }}>Last Updated: {lastUpdated}</div>
           </div>
           
           <div className="mt-1">
-            <span className="text-xl font-bold flex items-end dark:text-amber-300 text-amber-800">
+            <span className="text-xl font-bold flex items-end dark:text-amber-300 text-amber-800" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.8)' }}>
               {isCasinoBalanceLoading ? (
                 <div className="animate-pulse h-6 w-16 bg-amber-700/30 dark:bg-amber-600/20 rounded"></div>
               ) : (

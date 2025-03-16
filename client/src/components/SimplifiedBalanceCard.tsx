@@ -208,7 +208,7 @@ const SimplifiedBalanceCard = () => {
       <div className="dark:bg-gray-800 bg-gray-200 p-4">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-md font-medium flex items-center">
-            <Coins className="h-4 w-4 mr-2 text-yellow-400" /> Casino Balance
+            <Coins className="h-4 w-4 mr-2 text-yellow-400 drop-shadow-[0_0_1px_rgba(0,0,0,0.8)]" /> Casino Balance
           </h3>
           
           <div className="flex gap-2">
