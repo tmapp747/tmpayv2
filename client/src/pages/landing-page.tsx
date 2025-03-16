@@ -26,18 +26,23 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 w-full h-16 z-40 backdrop-blur-md border-b border-border/30 flex items-center px-4 md:px-6 justify-between bg-card/80 text-card-foreground">
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 overflow-hidden">
-            <svg viewBox="0 0 200 200" className="h-full w-full">
-              <circle cx="100" cy="100" r="90" fill="#1a2b47" />
-              <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="#b78628" fontSize="60" fontWeight="bold" className="jackpot-text">747</text>
-            </svg>
+          <div className="w-10 h-10 overflow-hidden flex items-center justify-center">
+            <img src={teamMarcLogo} alt="TeamMARC" className="h-8 w-auto object-contain" />
           </div>
           <span className="font-medium text-lg">TeamMARC</span>
         </div>
         <div className="flex items-center space-x-3">
           <ThemeToggle />
           <Link href="/auth">
-            <Button size="sm" variant="outline" className="hover:border-blue-500 hover:bg-blue-500/10">
+            <Button 
+              size="sm" 
+              style={{
+                background: "linear-gradient(to bottom, #3b82f6, #2563eb)",
+                borderColor: "#3b82f6",
+                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
+              }}
+              className="text-white border hover:border-blue-400"
+            >
               Sign In
             </Button>
           </Link>
@@ -47,7 +52,34 @@ export default function LandingPage() {
       {/* Simple hero section with only logo and buttons */}
       <main className="flex-1 flex flex-col items-center justify-center relative">
         {/* Background with overlay */}
-        <div className="absolute inset-0 overflow-hidden z-0 bg-gradient-to-b from-slate-900 to-slate-800" />
+        <div className="absolute inset-0 overflow-hidden z-0 bg-gradient-to-b from-slate-900 to-slate-800">
+          {/* Animated background orbs */}
+          <motion.div 
+            className="absolute top-1/4 -right-28 w-96 h-96 rounded-full bg-blue-500/10 blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.2, 0.3, 0.2]
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity,
+              repeatType: "reverse"
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-1/4 -left-28 w-96 h-96 rounded-full bg-green-500/10 blur-3xl"
+            animate={{
+              scale: [1, 1.3, 1],
+              opacity: [0.2, 0.3, 0.2]
+            }}
+            transition={{
+              duration: 12,
+              repeat: Infinity,
+              repeatType: "reverse",
+              delay: 2
+            }}
+          />
+        </div>
         
         {/* Hero content with logo animation */}
         <div className="relative z-20 flex flex-col items-center px-4 w-full">
@@ -62,43 +94,34 @@ export default function LandingPage() {
             }}
             className="flex flex-col items-center justify-center"
           >
-            {/* TeamMARC Logo with animation */}
+            {/* TeamMARC Logo without animation */}
             <motion.div 
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5 }}
               className="mb-10 relative"
-              whileHover={{ scale: 1.05 }}
             >
-              <motion.img 
+              <img 
                 src={teamMarcLogo} 
                 alt="TeamMARC Logo" 
-                className="w-64 h-auto md:w-80 lg:w-96 object-contain"
-                animate={{ 
-                  boxShadow: ["0 0 0px rgba(59, 130, 246, 0)", "0 0 30px rgba(59, 130, 246, 0.5)", "0 0 0px rgba(59, 130, 246, 0)"]
-                }}
-                transition={{
-                  duration: 3,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                }}
+                className="w-64 h-auto md:w-80 lg:w-96 object-contain shadow-lg"
               />
-              <motion.div 
-                className="absolute inset-0"
-                animate={{
-                  background: [
-                    "radial-gradient(circle, rgba(22, 163, 74, 0) 0%, rgba(22, 163, 74, 0) 100%)",
-                    "radial-gradient(circle, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0) 70%)",
-                    "radial-gradient(circle, rgba(22, 163, 74, 0) 0%, rgba(22, 163, 74, 0) 100%)"
-                  ]
-                }}
-                transition={{
-                  duration: 4,
-                  ease: "easeInOut",
-                  repeat: Infinity,
-                  repeatType: "reverse"
-                }}
-              />
+            </motion.div>
+            
+            {/* Brief content about the app */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="max-w-lg text-center mb-8"
+            >
+              <h2 className="text-white text-lg md:text-xl mb-3">
+                Secure Financial Platform for Casino Operations
+              </h2>
+              <p className="text-gray-300 text-sm md:text-base">
+                Manage your casino transactions with our secure e-wallet system. 
+                Integrated with GCash for seamless deposits and withdrawals.
+              </p>
             </motion.div>
             
             {/* Action buttons */}
@@ -111,7 +134,11 @@ export default function LandingPage() {
               <Link href="/auth">
                 <Button 
                   size="lg" 
-                  className="text-base shadow-lg bg-green-600 hover:bg-green-700 text-white pulse-button w-full md:w-auto min-w-[150px]"
+                  className="text-base shadow-lg bg-green-600 hover:bg-green-700 text-white w-full md:w-auto min-w-[150px] border-2 border-green-500"
+                  style={{
+                    background: "linear-gradient(to bottom, #22c55e, #16a34a)",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                  }}
                 >
                   Login <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
@@ -120,10 +147,29 @@ export default function LandingPage() {
               <Link href="/auth">
                 <Button 
                   size="lg" 
-                  className="text-base shadow-lg bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto min-w-[150px] mt-3 md:mt-0"
+                  className="text-base shadow-lg bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto min-w-[150px] mt-3 md:mt-0 border-2 border-blue-500"
+                  style={{
+                    background: "linear-gradient(to bottom, #3b82f6, #2563eb)",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                  }}
                 >
                   Sign Up
                 </Button>
+              </Link>
+            </motion.div>
+            
+            {/* Admin sign-in link */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9, duration: 0.6 }}
+              className="mt-6"
+            >
+              <Link 
+                href="/admin/auth" 
+                className="text-sm px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-blue-300 hover:text-blue-200 hover:bg-gray-700/60 transition-all duration-200"
+              >
+                Admin Sign In
               </Link>
             </motion.div>
           </motion.div>
