@@ -131,7 +131,10 @@ const RadiantBalanceCard = () => {
   const numericPendingBalance = typeof pendingBalance === 'string' ? parseFloat(pendingBalance) : pendingBalance;
   
   return (
-    <div className="rounded-xl shadow-lg overflow-hidden mb-6 border dark:border-gray-700/30 border-gray-200/70 hover:shadow-xl transition-all duration-300 backdrop-blur-sm relative">
+    <div className="rounded-xl overflow-hidden mb-6 border-2 dark:border-gray-700/50 border-gray-200/80 hover:shadow-2xl transition-all duration-300 backdrop-blur-sm relative transform hover:scale-[1.01]" 
+         style={{ 
+           boxShadow: '0 15px 30px -8px rgba(0, 0, 0, 0.15), 0 10px 20px -5px rgba(0, 0, 0, 0.1), 0 -2px 5px rgba(255, 255, 255, 0.05) inset, 0 2px 3px rgba(0, 0, 0, 0.2)',
+         }}>
       {/* Background elements */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-emerald-500/5 dark:from-blue-500/10 dark:via-purple-500/10 dark:to-emerald-500/10 z-0"></div>
       
@@ -168,23 +171,33 @@ const RadiantBalanceCard = () => {
         
         <div className="flex space-x-4 pt-2">
           {/* Green Deposit Button */}
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="flex-1">
             <Button 
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2 px-4 rounded-lg text-base shadow-md hover:shadow-lg transition-all"
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium py-2 px-4 rounded-lg text-base transition-all"
               onClick={handleDeposit}
+              style={{
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 2px rgba(0,0,0,0.2)'
+              }}
             >
-              <Plus className="h-4 w-4 mr-2" /> 
+              <Plus className="h-4 w-4 mr-2 drop-shadow-sm" /> 
               Deposit
             </Button>
           </motion.div>
           
           {/* Blue Transfer Button */}
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="flex-1">
             <Button 
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg text-base shadow-md hover:shadow-lg transition-all"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg text-base transition-all"
               onClick={handleTransfer}
+              style={{
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 2px rgba(0,0,0,0.2)'
+              }}
             >
-              <ArrowRight className="h-4 w-4 mr-2" /> 
+              <ArrowRight className="h-4 w-4 mr-2 drop-shadow-sm" /> 
               Transfer
             </Button>
           </motion.div>
@@ -193,16 +206,28 @@ const RadiantBalanceCard = () => {
       
       {/* Secondary Balances (Available + Pending) with Gradient Background */}
       <div className="grid grid-cols-2 gap-px bg-gray-500/30">
-        <div className="p-3 bg-gradient-to-br from-green-600/90 to-green-700/90 dark:from-green-600/90 dark:to-green-800/90">
-          <div className="text-sm text-white font-medium mb-1 opacity-90">Available for Play</div>
-          <div className="text-lg font-semibold text-white flex items-center">
+        <div className="p-4 bg-gradient-to-br from-green-600/90 to-green-700/90 dark:from-green-600/90 dark:to-green-800/90 relative overflow-hidden"
+             style={{
+               boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.15)'
+             }}>
+          {/* Decorative light effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+          
+          <div className="text-sm text-white font-medium mb-1 opacity-90" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Available for Play</div>
+          <div className="text-lg font-semibold text-white flex items-center" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
             {formatCurrency(numericTotalBalance - numericPendingBalance)}
             <span className="ml-1 text-xs text-white/70">Ready</span>
           </div>
         </div>
-        <div className="p-3 bg-gradient-to-br from-blue-600/90 to-blue-700/90 dark:from-blue-600/90 dark:to-blue-800/90">
-          <div className="text-sm text-white font-medium mb-1 opacity-90">Pending Deposits</div>
-          <div className="text-lg font-semibold text-white flex items-center">
+        <div className="p-4 bg-gradient-to-br from-blue-600/90 to-blue-700/90 dark:from-blue-600/90 dark:to-blue-800/90 relative overflow-hidden"
+             style={{
+               boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.15), inset 0 -1px 0 rgba(0, 0, 0, 0.15)'
+             }}>
+          {/* Decorative light effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-white/20 to-transparent"></div>
+          
+          <div className="text-sm text-white font-medium mb-1 opacity-90" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Pending Deposits</div>
+          <div className="text-lg font-semibold text-white flex items-center" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}>
             {formatCurrency(numericPendingBalance)}
             <span className="ml-1 text-xs text-white/70">Processing</span>
           </div>
@@ -223,25 +248,38 @@ const RadiantBalanceCard = () => {
             {/* Support Message Button */}
             <Button 
               size="sm"
-              className="h-8 px-2 py-0 text-xs rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-sm"
+              className="h-8 px-2 py-0 text-xs rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white transition-all"
               onClick={handleSendMessage}
+              style={{
+                boxShadow: '0 3px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                transform: 'translateY(-1px)',
+                textShadow: '0px 1px 1px rgba(0,0,0,0.2)'
+              }}
             >
-              <MessageCircle className="h-3.5 w-3.5 mr-1" /> Message Support
+              <MessageCircle className="h-3.5 w-3.5 mr-1 drop-shadow-sm" /> Message Support
             </Button>
             
             {/* Refresh Button */}
             <Button 
               size="sm"
-              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white shadow-sm backdrop-blur-sm"
+              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white backdrop-blur-sm transition-all"
               onClick={fetchCasinoBalance}
               disabled={isCasinoBalanceLoading}
+              style={{
+                boxShadow: '0 3px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                transform: 'translateY(-1px)'
+              }}
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isCasinoBalanceLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isCasinoBalanceLoading ? 'animate-spin' : ''} drop-shadow-sm`} />
             </Button>
           </div>
         </div>
         
-        <div className="bg-gradient-to-br dark:from-amber-900/30 dark:to-amber-800/20 from-amber-100/50 to-amber-200/30 rounded-lg p-3 border border-amber-500/20 shadow-inner backdrop-blur-sm relative z-10">
+        <div className="bg-gradient-to-br dark:from-amber-900/30 dark:to-amber-800/20 from-amber-100/50 to-amber-200/30 rounded-lg p-3 border-2 border-amber-500/30 backdrop-blur-sm relative z-10 transform transition-all duration-300"
+             style={{ 
+               boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.05), inset 0 -2px 4px rgba(0, 0, 0, 0.1), 0 2px 3px rgba(0, 0, 0, 0.1)',
+               transform: 'translateZ(5px)'
+             }}>
           <div className="flex justify-between items-center">
             <div className="dark:text-amber-200 text-amber-900 font-medium" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.5)' }}>Username: {username}</div>
             <div className="text-xs dark:text-amber-300/70 text-amber-700/70" style={{ textShadow: '0.5px 0.5px 1px rgba(0,0,0,0.5)' }}>Last Updated: {lastUpdated}</div>
