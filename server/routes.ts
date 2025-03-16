@@ -3487,7 +3487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if this was an anonymous/auto-login payment
         let isAnonymousPayment = false;
-        if (transaction.metadata && transaction.metadata.autoLogin) {
+        if (transaction.metadata && typeof transaction.metadata === 'object' && 'autoLogin' in transaction.metadata) {
           isAnonymousPayment = true;
           console.log(`This payment was initiated anonymously with auto-login flag. User ID: ${user.id}, Casino ID: ${user.casinoId}`);
         }
@@ -3498,7 +3498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "completed",
           txId,
           { 
-            ...transaction.metadata,
+            ...(transaction.metadata as Record<string, any> || {}),
             completedAt: new Date().toISOString(),
             isAnonymousPayment
           }
