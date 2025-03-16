@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { userApi } from "@/lib/api";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useLocalStorage } from "./use-local-storage";
+import { apiRequest } from "@/lib/api-client";
 
 type Theme = "dark" | "light" | "system";
 
@@ -19,18 +20,74 @@ const initialState: ThemeProviderState = {
   setTheme: () => null,
 };
 
+// Create context
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 export function ThemeProvider({
   children,
   defaultTheme = "system",
-  storageKey = "ui-theme",
+  storageKey = "vite-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
+  const [theme, setTheme] = useLocalStorage<Theme>(storageKey, defaultTheme);
+  const [serverSyncedTheme, setServerSyncedTheme] = useState<Theme | null>(null);
 
+  // Sync with database when user is logged in (if available)
+  useEffect(() => {
+    async function syncWithDatabase() {
+      try {
+        // Get user's theme from server
+        const response = await apiRequest({
+          method: 'GET',
+          url: '/api/user/preferences/theme'
+        });
+        
+        if (response.success && response.exists) {
+          // If theme is stored on server and is different from local, use that
+          const dbTheme = response.value as Theme;
+          if (dbTheme !== theme) {
+            setTheme(dbTheme);
+          }
+          setServerSyncedTheme(dbTheme);
+        } else if (theme) {
+          // If theme is not in database but we have a local theme, save to server
+          await apiRequest({
+            method: 'POST',
+            url: '/api/user/preferences/theme',
+            data: { value: theme }
+          });
+          setServerSyncedTheme(theme);
+        }
+      } catch (error) {
+        // Failed to sync with server (likely not logged in)
+        console.log("Theme not synced with server - user may not be logged in");
+      }
+    }
+
+    syncWithDatabase();
+  }, []);
+
+  // Update database when theme changes (if already synced)
+  useEffect(() => {
+    async function updateDatabase() {
+      if (serverSyncedTheme !== null && theme !== serverSyncedTheme) {
+        try {
+          await apiRequest({
+            method: 'POST',
+            url: '/api/user/preferences/theme',
+            data: { value: theme }
+          });
+          setServerSyncedTheme(theme);
+        } catch (error) {
+          console.error("Failed to update theme in database", error);
+        }
+      }
+    }
+
+    updateDatabase();
+  }, [theme, serverSyncedTheme]);
+
+  // Update <html> element class when theme changes
   useEffect(() => {
     const root = window.document.documentElement;
     
@@ -43,49 +100,11 @@ export function ThemeProvider({
         : "light";
       
       root.classList.add(systemTheme);
-      root.setAttribute("data-theme", systemTheme);
       return;
     }
-
-    root.classList.add(theme);
-    root.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  // Save theme preference to server if user is logged in
-  useEffect(() => {
-    // Only update server if theme is explicitly selected (not default)
-    if (theme !== defaultTheme) {
-      // Try to update user preference if authenticated
-      userApi.updatePreference('theme', theme).catch(() => {
-        // Silently fail if not authenticated or request fails
-        // Local storage will still keep the preference
-      });
-    }
-  }, [theme, defaultTheme]);
-
-  // Save theme preference to local storage
-  useEffect(() => {
-    localStorage.setItem(storageKey, theme);
-  }, [theme, storageKey]);
-
-  // Load user preference from server on initial load if available
-  useEffect(() => {
-    const loadUserThemePreference = async () => {
-      try {
-        const response = await userApi.getPreference('theme');
-        if (response.success && response.exists && response.value) {
-          const userTheme = response.value as Theme;
-          if (userTheme !== theme) {
-            setTheme(userTheme);
-          }
-        }
-      } catch (error) {
-        // Silently fail if not authenticated or request fails
-      }
-    };
     
-    loadUserThemePreference();
-  }, []);
+    root.classList.add(theme);
+  }, [theme]);
 
   const value = {
     theme,
@@ -103,9 +122,9 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
-
+  
   if (context === undefined)
     throw new Error("useTheme must be used within a ThemeProvider");
-
+  
   return context;
 };

@@ -2,14 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base styles */
+/* Base styles for both light and dark modes */
 :root {
   --color-lime: #AAFF00;
-  --color-bg-dark: #000000;
-  --color-text: #FFFFFF;
-  --color-border: #333333;
-  color-scheme: dark;
   --app-height: 100%;
+  
+  /* Light mode variables */
+  --light-background: #F5F7FA;
+  --light-foreground: #1A1A1A;
+  --light-card: #FFFFFF;
+  --light-card-foreground: #1A1A1A;
+  --light-primary: hsl(223, 68%, 28%);
+  --light-primary-foreground: #FFFFFF;
+  --light-secondary: #D4D4D8;
+  --light-secondary-foreground: #18181B;
+  --light-muted: #F4F4F5;
+  --light-muted-foreground: #71717A;
+  --light-accent: #F5F5F5;
+  --light-accent-foreground: #18181B;
+  --light-border: #E4E4E7;
+  --light-input: #E4E4E7;
+  --light-ring: hsl(223, 68%, 28%);
+  
+  /* Dark mode variables */
+  --dark-background: #0A0A0A;
+  --dark-foreground: #FAFAFA;
+  --dark-card: #1A1A1A;
+  --dark-card-foreground: #FAFAFA;
+  --dark-primary: hsl(223, 68%, 28%);
+  --dark-primary-foreground: #FFFFFF;
+  --dark-secondary: #27272A;
+  --dark-secondary-foreground: #FAFAFA;
+  --dark-muted: #18181B;
+  --dark-muted-foreground: #A1A1AA;
+  --dark-accent: #2A2A2A;
+  --dark-accent-foreground: #FAFAFA;
+  --dark-border: #27272A;
+  --dark-input: #27272A;
+  --dark-ring: hsl(223, 68%, 28%);
+}
+
+/* Light mode theme */
+:root,
+.light {
+  color-scheme: light;
+  
+  --background: var(--light-background);
+  --foreground: var(--light-foreground);
+  --card: var(--light-card);
+  --card-foreground: var(--light-card-foreground);
+  --primary: var(--light-primary);
+  --primary-foreground: var(--light-primary-foreground);
+  --secondary: var(--light-secondary);
+  --secondary-foreground: var(--light-secondary-foreground);
+  --muted: var(--light-muted);
+  --muted-foreground: var(--light-muted-foreground);
+  --accent: var(--light-accent);
+  --accent-foreground: var(--light-accent-foreground);
+  --border: var(--light-border);
+  --input: var(--light-input);
+  --ring: var(--light-ring);
+}
+
+/* Dark mode theme */
+.dark {
+  color-scheme: dark;
+  
+  --background: var(--dark-background);
+  --foreground: var(--dark-foreground);
+  --card: var(--dark-card);
+  --card-foreground: var(--dark-card-foreground);
+  --primary: var(--dark-primary);
+  --primary-foreground: var(--dark-primary-foreground);
+  --secondary: var(--dark-secondary);
+  --secondary-foreground: var(--dark-secondary-foreground);
+  --muted: var(--dark-muted);
+  --muted-foreground: var(--dark-muted-foreground);
+  --accent: var(--dark-accent);
+  --accent-foreground: var(--dark-accent-foreground);
+  --border: var(--dark-border);
+  --input: var(--dark-input);
+  --ring: var(--dark-ring);
 }
 
 /* Mobile app styles */
@@ -35,12 +108,13 @@ body {
   margin: 0;
   padding: 0;
   -webkit-overflow-scrolling: touch;
-  background-color: black !important;
-  color: white !important;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Disable text selection for most elements */
@@ -177,34 +251,52 @@ input, textarea, select, button {
 }
 
 /* Component styles */
-.card, .bg-white, div[class*="bg-white"],
+.card, div[class*="card"],
 section, main > div, .auth-card, .card-info {
-  background-color: black !important;
-  color: white !important;
+  background-color: var(--card);
+  color: var(--card-foreground);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-.panel {
-  @apply bg-black rounded-xl border border-gray-800 p-4;
+.dark .panel {
+  @apply rounded-xl border p-4;
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+.light .panel {
+  @apply rounded-xl border p-4;
+  background-color: var(--card);
+  border-color: var(--border);
 }
 
 .casino-button {
-  @apply bg-black rounded-lg relative overflow-hidden border border-gray-800;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  @apply rounded-lg relative overflow-hidden border;
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--card-foreground);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.casino-button:hover {
-  background-color: #111111;
-  color: #FFFF00;
+.dark .casino-button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.light .casino-button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
 }
 
 .casino-button:active {
   transform: translateY(1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .casino-spinner {
-  @apply inline-block rounded-full border-2 border-gray-500 border-t-transparent;
+  @apply inline-block rounded-full border-2 border-t-transparent;
+  border-color: var(--muted-foreground);
   animation: casino-spin 0.8s linear infinite;
 }
 
@@ -214,9 +306,11 @@ section, main > div, .auth-card, .card-info {
   }
 }
 
-/* Special elements */
-.hero ~ section,
-.hero + *,
-[class*="bg-gray"] {
-  background-color: black !important;
+/* Form elements */
+.form-control, input[type="text"], input[type="password"], 
+input[type="email"], input[type="number"], textarea, select {
+  background-color: var(--input);
+  color: var(--foreground);
+  border-color: var(--border);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
