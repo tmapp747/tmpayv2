@@ -1532,7 +1532,7 @@ export class DbStorage extends MemStorage {
           immediate_manager: immediateManager,
           casino_user_type: userType,
           hierarchy_level: user.hierarchyLevel,
-          updated_at: user.updatedAt
+          updated_at: new Date()
         })
         .where(eq(users.id, id));
       
@@ -1554,7 +1554,7 @@ export class DbStorage extends MemStorage {
       await this.dbInstance.update(users)
         .set({
           allowed_top_managers: allowedTopManagers,
-          updated_at: user.updatedAt
+          updated_at: new Date()
         })
         .where(eq(users.id, id));
       
@@ -1577,7 +1577,7 @@ export class DbStorage extends MemStorage {
         .set({
           casino_auth_token: token,
           casino_auth_token_expiry: expiryDate,
-          updated_at: user.updatedAt
+          updated_at: new Date()
         })
         .where(eq(users.id, id));
       
