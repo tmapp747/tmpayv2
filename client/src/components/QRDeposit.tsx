@@ -71,16 +71,19 @@ const QRDeposit = () => {
         throw new Error("Maximum deposit amount is ₱50,000");
       }
 
-      // Make sure we're properly authenticated for this request
-      const res = await apiRequest("POST", "/api/payments/gcash/generate-qr", {
-        amount: numAmount,
+      // For anonymous payments, we need to use a different approach
+      // We'll make a direct fetch request instead of using apiRequest to avoid auth handling
+      const res = await fetch("/api/payments/gcash/generate-qr", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: numAmount,
+        }),
+        // This ensures cookies are sent with the request, important for maintaining session if any
+        credentials: "include"
       });
-
-      // No longer need to handle unauthorized errors here as the endpoint supports anonymous access
-      if (res.status === 401) {
-        console.log("Anonymous deposit being processed - continuing without authentication");
-        // We'll continue processing as anonymous deposits are now supported
-      }
 
       if (!res.ok) {
         // Attempt to parse error message, but provide fallback
@@ -163,14 +166,15 @@ const QRDeposit = () => {
     // Poll every 5 seconds
     const interval = setInterval(async () => {
       try {
-        // Explicitly pass credentials to ensure session cookies are sent
-        const res = await apiRequest("GET", `/api/payments/status/${refId}`);
-        
-        // We don't need to handle authentication issues anymore as the status endpoint now supports anonymous access
-        if (res.status === 401) {
-          console.log("Anonymous payment status check - continuing without authentication");
-          // We will continue processing since the backend now supports anonymous status checks
-        }
+        // Use direct fetch call to bypass authentication for anonymous status checks
+        const res = await fetch(`/api/payments/status/${refId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          // Include credentials to maintain session if any
+          credentials: "include"
+        });
         
         // Reset consecutive errors counter on successful response
         consecutiveErrors = 0;
