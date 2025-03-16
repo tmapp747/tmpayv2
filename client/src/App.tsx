@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import Wallet from "@/pages/wallet/WalletPage";
 import History from "@/pages/History";
 import Profile from "@/pages/Profile";
+import EmeraldProfile from "@/pages/EmeraldProfile";
 import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
@@ -44,6 +45,11 @@ function Router() {
       <ProtectedRoute path="/profile" component={() => (
         <Layout>
           <Profile />
+        </Layout>
+      )} />
+      <ProtectedRoute path="/profile-emerald" component={() => (
+        <Layout>
+          <EmeraldProfile />
         </Layout>
       )} />
       {/* Payment routes */}

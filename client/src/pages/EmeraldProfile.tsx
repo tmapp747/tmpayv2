@@ -17,7 +17,7 @@ const EmeraldProfile = () => {
   const [tab, setTab] = useState("profile");
   const { toast } = useToast();
   
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ success: boolean; user: any }>({
     queryKey: ['/api/user/info'],
   });
   
