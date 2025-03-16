@@ -49,47 +49,71 @@ export function generateTransactionReference(): string {
   return `TXN-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 }
 
-// Get status color
+// Get status color with more UI flexibility
 export function getStatusColor(status: string): string {
   switch (status.toLowerCase()) {
     case "completed":
-      return "bg-green-500";
+      return "bg-green-500/10 text-green-500 border border-green-500/20";
     case "pending":
-      return "bg-yellow-500";
+      return "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20";
     case "failed":
-      return "bg-red-500";
+      return "bg-red-500/10 text-red-500 border border-red-500/20";
     case "expired":
-      return "bg-gray-500";
+      return "bg-muted/10 text-muted-foreground border border-muted/20";
+    case "approved":
+      return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
+    case "rejected":
+      return "bg-red-600/10 text-red-600 border border-red-600/20";
     default:
-      return "bg-gray-500";
+      return "bg-muted/10 text-muted-foreground border border-muted/20";
   }
 }
 
-// Get transaction type icon
+// Get transaction type icon - updated for Lucide icons
 export function getTransactionTypeIcon(type: string): string {
-  switch (type.toLowerCase()) {
-    case "deposit":
-      return "arrow-down";
-    case "withdraw":
-      return "arrow-up";
-    case "transfer":
-      return "exchange-alt";
-    default:
-      return "question-circle";
+  const normalizedType = type.toLowerCase();
+  if (normalizedType.includes('deposit')) {
+    return "wallet";
+  } else if (normalizedType.includes('withdraw')) {
+    return "arrow-up";
+  } else if (normalizedType.includes('transfer')) {
+    return "arrow-left-right";
+  } else if (normalizedType.includes('casino')) {
+    return "dices";
+  } else {
+    return "circle-help";
   }
 }
 
-// Get transaction method icon
+// Get transaction method icon - updated for Lucide icons
 export function getTransactionMethodIcon(method: string): string {
-  switch (method.toLowerCase()) {
-    case "gcash_qr":
-      return "qrcode";
-    case "bank_transfer":
-      return "university";
-    case "crypto":
-      return "coins";
-    default:
-      return "money-bill";
+  const normalizedMethod = method.toLowerCase();
+  if (normalizedMethod.includes('gcash') || normalizedMethod.includes('qr')) {
+    return "qr-code";
+  } else if (normalizedMethod.includes('bank') || normalizedMethod.includes('transfer')) {
+    return "building-bank";
+  } else if (normalizedMethod.includes('crypto')) {
+    return "bitcoin";
+  } else if (normalizedMethod.includes('casino')) {
+    return "cards";
+  } else {
+    return "credit-card";
+  }
+}
+
+// Get transaction color based on type
+export function getTransactionTypeColor(type: string): string {
+  const normalizedType = type.toLowerCase();
+  if (normalizedType.includes('deposit')) {
+    return "text-green-500 bg-green-500/10";
+  } else if (normalizedType.includes('withdraw')) {
+    return "text-red-500 bg-red-500/10";
+  } else if (normalizedType.includes('transfer')) {
+    return "text-blue-500 bg-blue-500/10";
+  } else if (normalizedType.includes('casino')) {
+    return "text-purple-500 bg-purple-500/10";
+  } else {
+    return "text-muted-foreground bg-muted/10";
   }
 }
 
