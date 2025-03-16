@@ -1916,8 +1916,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get the authenticated user
+      // Get the authenticated user if available
       const authenticatedUser = (req as any).user;
+      const isAnonymous = !authenticatedUser;
       
       // Check if this is a Telegram/Paygram payment reference (starts with PGRAM-)
       if (referenceId.startsWith('PGRAM-')) {
@@ -1931,8 +1932,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Check if the payment belongs to the authenticated user
-        if (telegramPayment.userId !== authenticatedUser.id) {
+        // Skip permission check for anonymous users, otherwise check if payment belongs to user
+        if (!isAnonymous && telegramPayment.userId !== authenticatedUser.id) {
           return res.status(403).json({ 
             success: false,
             message: "You don't have permission to view this payment" 
@@ -1962,8 +1963,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (telegramPayment.status === "pending") {
           try {
             // Check payment status with Paygram API
+            // If user is anonymous, use the user ID from the telegramPayment record
+            const userId = isAnonymous ? telegramPayment.userId.toString() : authenticatedUser.id.toString();
             const paygramStatus = await paygramApi.checkPaymentStatus(
-              authenticatedUser.id.toString(), 
+              userId, 
               telegramPayment.invoiceId || '' // Empty string as fallback in case invoiceId is null
             );
             
@@ -2023,8 +2026,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
-        // Check if the payment belongs to the authenticated user
-        if (qrPayment.userId !== authenticatedUser.id) {
+        // Skip permission check for anonymous users, otherwise check if payment belongs to user
+        if (!isAnonymous && qrPayment.userId !== authenticatedUser.id) {
           return res.status(403).json({ 
             success: false,
             message: "You don't have permission to view this payment" 
@@ -3476,15 +3479,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (
         ['success', 'completed', 'paid', 'successful', 'approved', 'settled', 'confirmed'].includes(normalizedStatus)
       ) {
+        console.log(`Payment status confirmed as completed (normalized: ${normalizedStatus})`);
+        
         // Update QR payment status
         await storage.updateQrPaymentStatus(qrPayment.id, "completed");
+        console.log(`QR payment status updated to completed for ID: ${qrPayment.id}`);
+        
+        // Check if this was an anonymous/auto-login payment
+        let isAnonymousPayment = false;
+        if (transaction.metadata && transaction.metadata.autoLogin) {
+          isAnonymousPayment = true;
+          console.log(`This payment was initiated anonymously with auto-login flag. User ID: ${user.id}, Casino ID: ${user.casinoId}`);
+        }
         
         // Update transaction status and add DirectPay transaction ID
         await storage.updateTransactionStatus(
           transaction.id,
           "completed",
-          txId
+          txId,
+          { 
+            ...transaction.metadata,
+            completedAt: new Date().toISOString(),
+            isAnonymousPayment
+          }
         );
+        console.log(`Transaction status updated to completed for ID: ${transaction.id} with txId: ${txId}`);
         
         // Call 747 Casino API to complete the topup
         const paymentAmount = parseFloat(qrPayment.amount.toString());
