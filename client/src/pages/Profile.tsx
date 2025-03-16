@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { User, ShieldCheck, ShieldAlert, Lock, Mail, Phone, Cog, ExternalLink, CreditCard, BarChart } from "lucide-react";
 import { motion } from "framer-motion";
@@ -303,8 +304,10 @@ const Profile = () => {
                     <Input
                       id="current-password"
                       type="password"
-                      className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/50"
-                      style={{ boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' }}
+                      className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/30 transition-all duration-300"
+                      style={{ 
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                      }}
                     />
                   </div>
                   
@@ -314,8 +317,10 @@ const Profile = () => {
                       <Input
                         id="new-password"
                         type="password"
-                        className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/50"
-                        style={{ boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' }}
+                        className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/30 transition-all duration-300"
+                        style={{ 
+                          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                        }}
                       />
                     </div>
                     
@@ -324,8 +329,10 @@ const Profile = () => {
                       <Input
                         id="confirm-password"
                         type="password"
-                        className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/50"
-                        style={{ boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' }}
+                        className="bg-emerald-900/60 border-emerald-700/50 text-white focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/30 transition-all duration-300"
+                        style={{ 
+                          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                        }}
                       />
                     </div>
                   </div>
@@ -333,31 +340,43 @@ const Profile = () => {
                 
                 <Separator className="bg-emerald-700/30" />
                 
-                <div className="bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40"
-                  style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+                <div 
+                  className="bg-emerald-800/30 p-5 rounded-lg border border-emerald-700/40 hover:border-yellow-500/40 transition-all duration-300 hover:bg-emerald-800/50 group transform hover:scale-[1.02]"
+                  style={{ 
+                    boxShadow: '0 6px 16px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1)',
+                    cursor: 'pointer',
+                  }}
                 >
                   <div className="flex items-start">
-                    <ShieldAlert className="text-emerald-300 mt-1 mr-3 h-5 w-5" 
-                      style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))' }}
-                    />
+                    <div className="mr-4 mt-1 bg-yellow-500/10 p-2 rounded-full transition-all duration-300 group-hover:bg-yellow-500/20 group-hover:scale-110">
+                      <ShieldAlert className="text-yellow-300 h-6 w-6" 
+                        style={{ 
+                          filter: 'drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3))',
+                          transition: 'all 0.3s ease',
+                        }}
+                      />
+                    </div>
                     <div>
-                      <h3 className="text-white font-medium"
+                      <h3 className="text-white font-medium text-lg flex items-center"
                         style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
                       >
                         Two-Factor Authentication
+                        <Badge className="ml-2 bg-red-500/80 text-xs font-normal py-0 px-2">Recommended</Badge>
                       </h3>
-                      <p className="text-emerald-200/80 text-sm mt-1">
-                        Add an extra layer of security to your account by enabling two-factor authentication.
+                      <p className="text-emerald-200/90 text-sm mt-1.5 max-w-md">
+                        Add an extra layer of security to your account by enabling two-factor authentication. This prevents unauthorized access even if your password is compromised.
                       </p>
                       <Button 
-                        className="mt-3 bg-emerald-800/50 hover:bg-emerald-700/60 text-yellow-300 border border-yellow-500/30"
+                        className="mt-4 relative overflow-hidden bg-gradient-to-r from-yellow-500/80 to-yellow-600/80 hover:from-yellow-400/90 hover:to-yellow-500/90 text-emerald-950 border border-yellow-400/60 group-hover:scale-105 transition-transform duration-300"
                         style={{ 
-                          boxShadow: '0 2px 5px rgba(0, 0, 0, 0.2), 0 0 10px rgba(16, 185, 129, 0.1)',
-                          textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
+                          boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2), 0 0 15px rgba(250, 204, 21, 0.2)',
                         }}
                       >
-                        <ShieldAlert className="h-3.5 w-3.5 mr-1.5" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.4))' }} />
-                        Enable 2FA
+                        <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-300/0 via-yellow-100/30 to-yellow-300/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                        <span className="relative z-10 flex items-center font-medium">
+                          <ShieldAlert className="h-4 w-4 mr-2" />
+                          Enable 2FA Protection
+                        </span>
                       </Button>
                     </div>
                   </div>
@@ -481,8 +500,11 @@ const Profile = () => {
                   </div>
                   <div>
                     <select 
-                      className="bg-emerald-900/70 border border-emerald-700/50 text-white rounded p-2 text-sm focus:border-emerald-500/70 focus:ring-1 focus:ring-emerald-500/50"
-                      style={{ boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)' }}
+                      className="bg-emerald-900/70 border border-emerald-700/50 text-white rounded p-2 text-sm focus:border-yellow-500/50 focus:ring-2 focus:ring-yellow-500/30 transition-all duration-300 hover:border-yellow-500/40"
+                      style={{ 
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                        cursor: 'pointer',
+                      }}
                     >
                       <option value="en">English</option>
                       <option value="zh">Chinese</option>
