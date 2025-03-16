@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { User, ShieldCheck, Lock, Mail, Phone, Cog, ExternalLink, CreditCard, BarChart } from "lucide-react";
+import { User, ShieldCheck, ShieldAlert, Lock, Mail, Phone, Cog, ExternalLink, CreditCard, BarChart } from "lucide-react";
 import { motion } from "framer-motion";
 
 const EmeraldProfile = () => {
@@ -350,7 +350,7 @@ const EmeraldProfile = () => {
                           textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)'
                         }}
                       >
-                        <Shield className="h-3.5 w-3.5 mr-1.5" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.4))' }} />
+                        <ShieldAlert className="h-3.5 w-3.5 mr-1.5" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.4))' }} />
                         Enable 2FA
                       </Button>
                     </div>
@@ -472,11 +472,11 @@ const EmeraldProfile = () => {
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg"
+                  <Button 
+                    className="relative overflow-hidden group bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 text-white shadow-lg border border-yellow-500/20"
                     style={{ 
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2)',
-                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.15)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'
                     }}
                     onClick={() => {
                       toast({
@@ -485,7 +485,11 @@ const EmeraldProfile = () => {
                       });
                     }}
                   >
-                    Save Settings
+                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-yellow-300/0 via-yellow-300/30 to-yellow-300/0 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+                    <span className="relative z-10 flex items-center">
+                      <span className="mr-1.5 text-yellow-300" style={{ filter: 'drop-shadow(0 0 2px rgba(250, 204, 21, 0.5))' }}>⚙️</span>
+                      Save Settings
+                    </span>
                   </Button>
                 </div>
               </div>
