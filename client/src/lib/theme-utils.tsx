@@ -23,14 +23,18 @@ export const EmeraldCard: React.FC<{
   return (
     <Card 
       className={`${card.base} ${className}`}
-      style={card.styles}
+      style={{ 
+        boxShadow: card.styles?.boxShadow as string || '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)'
+      }}
       onClick={onClick}
     >
       {title && (
         <CardHeader className={`${cardHeader.base} ${headerClassName}`}>
           <CardTitle 
             className={cardTitle.base}
-            style={cardTitle.styles}
+            style={{ 
+              textShadow: cardTitle.styles?.textShadow as string || '0 1px 2px rgba(0, 0, 0, 0.3)'
+            }}
           >
             {title}
           </CardTitle>
@@ -85,7 +89,9 @@ export const EmeraldInput: React.FC<{
         onChange={onChange}
         required={required}
         className={`${input.base} ${className}`}
-        style={input.styles}
+        style={{ 
+          boxShadow: input.styles?.boxShadow as string || 'inset 0 2px 4px rgba(0, 0, 0, 0.1)'
+        }}
       />
     </div>
   );
@@ -118,7 +124,12 @@ export const EmeraldButton: React.FC<{
     <Button 
       type={type}
       className={`${buttonTheme.base} ${className}`}
-      style={buttonTheme.styles}
+      style={{ 
+        boxShadow: buttonTheme.styles?.boxShadow as string || '0 4px 12px rgba(16, 185, 129, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.15)',
+        textShadow: variant === 'primary' ? 
+          (buttonTheme.styles as any)?.textShadow as string || '0 1px 2px rgba(0, 0, 0, 0.3)' :
+          '0 1px 2px rgba(0, 0, 0, 0.3)'
+      }}
       onClick={onClick}
       disabled={disabled}
     >
@@ -166,7 +177,10 @@ export const EmeraldSelect: React.FC<{
         onChange={onChange}
         required={required}
         className={`${select.base} ${className}`}
-        style={select.styles}
+        style={{ 
+          boxShadow: select.styles?.boxShadow as string || 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+          cursor: 'pointer'
+        }}
       >
         {options.map(option => (
           <option key={option.value} value={option.value}>
@@ -192,7 +206,10 @@ export const EmeraldPanel: React.FC<{
   return (
     <div 
       className={`${panel.base} ${className}`}
-      style={panel.styles}
+      style={{ 
+        boxShadow: panel.styles?.boxShadow as string || '0 4px 12px rgba(0, 0, 0, 0.1)',
+        cursor: 'pointer'
+      }}
       onClick={onClick}
     >
       {children}
@@ -215,7 +232,10 @@ export const EmeraldFeatureHighlight: React.FC<{
   return (
     <div 
       className={`${featureHighlight.base} ${className}`}
-      style={featureHighlight.styles}
+      style={{ 
+        boxShadow: featureHighlight.styles?.boxShadow as string || '0 6px 16px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.1)',
+        cursor: 'pointer'
+      }}
       onClick={onClick}
     >
       <div className="flex items-start">
@@ -262,14 +282,18 @@ export const EmeraldTabs: React.FC<{
     >
       <TabsList 
         className={tabsTheme.list}
-        style={tabsTheme.listStyles}
+        style={{ 
+          boxShadow: tabsTheme.listStyles?.boxShadow as string || '0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 15px rgba(16, 185, 129, 0.15)'
+        }}
       >
         {tabs.map(tab => (
           <TabsTrigger 
             key={tab.value} 
             value={tab.value}
             className={tabsTheme.trigger}
-            style={tabsTheme.triggerStyles}
+            style={{ 
+              textShadow: tabsTheme.triggerStyles?.textShadow as string || '0 1px 2px rgba(0, 0, 0, 0.4)'
+            }}
           >
             {tab.icon && <span className="h-4 w-4 mr-2">{tab.icon}</span>}
             {tab.label}
