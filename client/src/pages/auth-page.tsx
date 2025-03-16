@@ -92,10 +92,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const [activeTab, setActiveTab] = useState<string>("verification");
+  // Simplified state management
+  const [step, setStep] = useState<"welcome" | "verification" | "login" | "register">("welcome");
   const [verifiedUsername, setVerifiedUsername] = useState<string>("");
   const [verifiedUserType, setVerifiedUserType] = useState<"player" | "agent">("player");
   const [casinoVerificationData, setCasinoVerificationData] = useState<CasinoVerificationResponse | null>(null);
+  
   const { toast } = useToast();
   const { user, loginMutation, registerMutation } = useAuth();
   const [, navigate] = useLocation();
@@ -143,8 +145,8 @@ export default function AuthPage() {
         variant: "default",
       });
       
-      // Switch to login tab by default
-      setActiveTab("login");
+      // Switch to login step
+      setStep("login");
     },
     onError: (error: Error) => {
       toast({
@@ -224,7 +226,7 @@ export default function AuthPage() {
   const goBackToVerification = () => {
     setVerifiedUsername("");
     setVerifiedUserType("player");
-    setActiveTab("verification");
+    setStep("verification");
   };
 
   // Don't render anything if user is logged in
