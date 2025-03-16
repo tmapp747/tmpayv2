@@ -108,48 +108,48 @@ const TransactionTable = () => {
   const filteredTransactions = getFilteredTransactions();
   
   return (
-    <Card className="mb-6 border-2 border-green-800/40 rounded-xl overflow-hidden relative"
+    <Card className="mb-6 border-2 border-green-600/30 rounded-xl overflow-hidden relative"
          style={{
-           background: 'linear-gradient(145deg, rgba(2, 6, 9, 0.8), rgba(9, 24, 16, 0.85))',
-           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 5px 10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.03)', 
+           background: 'linear-gradient(145deg, rgba(2, 6, 9, 0.65), rgba(9, 24, 16, 0.7))',
+           boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3), 0 5px 10px rgba(0, 0, 0, 0.15), 0 0 30px rgba(16, 185, 129, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.05)', 
            transform: 'translateZ(0)',
            backdropFilter: 'blur(10px)'
          }}>
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-green-800/10 via-green-600/8 to-emerald-500/10 opacity-60 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-green-500/15 via-green-400/10 to-emerald-300/15 opacity-75 pointer-events-none"></div>
       
       <CardHeader className="pb-2 relative">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <CardTitle className="text-lg flex items-center text-green-300" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>
-            <History className="h-5 w-5 mr-2 text-green-400" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))'}} />
+          <CardTitle className="text-lg flex items-center text-green-200" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'}}>
+            <History className="h-5 w-5 mr-2 text-green-300" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3))'}} />
             Transaction History
           </CardTitle>
           
           <div className="flex flex-wrap gap-2 items-center">
             <div className="relative">
-              <Search className="h-4 w-4 absolute left-2 top-1/2 transform -translate-y-1/2 text-green-500/70" />
+              <Search className="h-4 w-4 absolute left-2 top-1/2 transform -translate-y-1/2 text-green-400/80" />
               <Input 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search..." 
-                className="pl-8 h-9 w-full sm:w-[160px] text-sm border-2 border-green-800/40 bg-black/60 text-white"
+                className="pl-8 h-9 w-full sm:w-[160px] text-sm border-2 border-green-600/30 bg-black/50 text-white"
                 style={{
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(16, 185, 129, 0.1)'
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(16, 185, 129, 0.15)'
                 }}
               />
             </div>
             
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger 
-                className="h-9 w-[130px] border-2 border-green-800/40 bg-black/60 text-white text-sm"
+                className="h-9 w-[130px] border-2 border-green-600/30 bg-black/50 text-white text-sm"
                 style={{
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(16, 185, 129, 0.1)'
+                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(16, 185, 129, 0.15)'
                 }}
               >
-                <Filter className="h-3.5 w-3.5 mr-2 text-green-500/70" />
+                <Filter className="h-3.5 w-3.5 mr-2 text-green-400/80" />
                 <SelectValue placeholder="Filter" />
               </SelectTrigger>
-              <SelectContent className="border-green-900 bg-black/90">
+              <SelectContent className="border-green-700/50 bg-black/90">
                 <SelectItem value="all" className="text-white">All Types</SelectItem>
                 <SelectItem value="deposit" className="text-white">Deposits</SelectItem>
                 <SelectItem value="withdraw" className="text-white">Withdrawals</SelectItem>
@@ -162,24 +162,24 @@ const TransactionTable = () => {
               variant="outline" 
               size="sm" 
               onClick={() => setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc')}
-              className="h-9 border-2 border-green-800/40 bg-black/60 text-green-300"
+              className="h-9 border-2 border-green-600/30 bg-black/50 text-green-300"
               style={{
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(16, 185, 129, 0.1)'
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(16, 185, 129, 0.15)'
               }}
             >
-              <Calendar className="h-3.5 w-3.5 mr-2 text-green-400" />
+              <Calendar className="h-3.5 w-3.5 mr-2 text-green-400/90" />
               {sortDirection === 'desc' ? 'Newest' : 'Oldest'}
             </Button>
             
             <Button 
               variant="outline" 
               size="sm"
-              className="h-9 border-2 border-green-800/40 bg-black/60 text-green-300"
+              className="h-9 border-2 border-green-600/30 bg-black/50 text-green-300"
               style={{
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(16, 185, 129, 0.1)'
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(16, 185, 129, 0.15)'
               }}
             >
-              <Download className="h-3.5 w-3.5 mr-2 text-green-400" />
+              <Download className="h-3.5 w-3.5 mr-2 text-green-400/90" />
               Export
             </Button>
           </div>
@@ -191,35 +191,35 @@ const TransactionTable = () => {
           <table className="w-full divide-y-2 divide-green-900/30" style={{
             boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.05)'
           }}>
-            <thead className="bg-green-950/50" style={{background: 'linear-gradient(180deg, rgba(6, 29, 16, 0.8), rgba(4, 20, 12, 0.7))'}}>
+            <thead className="bg-green-950/30" style={{background: 'linear-gradient(180deg, rgba(6, 29, 16, 0.6), rgba(4, 20, 12, 0.5))'}}>
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-green-300 tracking-wider" 
-                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'}}>
                   <div className="flex items-center">
                     Type
-                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/80" />
+                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/90" />
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-green-300 tracking-wider"
-                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'}}>
                   <div className="flex items-center">
                     Date
-                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/80" />
+                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/90" />
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-green-300 tracking-wider"
-                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'}}>
                   Method
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-green-300 tracking-wider"
-                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'}}>
                   <div className="flex items-center justify-end">
                     Amount
-                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/80" />
+                    <ArrowUpDown className="ml-1 h-3 w-3 text-green-400/90" />
                   </div>
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-green-300 tracking-wider"
-                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
+                   style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)'}}>
                   Status
                 </th>
               </tr>
