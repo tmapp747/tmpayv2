@@ -123,7 +123,7 @@ const Home = () => {
         className="mb-6"
       >
         <h1 className="text-2xl font-bold mb-1">
-          {greeting}, {user?.username || "User"}
+          {greeting}, <span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>{user?.username || "User"}</span>
         </h1>
         <p className="text-muted-foreground">
           {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
