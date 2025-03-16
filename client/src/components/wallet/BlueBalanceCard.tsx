@@ -12,6 +12,8 @@ interface User {
   balance: string | number;
   pendingBalance: string | number;
   casinoBalance?: string | number;
+  casinoClientId?: number;
+  casinoUsername?: string;
 }
 
 const BlueBalanceCard = () => {
@@ -24,7 +26,7 @@ const BlueBalanceCard = () => {
   
   const { data: casinoBalanceData, refetch } = useQuery<{ success: boolean; balance: number }>({
     queryKey: ['/api/casino/balance-realtime'],
-    enabled: !!data?.user?.casinoClientId,
+    enabled: data?.user && !!data.user.casinoClientId,
   });
   
   const handleRefreshCasinoBalance = async () => {
