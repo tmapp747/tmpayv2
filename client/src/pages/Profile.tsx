@@ -183,8 +183,12 @@ const Profile = () => {
         </TabsList>
         
         <TabsContent value="profile">
-          <Card className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl"
-            style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)' }}
+          <Card 
+            className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl transition-all duration-300 hover:scale-[1.005] hover:border-yellow-500/40"
+            style={{ 
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)',
+              transformStyle: 'preserve-3d',
+            }}
           >
             <CardHeader className="border-b border-emerald-700/30 bg-emerald-900/40">
               <CardTitle className="text-emerald-100"
@@ -277,8 +281,12 @@ const Profile = () => {
         </TabsContent>
         
         <TabsContent value="security">
-          <Card className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl"
-            style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)' }}
+          <Card 
+            className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl transition-all duration-300 hover:scale-[1.005] hover:border-yellow-500/40"
+            style={{ 
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)',
+              transformStyle: 'preserve-3d',
+            }}
           >
             <CardHeader className="border-b border-emerald-700/30 bg-emerald-900/40">
               <CardTitle className="text-emerald-100"
@@ -377,8 +385,12 @@ const Profile = () => {
         </TabsContent>
         
         <TabsContent value="settings">
-          <Card className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl"
-            style={{ boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)' }}
+          <Card 
+            className="border-emerald-700/30 bg-emerald-900/30 backdrop-blur-sm shadow-xl transition-all duration-300 hover:scale-[1.005] hover:border-yellow-500/40"
+            style={{ 
+              boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1), 0 6px 12px rgba(0, 0, 0, 0.1)',
+              transformStyle: 'preserve-3d',
+            }}
           >
             <CardHeader className="border-b border-emerald-700/30 bg-emerald-900/40">
               <CardTitle className="text-emerald-100"
@@ -390,11 +402,15 @@ const Profile = () => {
             <CardContent className="pt-6">
               <div className="grid gap-6">
                 <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40"
-                    style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+                  <div 
+                    className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40 hover:border-yellow-500/30 hover:bg-emerald-800/50 transition-all duration-300 transform hover:-translate-y-1"
+                    style={{ 
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      cursor: 'pointer',
+                    }}
                   >
                     <div className="flex items-center">
-                      <Mail className="text-emerald-300 mr-3 h-5 w-5" 
+                      <Mail className="text-emerald-300 mr-3 h-5 w-5 transition-transform duration-300 group-hover:scale-110" 
                         style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))' }}
                       />
                       <div>
@@ -416,11 +432,15 @@ const Profile = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40"
-                    style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+                  <div 
+                    className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40 hover:border-yellow-500/30 hover:bg-emerald-800/50 transition-all duration-300 transform hover:-translate-y-1"
+                    style={{ 
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      cursor: 'pointer',
+                    }}
                   >
                     <div className="flex items-center">
-                      <Phone className="text-emerald-300 mr-3 h-5 w-5" 
+                      <Phone className="text-emerald-300 mr-3 h-5 w-5 transition-transform duration-300 group-hover:scale-110" 
                         style={{ filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3))' }}
                       />
                       <div>
@@ -444,8 +464,12 @@ const Profile = () => {
                 
                 <Separator className="bg-emerald-700/30" />
                 
-                <div className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40"
-                  style={{ boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)' }}
+                <div 
+                  className="flex items-center justify-between bg-emerald-800/30 p-4 rounded-lg border border-emerald-700/40 hover:border-yellow-500/30 hover:bg-emerald-800/50 transition-all duration-300 transform hover:-translate-y-1"
+                  style={{ 
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                    cursor: 'pointer',
+                  }}
                 >
                   <div>
                     <h3 className="text-white font-medium"
