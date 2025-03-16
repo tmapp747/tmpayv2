@@ -123,7 +123,7 @@ const Home = () => {
         className="mb-6"
       >
         <h1 className="text-2xl font-bold mb-1">
-          {greeting}, <span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>{user?.username || "User"}</span>
+          <span style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }} className="text-secondary">{greeting}</span>, <span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>{user?.username || "User"}</span>
         </h1>
         <p className="text-muted-foreground">
           {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -175,7 +175,7 @@ const Home = () => {
         {/* Quick Actions section */}
         <motion.div variants={itemVariants} className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Quick Actions</h2>
+            <h2 className="text-lg font-semibold"><span className="text-secondary" style={{ textShadow: '0.5px 0.5px 1px black, -0.5px -0.5px 1px black, 0.5px -0.5px 1px black, -0.5px 0.5px 1px black' }}>Quick Actions</span></h2>
             <Button variant="ghost" size="sm" onClick={goToWallet} className="text-primary text-sm">
               See all <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
