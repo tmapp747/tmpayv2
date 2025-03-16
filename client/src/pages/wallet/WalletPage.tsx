@@ -153,15 +153,16 @@ function WalletPage() {
             transition={{ duration: 0.3, delay: 0.3 }}
           >
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-6 bg-muted/30 p-1 border-2 border-secondary/20 rounded-lg"
+              <TabsList className="mb-6 p-1 border-2 border-green-900/30 rounded-lg"
                        style={{
-                         boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
+                         background: 'radial-gradient(circle at top right, rgba(20, 83, 45, 0.9), rgba(0, 0, 0, 0.85))',
+                         boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05)',
                          transform: 'translateZ(0)'
                        }}>
-                <TabsTrigger value="balance" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-secondary/30">
+                <TabsTrigger value="balance" className="rounded-md text-green-300 data-[state=active]:bg-black/50 data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-green-500/40 data-[state=active]:text-white">
                   Recent Activity
                 </TabsTrigger>
-                <TabsTrigger value="transactions" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-secondary/30">
+                <TabsTrigger value="transactions" className="rounded-md text-green-300 data-[state=active]:bg-black/50 data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-green-500/40 data-[state=active]:text-white">
                   All Transactions
                 </TabsTrigger>
               </TabsList>
