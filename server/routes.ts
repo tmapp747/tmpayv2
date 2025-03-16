@@ -948,7 +948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Authorization middleware - prioritizes session auth, falls back to token
+  // Enhanced Authorization middleware - prioritizes session auth, falls back to token
   async function authMiddleware(req: Request, res: Response, next: Function) {
     try {
       console.log("[AUTH MIDDLEWARE] Checking authentication for path:", req.path);
@@ -964,7 +964,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "Session exists but user data is missing, please login again" 
           });
         }
+        
+        // Validate that the user from the session still exists in the database
+        const userId = (req.user as any).id;
+        if (userId) {
+          const userExists = await storage.getUser(userId);
+          if (!userExists) {
+            console.warn("[AUTH MIDDLEWARE] User from session no longer exists in database");
+            req.logout(() => {
+              return res.status(401).json({ 
+                success: false, 
+                message: "User account no longer exists" 
+              });
+            });
+            return;
+          }
+          
+          // Check if the user is authorized
+          if (!userExists.isAuthorized) {
+            console.warn("[AUTH MIDDLEWARE] User from session is not authorized");
+            return res.status(403).json({ 
+              success: false, 
+              message: "User is not authorized to use this system" 
+            });
+          }
+        }
+        
         // User is already attached to req.user by Passport
+        console.log("[AUTH MIDDLEWARE] Session user validated successfully");
         return next();
       }
       

@@ -9,7 +9,7 @@ let refreshPromise: Promise<string> | null = null;
 
 /**
  * Make an authenticated API request with automatic token refresh
- * Now uses server-side session cookies for authentication
+ * Uses server-side session cookies for authentication
  */
 export async function apiRequest(
   method: string,
@@ -18,14 +18,14 @@ export async function apiRequest(
   headers?: Record<string, string>,
   retry = true
 ): Promise<Response> {
-  // Build request options using session cookies
+  // Always ensure we use session cookies and the right content type
   const options: RequestInit = {
     method,
     headers: {
       'Content-Type': 'application/json',
       ...(headers || {}),
     },
-    credentials: 'include', // Include cookies for session-based auth
+    credentials: 'include', // Always include cookies for session-based auth
   };
   
   // Add body for non-GET requests
@@ -35,12 +35,13 @@ export async function apiRequest(
   
   // Log the request details for debugging
   console.log(`API Request: ${method} ${endpoint}`);
-  if (body) {
-    console.log('Request body:', body);
+  if (body && method !== 'GET') {
+    // Avoid logging potentially sensitive data
+    console.log('Request body type:', typeof body);
   }
   
   try {
-    // Make the request
+    // Make the request with credentials to ensure cookies are sent
     const res = await fetch(endpoint, options);
     
     // Log response status for debugging
@@ -51,19 +52,33 @@ export async function apiRequest(
       console.log('Authentication required, attempting to refresh session');
       
       try {
-        // Attempt server-side token refresh
+        // Prevent multiple simultaneous refresh attempts
         if (!isRefreshing) {
           isRefreshing = true;
           refreshPromise = refreshAccessToken();
         }
         
-        // Wait for the refresh token and retry
-        await refreshPromise;
+        // Wait for the refresh attempt to complete
+        const refreshResult = await refreshPromise;
         
-        // Retry the request (without allowing further retries to prevent loops)
-        return await apiRequest(method, endpoint, body, headers, false);
+        // Check if refresh was successful
+        if (refreshResult) {
+          console.log('Session refresh successful, retrying original request');
+          // Retry the request (without allowing further retries to prevent loops)
+          return await apiRequest(method, endpoint, body, headers, false);
+        } else {
+          console.log('Session refresh failed, not retrying original request');
+          // If refresh failed, return the original 401 response
+          return res;
+        }
       } catch (error) {
-        console.error('Failed to refresh token and retry request:', error);
+        console.error('Error during session refresh:', error);
+        // On error, return the original 401 response
+        return res;
+      } finally {
+        // Reset refresh state
+        isRefreshing = false;
+        refreshPromise = null;
       }
     }
     

@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, QrCode } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { Loader2, QrCode, LogIn } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import SuccessNotificationModal from "./SuccessNotificationModal";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const QRDeposit = () => {
   const [amount, setAmount] = useState("");
@@ -19,6 +20,12 @@ const QRDeposit = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  // Verify authentication state on component mount
+  useEffect(() => {
+    console.log("QRDeposit authentication state:", user ? "Authenticated" : "Not authenticated");
+  }, [user]);
 
   // Handle displaying amounts in the preset buttons
   const formatDisplayAmount = (value: number | null) => {
@@ -64,13 +71,25 @@ const QRDeposit = () => {
         throw new Error("Maximum deposit amount is ₱50,000");
       }
 
+      // Make sure we're properly authenticated for this request
       const res = await apiRequest("POST", "/api/payments/gcash/generate-qr", {
         amount: numAmount,
       });
 
+      // Handle unauthorized error specifically
+      if (res.status === 401) {
+        console.error("Authentication error when generating QR code");
+        throw new Error("You must be logged in to make a deposit. Please log in again.");
+      }
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Failed to generate QR code");
+        // Attempt to parse error message, but provide fallback
+        try {
+          const data = await res.json();
+          throw new Error(data.message || "Failed to generate QR code");
+        } catch (e) {
+          throw new Error(`Error ${res.status}: Failed to generate QR code. Please try again.`);
+        }
       }
 
       const data = await res.json();
@@ -138,11 +157,57 @@ const QRDeposit = () => {
   });
 
   const pollPaymentStatus = async (refId: string) => {
+    // Track consecutive errors to handle persistent auth problems
+    let consecutiveErrors = 0;
+    
     // Poll every 5 seconds
     const interval = setInterval(async () => {
       try {
+        // Explicitly pass credentials to ensure session cookies are sent
         const res = await apiRequest("GET", `/api/payments/status/${refId}`);
+        
+        // Handle authentication issues
+        if (res.status === 401) {
+          console.warn("Authentication error during payment status check");
+          consecutiveErrors++;
+          
+          // If we get consecutive authentication errors, stop polling and show error
+          if (consecutiveErrors >= 3) {
+            clearInterval(interval);
+            setIsModalOpen(false);
+            toast({
+              title: "Session Expired",
+              description: "Your session has expired. Please log in again and check your payment status in transaction history.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Try to refresh the session
+          try {
+            await fetch("/api/auth/refresh-token", {
+              method: "POST",
+              credentials: "include",
+            });
+          } catch (e) {
+            console.error("Failed to refresh session during payment status check", e);
+          }
+          
+          // Continue to next iteration without further processing
+          return;
+        }
+        
+        // Reset consecutive errors counter on successful response
+        consecutiveErrors = 0;
+        
+        // Process the response
+        if (!res.ok) {
+          console.error(`Error checking payment status: ${res.status} ${res.statusText}`);
+          return;
+        }
+        
         const data = await res.json();
+        console.log("Payment status check response:", data);
 
         if (data.status === "completed") {
           clearInterval(interval);
@@ -164,6 +229,18 @@ const QRDeposit = () => {
         }
       } catch (error) {
         console.error("Error checking payment status:", error);
+        consecutiveErrors++;
+        
+        // Handle persistent errors
+        if (consecutiveErrors >= 5) {
+          clearInterval(interval);
+          setIsModalOpen(false);
+          toast({
+            title: "Connection Error",
+            description: "We're having trouble checking your payment status. Please check your transaction history later.",
+            variant: "destructive",
+          });
+        }
       }
     }, 5000);
 
@@ -186,67 +263,87 @@ const QRDeposit = () => {
             Instant
           </div>
         </div>
-
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-2">Select Amount</label>
-          <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">
-            {presetAmounts.map((amt) => (
-              <Button
-                key={amt}
-                type="button"
-                variant={selectedAmount === amt ? "default" : "outline"}
-                className={getPresetButtonClasses(amt)}
-                onClick={() => handlePresetAmountClick(amt)}
-              >
-                ₱{formatDisplayAmount(amt)}
-              </Button>
-            ))}
+        
+        {!user ? (
+          // Show login required message when user is not authenticated
+          <div className="bg-red-500/20 border border-red-500/40 rounded-md p-4 mb-4 text-center">
+            <LogIn className="h-6 w-6 text-yellow-300 mx-auto mb-2" />
+            <h3 className="font-medium text-white mb-1">Authentication Required</h3>
+            <p className="text-sm text-gray-300 mb-3">
+              You must be logged in to make a deposit. Please log in or create an account.
+            </p>
+            <Button 
+              onClick={() => window.location.href = '/auth'} 
+              className="bg-secondary/90 hover:bg-secondary text-white"
+            >
+              Log In Now
+            </Button>
           </div>
-        </div>
+        ) : (
+          // Show deposit form for authenticated users
+          <>
+            <div className="mb-4">
+              <label className="block text-gray-300 mb-2">Select Amount</label>
+              <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3">
+                {presetAmounts.map((amt) => (
+                  <Button
+                    key={amt}
+                    type="button"
+                    variant={selectedAmount === amt ? "default" : "outline"}
+                    className={getPresetButtonClasses(amt)}
+                    onClick={() => handlePresetAmountClick(amt)}
+                  >
+                    ₱{formatDisplayAmount(amt)}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-white">
-            Or Enter Custom Amount
-          </label>
-          <div className="flex">
-            <span className="inline-flex items-center px-3 py-2 text-sm bg-secondary/20 border border-r-0 border-secondary/50 rounded-l-md text-white">
-              ₱
-            </span>
-            <Input
-              type="number"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                setSelectedAmount(null);
-              }}
-              placeholder="Enter amount"
-              className="rounded-l-none text-white placeholder-gray-400"
-              min="100"
-              max="50000"
-            />
-          </div>
-          <p className="text-xs text-gray-400 mt-1">
-            Min: ₱100 | Max: ₱50,000
-          </p>
-        </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2 text-white">
+                Or Enter Custom Amount
+              </label>
+              <div className="flex">
+                <span className="inline-flex items-center px-3 py-2 text-sm bg-secondary/20 border border-r-0 border-secondary/50 rounded-l-md text-white">
+                  ₱
+                </span>
+                <Input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setSelectedAmount(null);
+                  }}
+                  placeholder="Enter amount"
+                  className="rounded-l-none text-white placeholder-gray-400"
+                  min="100"
+                  max="50000"
+                />
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Min: ₱100 | Max: ₱50,000
+              </p>
+            </div>
 
-        <Button
-          onClick={() => generateQrMutation.mutate()}
-          disabled={generateQrMutation.isPending}
-          className="w-full bg-secondary hover:bg-secondary/90"
-        >
-          {generateQrMutation.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating QR...
-            </>
-          ) : (
-            <>
-              <QrCode className="mr-2 h-4 w-4" />
-              Pay with GCash
-            </>
-          )}
-        </Button>
+            <Button
+              onClick={() => generateQrMutation.mutate()}
+              disabled={generateQrMutation.isPending}
+              className="w-full bg-secondary hover:bg-secondary/90"
+            >
+              {generateQrMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Generating QR...
+                </>
+              ) : (
+                <>
+                  <QrCode className="mr-2 h-4 w-4" />
+                  Pay with GCash
+                </>
+              )}
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Payment Modal - QR Code or Payment URL */}
