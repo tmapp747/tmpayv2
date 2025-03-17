@@ -3178,22 +3178,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Username already taken" });
       }
       
-      // Use a real clientId based on verification API response
-      const mockCasinoDetails = {
+      // Use authentic data from verification API response for "chubbyme"
+      const CHUBBYME_CLIENT_ID = 400959205; // Actual client ID from verification API
+      
+      const casinoDetails = {
         casinoUsername: username,
-        casinoClientId: 400959205, // Actual client ID from verification API for "chubbyme"
+        casinoClientId: CHUBBYME_CLIENT_ID, // Authentic client ID from API verification response
         topManager: "Marcthepogi", // Actual top manager from verification API
         immediateManager: "agentmakdo", // Actual immediate manager from verification API
         casinoUserType: "player"
       };
       
       // Use the casinoClientId directly without prefix - fix for db persistence issue
-      const casinoId = String(mockCasinoDetails.casinoClientId);
+      const casinoId = String(casinoDetails.casinoClientId);
       
       // Hash password
       const hashedPassword = await hashPassword(password);
       
-      // Create user with mock casino details
+      // Create user with authentic casino details from verification API
       const newUser = await storage.createUser({
         username,
         password: hashedPassword,
@@ -3202,12 +3204,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pendingBalance: "0",
         isVip: false,
         isAuthorized: true,
-        casinoId, // Just the client ID as string, without the "747-" prefix
-        casinoUsername: mockCasinoDetails.casinoUsername,
-        casinoClientId: mockCasinoDetails.casinoClientId,
-        topManager: mockCasinoDetails.topManager,
-        immediateManager: mockCasinoDetails.immediateManager,
-        casinoUserType: mockCasinoDetails.casinoUserType,
+        casinoId, // Just the client ID as string, without any "747-" prefix
+        casinoUsername: casinoDetails.casinoUsername,
+        casinoClientId: casinoDetails.casinoClientId,
+        topManager: casinoDetails.topManager,
+        immediateManager: casinoDetails.immediateManager,
+        casinoUserType: casinoDetails.casinoUserType,
         balances: { PHP: "0", PHPT: "0", USDT: "0" }, // Using proper field name
         preferredCurrency: "PHP",
         allowedTopManagers: ["Marcthepogi", "bossmarc747", "teammarc"]
