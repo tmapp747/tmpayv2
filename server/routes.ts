@@ -1708,24 +1708,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[DEBUG] Creating test transaction for user ${username} (ID: ${user.id})`);
       
-      // Create a transaction
-      const transaction = await storage.createTransaction({
-        userId: user.id,
-        type: "deposit",
-        method: "test",
-        amount: "100.00",
-        status: "pending",
-        paymentReference: `TEST-${Date.now()}`,
-        currency: "PHP",
-        metadata: { debug: true, timestamp: new Date().toISOString() }
-      });
+      // First query current transactions to see what exists
+      const beforeTransactions = await storage.getTransactionsByUserId(user.id);
+      console.log(`[DEBUG] BEFORE: User ${username} (ID: ${user.id}) has ${beforeTransactions.length} transactions`);
       
-      console.log(`[DEBUG] Created test transaction with ID: ${transaction.id}`);
+      // Create a new unique reference
+      const testReference = `TEST-${username}-${Date.now()}`;
+      
+      // Create a transaction
+      let transaction: Transaction;
+      try {
+        transaction = await storage.createTransaction({
+          userId: user.id,
+          type: "deposit",
+          method: "test",
+          amount: "100.00",
+          status: "pending",
+          paymentReference: testReference,
+          currency: "PHP",
+          metadata: { 
+            debug: true, 
+            timestamp: new Date().toISOString(),
+            testCreated: true
+          }
+        });
+        console.log(`[DEBUG] Successfully created test transaction with ID: ${transaction.id}`);
+      } catch (txError) {
+        console.error("[DEBUG] Failed to create transaction:", txError);
+        
+        // Check if the error is a duplicate ID error, if so try with a different approach
+        if (txError instanceof Error && txError.message.includes('duplicate key value')) {
+          console.log("[DEBUG] Handling duplicate key error by creating a direct database insertion");
+          
+          // Let's manually create a transaction ID that won't conflict
+          let newId: number;
+          try {
+            // First get max transaction ID
+            const maxIdResult = await (storage as any).dbInstance.execute(
+              sql`SELECT MAX(id) as max_id FROM transactions`
+            );
+            newId = (maxIdResult[0]?.max_id || 0) + 1;
+            console.log(`[DEBUG] Generated new transaction ID: ${newId}`);
+            
+            // Now try insertion with explicit ID
+            await (storage as any).dbInstance.execute(
+              sql`INSERT INTO transactions (id, user_id, type, method, amount, status, payment_reference, currency, metadata, created_at, updated_at)
+                  VALUES (${newId}, ${user.id}, 'deposit', 'test', 100.00, 'pending', ${testReference}, 'PHP', 
+                          ${{debug: true, timestamp: new Date().toISOString(), recovery: true}}, 
+                          NOW(), NOW())`
+            );
+            
+            // Now get the transaction
+            const insertedTx = await (storage as any).dbInstance.execute(
+              sql`SELECT * FROM transactions WHERE id = ${newId}`
+            );
+            transaction = insertedTx[0];
+            console.log(`[DEBUG] Created transaction via direct SQL: ${transaction?.id}`);
+          } catch (sqlError) {
+            console.error("[DEBUG] Failed direct SQL insertion:", sqlError);
+            throw new Error(`Both standard and direct SQL insertion failed: ${sqlError instanceof Error ? sqlError.message : String(sqlError)}`);
+          }
+        } else {
+          // Not a duplicate key error, rethrow
+          throw txError;
+        }
+      }
+      
+      // Allow a brief moment for database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Now check if the transaction is visible
       console.log(`[DEBUG] Checking transaction visibility for user ${username} (ID: ${user.id})`);
       const transactions = await storage.getTransactionsByUserId(user.id);
-      console.log(`[DEBUG] Found ${transactions.length} transactions for user ${username} (ID: ${user.id})`);
+      console.log(`[DEBUG] AFTER: Found ${transactions.length} transactions for user ${username} (ID: ${user.id})`);
       
       // Get details about each transaction
       const transactionDetails = transactions.map(tx => ({
@@ -1734,8 +1789,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         method: tx.method,
         amount: tx.amount,
         status: tx.status,
+        paymentReference: tx.paymentReference,
         createdAt: tx.createdAt
       }));
+      
+      // Check if our new transaction is in the list
+      const newTransactionFound = transactions.some(tx => 
+        tx.paymentReference === testReference || 
+        (transaction && tx.id === transaction.id)
+      );
+      
+      console.log(`[DEBUG] Is new transaction in the list? ${newTransactionFound}`);
       
       return res.json({
         success: true,
@@ -1743,7 +1807,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         transaction,
         allTransactions: transactions,
         transactionDetails,
-        transactionCount: transactions.length
+        transactionCount: transactions.length,
+        newTransactionFound,
+        testReference
       });
     } catch (error) {
       console.error("Test transaction error:", error);

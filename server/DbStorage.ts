@@ -613,6 +613,15 @@ export class DbStorage implements IStorage {
     }
   ): Promise<Transaction[]> {
     try {
+      console.log(`[DB DEBUG] Fetching transactions for userId: ${userId} with options:`, options);
+      
+      // Log current transactions in the database
+      const allTransactions = await this.dbInstance.select().from(transactions);
+      console.log(`[DB DEBUG] Total transactions in database: ${allTransactions.length}`);
+      console.log(`[DB DEBUG] Transaction IDs:`, allTransactions.map(t => t.id));
+      console.log(`[DB DEBUG] Transaction user IDs:`, allTransactions.map(t => t.userId));
+      
+      // Build the query
       let query = this.dbInstance
         .select()
         .from(transactions)
@@ -651,8 +660,17 @@ export class DbStorage implements IStorage {
         query = query.offset(options.offset);
       }
       
+      // Convert query to SQL for debugging
+      const { sql, params } = query.toSQL();
+      console.log(`[DB DEBUG] SQL query for transactions: ${sql}`);
+      console.log(`[DB DEBUG] SQL params:`, params);
+      
       const result = await query;
-      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} transactions for user ID: ${userId}`);
+      console.log(`[DB DEBUG] Retrieved ${result.length} transactions for user ID: ${userId}`);
+      if (result.length > 0) {
+        console.log(`[DB DEBUG] First transaction:`, result[0]);
+      }
+      
       return result;
     } catch (error) {
       console.error(`[DB] Error retrieving transactions for user ID ${userId}:`, error);
