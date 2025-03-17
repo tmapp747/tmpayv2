@@ -112,8 +112,9 @@ async function directPayGenerateQRCode(amount: number, reference: string, userna
 }
 
 // Helper function to generate a unique transaction reference
-function generateTransactionReference(): string {
-  return `TX-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+function generateTransactionReference(username?: string): string {
+  const userPrefix = username ? username.toUpperCase() : 'TX';
+  return `${userPrefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 }
 
 async function casino747PrepareTopup(casinoId: string, amount: number, reference: string) {
