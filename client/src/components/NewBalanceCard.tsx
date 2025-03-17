@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Wallet, Eye, EyeOff, RefreshCw, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import { User } from '@/lib/types';
-import { motion } from 'framer-motion';
+import { User, CasinoBalanceRequest } from '@/lib/types';
+import { motion, useAnimation } from 'framer-motion';
+import { casinoApi } from '@/lib/api';
 
 interface NewBalanceCardProps {
   className?: string;
@@ -20,6 +21,13 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   const [refreshing, setRefreshing] = useState(false);
   const [cardRotation, setCardRotation] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // State for casino balance
+  const [casinoBalance, setCasinoBalance] = useState<number | null>(null);
+  const [previousCasinoBalance, setPreviousCasinoBalance] = useState<number | null>(null);
+  const [isCasinoBalanceLoading, setIsCasinoBalanceLoading] = useState(false);
+  const [isCasinoBalanceUpdated, setIsCasinoBalanceUpdated] = useState(false);
+  const balanceControls = useAnimation();
   
   // Handle card tilt effect
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -57,15 +65,74 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
     return paddedId.match(/.{1,4}/g)?.join(' ') || idStr;
   };
   
+  // Fetch real-time casino balance
+  const fetchCasinoBalance = async () => {
+    if (!data?.user?.casinoClientId || !data?.user?.casinoUsername) return;
+    
+    try {
+      setIsCasinoBalanceLoading(true);
+      
+      const request: CasinoBalanceRequest = {
+        casinoClientId: data.user.casinoClientId,
+        casinoUsername: data.user.casinoUsername
+      };
+      
+      // Use the real-time balance endpoint
+      const balanceResponse = await casinoApi.getRealTimeBalance(request);
+      
+      if (balanceResponse.success && balanceResponse.balance) {
+        // Store previous balance for animation
+        if (casinoBalance !== null) {
+          setPreviousCasinoBalance(casinoBalance);
+        }
+        
+        // Convert balance to number if it's a string
+        const newBalance = typeof balanceResponse.balance === 'string' 
+          ? parseFloat(balanceResponse.balance) 
+          : balanceResponse.balance;
+        
+        // Update balance
+        setCasinoBalance(newBalance);
+        
+        // Show animation if this is an update (not first load)
+        if (casinoBalance !== null && casinoBalance !== newBalance) {
+          setIsCasinoBalanceUpdated(true);
+          // Animate balance change
+          balanceControls.start({
+            scale: [1, 1.1, 1],
+            color: ["#ffffff", "#38bdf8", "#ffffff"],
+            transition: { duration: 0.5 }
+          });
+          
+          // Reset flag after animation
+          setTimeout(() => setIsCasinoBalanceUpdated(false), 3000);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching casino balance:', error);
+    } finally {
+      setIsCasinoBalanceLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  // Fetch casino balance on initial load and after every refresh
+  useEffect(() => {
+    if (data?.user?.casinoClientId && data?.user?.casinoUsername) {
+      fetchCasinoBalance();
+      
+      // Set up interval for real-time updates every 30 seconds
+      const intervalId = setInterval(fetchCasinoBalance, 30000);
+      return () => clearInterval(intervalId);
+    }
+  }, [data?.user?.casinoClientId, data?.user?.casinoUsername]);
+  
   // Debug log to see available user data
   console.log("User data:", data?.user);
   
   const handleRefresh = async () => {
     setRefreshing(true);
-    // After animation completes
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
+    await fetchCasinoBalance();
   };
   
   if (isLoading) {
@@ -135,7 +202,6 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   const { 
     balance, 
     pendingBalance, 
-    casinoBalance, 
     casinoId, 
     casinoClientId, 
     id, 
@@ -144,7 +210,11 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
     immediateManager 
   } = data.user;
   
-  const totalBalance = parseFloat(balance as string) + parseFloat(pendingBalance as string);
+  // Determine which balance to show:
+  // Use casino balance if available, otherwise fallback to app balance
+  const displayBalance = casinoBalance !== null 
+    ? casinoBalance 
+    : parseFloat(balance as string) + parseFloat(pendingBalance as string);
   
   // Use casinoClientId or casinoId from the user record (whichever is available)
   const formattedCardNumber = formatCardNumber(casinoClientId || casinoId);
@@ -181,7 +251,22 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
       <div className="relative z-10 flex flex-col h-full justify-between">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="text-sm font-medium text-white/90">Current Balance</div>
+          <div className="text-sm font-medium text-white/90">
+            Current Balance
+            {refreshing && (
+              <span className="ml-2 inline-block">
+                <RefreshCw className="h-3 w-3 animate-spin text-white/70" />
+              </span>
+            )}
+            {!refreshing && (
+              <span 
+                className="ml-2 inline-block cursor-pointer" 
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="h-3 w-3 text-white/70 hover:text-white" />
+              </span>
+            )}
+          </div>
           <div className="casino-747-logo">
             <img 
               src="/assets/logos/747logo.png" 
@@ -205,13 +290,17 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
           <motion.h3 
             className="text-3xl font-bold text-white"
             initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
+            animate={isCasinoBalanceUpdated ? balanceControls : { opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            ₱{showBalance ? (totalBalance).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            }) : '••••••••'}
+            {isCasinoBalanceLoading && !casinoBalance ? (
+              <div className="h-8 w-32 bg-white/20 rounded-md animate-pulse"></div>
+            ) : (
+              showBalance ? `₱${displayBalance.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}` : '₱••••••••'
+            )}
           </motion.h3>
         </div>
         
