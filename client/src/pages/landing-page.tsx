@@ -34,14 +34,14 @@ export default function LandingPage() {
   return (
     <div className={`min-h-screen flex flex-col ${theme === "dark" ? "dark" : "light"}`}>
       {/* Header */}
-      <header className="fixed top-0 w-full h-16 z-40 backdrop-blur-md border-b border-border/30 flex items-center px-4 md:px-6 justify-between bg-card/80 text-card-foreground">
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 overflow-hidden flex items-center justify-center">
-            <img src={teamMarcLogo} alt="TeamMARC" className="h-8 w-auto object-contain" />
+      <header className="fixed top-0 w-full h-14 z-40 backdrop-blur-md border-b border-border/30 flex items-center px-3 md:px-5 justify-between bg-card/80 text-card-foreground">
+        <div className="flex items-center space-x-1.5">
+          <div className="w-8 h-8 overflow-hidden flex items-center justify-center">
+            <img src={teamMarcLogo} alt="TeamMARC" className="h-6 w-auto object-contain" />
           </div>
-          <span className="font-medium text-lg">TeamMARC</span>
+          <span className="font-medium text-base">TeamMARC</span>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
           <ThemeToggle />
           <Link href={isMobile ? "/mobile-auth" : "/auth"}>
             <Button 
@@ -51,7 +51,7 @@ export default function LandingPage() {
                 borderColor: "#3b82f6",
                 boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
               }}
-              className="text-white border hover:border-blue-400"
+              className="text-white border hover:border-blue-400 text-xs py-1 h-8"
             >
               Sign In
             </Button>
@@ -63,17 +63,17 @@ export default function LandingPage() {
       <AnimatePresence>
         {showMobilePromo && isMobile && (
           <motion.div 
-            className="fixed inset-x-0 top-16 z-50 px-4 py-3"
+            className="fixed inset-x-0 top-14 z-50 px-4 py-3"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
           >
             <motion.div 
-              className="relative bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-4 flex items-center justify-between"
+              className="relative bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg shadow-lg p-3 flex items-center justify-between"
               whileTap={{ scale: 0.98 }}
             >
               <div className="flex-1">
-                <p className="text-white font-medium text-sm">
+                <p className="text-white font-medium text-xs">
                   Try our new mobile banking interface!
                 </p>
               </div>
@@ -81,13 +81,13 @@ export default function LandingPage() {
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="text-white border-white/40 bg-white/10 hover:bg-white/20"
+                  className="text-white border-white/40 bg-white/10 hover:bg-white/20 text-xs h-7 py-0 px-2"
                 >
-                  Try Now <ChevronRight className="h-4 w-4 ml-1" />
+                  Try Now <ChevronRight className="h-3 w-3 ml-1" />
                 </Button>
               </Link>
               <button 
-                className="absolute -top-2 -right-2 w-6 h-6 bg-black/30 rounded-full flex items-center justify-center text-white text-xs"
+                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-black/30 rounded-full flex items-center justify-center text-white text-xs"
                 onClick={() => setShowMobilePromo(false)}
               >
                 ✕
@@ -147,12 +147,12 @@ export default function LandingPage() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.5 }}
-              className="mb-10 relative"
+              className="mb-8 relative"
             >
               <img 
                 src={teamMarcLogo} 
                 alt="TeamMARC Logo" 
-                className="w-64 h-auto md:w-80 lg:w-96 object-contain shadow-lg"
+                className="w-56 h-auto md:w-72 lg:w-80 object-contain shadow-lg"
               />
             </motion.div>
             
@@ -161,12 +161,12 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.6 }}
-              className="max-w-lg text-center mb-8"
+              className="max-w-lg text-center mb-6"
             >
-              <h2 className="text-white text-lg md:text-xl mb-3">
+              <h2 className="text-white text-base md:text-lg mb-2">
                 Secure Financial Platform for Casino Operations
               </h2>
-              <p className="text-gray-300 text-sm md:text-base">
+              <p className="text-gray-300 text-xs md:text-sm">
                 Manage your casino transactions with our secure e-wallet system. 
                 Integrated with GCash for seamless deposits and withdrawals.
               </p>
@@ -178,19 +178,19 @@ export default function LandingPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6, duration: 0.6 }}
-                className="mb-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 shadow-lg max-w-lg w-full"
+                className="mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-3 shadow-md max-w-lg w-full"
               >
                 <div className="flex items-center">
-                  <div className="bg-white/10 rounded-full p-2 mr-4">
-                    <Smartphone className="text-white h-6 w-6" />
+                  <div className="bg-white/10 rounded-full p-1.5 mr-3">
+                    <Smartphone className="text-white h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-white font-semibold">Try Our Mobile Banking Interface</h3>
-                    <p className="text-white/80 text-sm">Experience our new mobile banking-style interface with smooth animations and gestures.</p>
+                    <h3 className="text-white font-medium text-sm">Try Our Mobile Banking Interface</h3>
+                    <p className="text-white/80 text-xs">Experience our new mobile banking-style interface with smooth animations and gestures.</p>
                   </div>
                   <Link href="/mobile-auth">
                     <Button 
-                      className="bg-white text-blue-600 hover:bg-white/90 ml-2 shadow-md" 
+                      className="bg-white text-blue-600 hover:bg-white/90 ml-2 shadow-sm text-xs py-1 h-7" 
                       size="sm"
                     >
                       Try Now
@@ -210,14 +210,14 @@ export default function LandingPage() {
               <Link href={isMobile ? "/mobile-auth" : "/auth"}>
                 <motion.div whileTap={{ scale: 0.97 }}>
                   <Button 
-                    size="lg" 
-                    className="text-base shadow-lg bg-green-600 hover:bg-green-700 text-white w-full md:w-auto min-w-[150px] border-2 border-green-500"
+                    size="default" 
+                    className="text-sm shadow-md bg-green-600 hover:bg-green-700 text-white w-full md:w-auto min-w-[120px] border border-green-500"
                     style={{
                       background: "linear-gradient(to bottom, #22c55e, #16a34a)",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                      boxShadow: "0 3px 5px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
                     }}
                   >
-                    Login <ArrowRight className="ml-2 h-5 w-5" />
+                    Login <ArrowRight className="ml-1 h-4 w-4" />
                   </Button>
                 </motion.div>
               </Link>
@@ -225,11 +225,11 @@ export default function LandingPage() {
               <Link href={isMobile ? "/mobile-auth" : "/auth"}>
                 <motion.div whileTap={{ scale: 0.97 }}>
                   <Button 
-                    size="lg" 
-                    className="text-base shadow-lg bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto min-w-[150px] mt-3 md:mt-0 border-2 border-blue-500"
+                    size="default" 
+                    className="text-sm shadow-md bg-blue-600 hover:bg-blue-700 text-white w-full md:w-auto min-w-[120px] mt-3 md:mt-0 border border-blue-500"
                     style={{
                       background: "linear-gradient(to bottom, #3b82f6, #2563eb)",
-                      boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+                      boxShadow: "0 3px 5px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
                     }}
                   >
                     Sign Up
@@ -243,25 +243,25 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.6 }}
-              className="mt-6 flex flex-wrap justify-center gap-3"
+              className="mt-5 flex flex-wrap justify-center gap-2"
             >
               <Link 
                 href="/admin/auth" 
-                className="text-sm px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-blue-300 hover:text-blue-200 hover:bg-gray-700/60 transition-all duration-200"
+                className="text-xs px-3 py-1.5 rounded-full bg-gray-800/50 border border-gray-700 text-blue-300 hover:text-blue-200 hover:bg-gray-700/60 transition-all duration-200"
               >
                 Admin Sign In
               </Link>
               <Link 
                 href="/mobile" 
-                className="text-sm px-4 py-2 rounded-full bg-purple-900/50 border border-purple-700 text-purple-300 hover:text-purple-200 hover:bg-purple-800/60 transition-all duration-200 flex items-center"
+                className="text-xs px-3 py-1.5 rounded-full bg-purple-900/50 border border-purple-700 text-purple-300 hover:text-purple-200 hover:bg-purple-800/60 transition-all duration-200 flex items-center"
               >
-                <Smartphone className="h-4 w-4 mr-1" /> Mobile App
+                <Smartphone className="h-3 w-3 mr-1" /> Mobile App
               </Link>
               <Link 
                 href="/dashboard" 
-                className="text-sm px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-teal-300 hover:text-teal-200 hover:bg-gray-700/60 transition-all duration-200 flex items-center"
+                className="text-xs px-3 py-1.5 rounded-full bg-gray-800/50 border border-gray-700 text-teal-300 hover:text-teal-200 hover:bg-gray-700/60 transition-all duration-200 flex items-center"
               >
-                <LaptopIcon className="h-4 w-4 mr-1" /> Desktop Version
+                <LaptopIcon className="h-3 w-3 mr-1" /> Desktop Version
               </Link>
             </motion.div>
           </motion.div>
