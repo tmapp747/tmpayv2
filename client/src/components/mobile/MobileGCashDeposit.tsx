@@ -520,49 +520,17 @@ export default function MobileGCashDeposit() {
                     title="GCash Payment"
                   />
                   
-                  {/* QR Code overlay covering the bottom part of the iframe */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/90 rounded-b-lg p-4 border-t border-blue-500/30" style={{ height: "50%" }}>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <img 
-                          src="/images/gcash.png" 
-                          alt="GCash" 
-                          className="w-5 h-5 mr-2 rounded-lg" 
-                        />
-                        <span className="text-white text-sm font-medium">Scan QR Instead</span>
-                      </div>
-                      <span className="text-xs text-blue-300 bg-blue-900/50 px-2 py-1 rounded-full">Recommended</span>
-                    </div>
-                    
-                    <div className="flex space-x-4">
-                      {/* QR Code */}
-                      <div className="p-2 bg-white rounded-lg" style={{ width: "110px", height: "110px" }}>
-                        {qrData && qrData.includes('<iframe') ? (
-                          <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full h-full" />
-                        ) : (
-                          <img 
-                            src={qrData || '/images/placeholder-qr.png'} 
-                            alt="GCash QR Code"
-                            className="w-full h-full object-contain"
-                          />
-                        )}
-                      </div>
-                      
-                      {/* Instructions */}
-                      <div className="flex-1 flex flex-col justify-center">
-                        <p className="text-xs text-blue-200">
-                          <strong>Scan this QR</strong> with your GCash app or share to another device for easy payment
-                        </p>
-                        <Button 
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 border-blue-500/20 text-xs h-8 text-white bg-blue-800/40 hover:bg-blue-700/60"
-                          onClick={handleShareLink}
-                        >
-                          <Share2 className="h-3 w-3 mr-1" />
-                          Share to another device
-                        </Button>
-                      </div>
+                  {/* QR Code overlay covering just 1/3 of the bottom of the iframe */}
+                  <div className="absolute bottom-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/95 rounded-bl-lg rounded-tr-none p-2 border border-blue-500/40 shadow-lg" style={{ width: "130px", height: "130px" }}>
+                    {/* QR Code with payment URL */}
+                    <div className="p-1 bg-white rounded-lg h-full w-full flex flex-col items-center justify-center">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(payUrl || '')}`}
+                        alt="Payment QR Code"
+                        className="w-full h-auto object-contain"
+                        style={{ maxHeight: "110px" }}
+                      />
+                      <span className="text-[8px] text-gray-500 mt-1">Scan to pay</span>
                     </div>
                   </div>
                 </div>
