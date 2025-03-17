@@ -3176,13 +3176,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-
-  // Additional endpoint to handle submission from ManualPaymentForm
-  app.post("/api/payments/manual/submit", authMiddleware, async (req: Request, res: Response) => {
-    // Redirect to the correct endpoint
-    return res.redirect(307, '/api/payments/manual/create');
-  });
-
       console.error("Casino transfer error:", error);
       if (error instanceof ZodError) {
         return res.status(400).json({ 
