@@ -44,6 +44,10 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  email: z.string().email(),
+  casinoId: z.string().nonempty(),
+  preferredCurrency: z.enum(supportedCurrencies)
 });
 
 // Transaction ledger schema with enhanced tracking and analytics capabilities
