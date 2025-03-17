@@ -457,11 +457,36 @@ export default function MobileAuthPage() {
               
               <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
                 <div className="space-y-4">
-                  <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-4 flex items-center">
-                    <div className="flex-1 opacity-70">
-                      {verifiedUsername}
+                  <div className="space-y-3">
+                    <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-4 flex items-center">
+                      <div className="flex-1 opacity-70">
+                        {verifiedUsername}
+                      </div>
+                      <CheckCircle className="h-5 w-5 text-green-400" />
                     </div>
-                    <CheckCircle className="h-5 w-5 text-green-400" />
+                    
+                    {verificationResponse && (
+                      <div className="bg-blue-900/30 border border-blue-500/30 rounded-xl p-3 text-sm text-white/80">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <div className="text-xs text-white/50 mb-1">Top Manager</div>
+                            <div className="font-medium">{verificationResponse.topManager || '-'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50 mb-1">Immediate Manager</div>
+                            <div className="font-medium">{verificationResponse.immediateManager || '-'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50 mb-1">User Type</div>
+                            <div className="font-medium">{verificationResponse.userType || 'player'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-white/50 mb-1">Client ID</div>
+                            <div className="font-medium">{verificationResponse.clientId || '-'}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="relative">
