@@ -154,12 +154,14 @@ export default function MobileAuthPage() {
         // Add casino data from verification if available
         const registerData = {
           ...data,
-          casinoUsername: verificationResponse?.casinoUsername || null,
-          clientId: verificationResponse?.clientId || null,
-          topManager: verificationResponse?.topManager || null,
-          immediateManager: verificationResponse?.immediateManager || null,
-          userType: verificationResponse?.userType || null
+          casinoUsername: verificationResponse?.casinoUsername || undefined,
+          clientId: verificationResponse?.clientId || undefined,
+          topManager: verificationResponse?.topManager || undefined,
+          immediateManager: verificationResponse?.immediateManager || undefined,
+          userType: verificationResponse?.userType || undefined
         };
+        
+        console.log('Registration data:', JSON.stringify(registerData));
         
         const response = await fetch('/api/auth/register', {
           method: 'POST',
@@ -169,12 +171,13 @@ export default function MobileAuthPage() {
           body: JSON.stringify(registerData)
         });
         
+        const responseData = await response.json();
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Registration failed');
+          throw new Error(responseData.message || 'Registration failed');
         }
         
-        return await response.json();
+        return responseData;
       } finally {
         setIsLoading(false);
       }
