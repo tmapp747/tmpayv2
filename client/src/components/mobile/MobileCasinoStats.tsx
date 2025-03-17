@@ -281,7 +281,7 @@ export default function MobileCasinoStats() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Yearly</span>
-                    <span className="font-medium">{safeCurrency(turnOver?.yearly)}</span>
+                    <span className="font-medium">{formatCurrency(turnOver?.yearly)}</span>
                   </div>
                 </div>
               </motion.div>
