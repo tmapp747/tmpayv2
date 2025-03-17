@@ -2553,6 +2553,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get detailed user stats from casino API
+  app.get("/api/casino/user-stats/:username", async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+      
+      if (!username) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Username is required" 
+        });
+      }
+      
+      try {
+        // Get detailed user statistics from casino API
+        const userDetails = await casino747Api.getUserDetails(username);
+        
+        return res.json({
+          success: true,
+          clientId: userDetails.clientId,
+          isAgent: userDetails.isAgent,
+          userType: userDetails.userType,
+          username: userDetails.username,
+          topManager: userDetails.topManager,
+          immediateManager: userDetails.immediateManager,
+          statistics: userDetails.statistic,
+          turnOver: userDetails.turnOver,
+          managers: userDetails.managers || [],
+          message: "User statistics fetched successfully"
+        });
+      } catch (casinoError) {
+        console.error("Error fetching user statistics from casino API:", casinoError);
+        return res.status(400).json({ 
+          success: false,
+          message: "Failed to fetch user statistics from casino system" 
+        });
+      }
+    } catch (error) {
+      console.error("Get casino user statistics error:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Server error while fetching casino user statistics" 
+      });
+    }
+  });
+  
   // Get user balance from casino
   app.post("/api/casino/balance", async (req: Request, res: Response) => {
     try {
