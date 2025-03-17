@@ -410,8 +410,17 @@ export default function MobileCasinoStats() {
     // Find the current user node
     const currentUser = hierarchy.user;
     
-    // Build a structured tree
-    const buildHierarchyTree = (parentId: number | null) => {
+    // Define the node type for better TypeScript support
+    interface HierarchyNode {
+      id: number;
+      clientId: number;
+      username: string;
+      parentClientId: number | null;
+      children?: HierarchyNode[];
+    }
+    
+    // Build a structured tree with proper typing
+    const buildHierarchyTree = (parentId: number | null): HierarchyNode[] => {
       return otherNodes
         .filter(node => node.parentClientId === parentId)
         .map(node => ({
@@ -426,22 +435,39 @@ export default function MobileCasinoStats() {
     }));
     
     // Render a node and its children
-    const renderNode = (node: any, level: number = 0, isCurrentUser: boolean = false) => {
+    const renderNode = (node: HierarchyNode, level: number = 0, isCurrentUser: boolean = false) => {
       const paddingLeft = level * 16;
-      const bgColor = isCurrentUser ? 'bg-blue-800/50' : level === 0 ? 'bg-[#002366]' : 'bg-[#001849]';
+      // Color gradient from darker to lighter blue based on hierarchy level
+      const bgColor = isCurrentUser 
+        ? 'bg-blue-800/50' 
+        : level === 0 
+          ? 'bg-[#002366]' 
+          : level === 1
+            ? 'bg-[#001f52]'
+            : 'bg-[#001849]';
+      
+      // Render the appropriate icon based on role in hierarchy
+      const renderIcon = () => {
+        if (level === 0) {
+          return <Award className="h-4 w-4 text-white" />;  // Top level (company)
+        } else if (level === 1) {
+          return <CreditCard className="h-4 w-4 text-white" />; // Direct reports (top managers)
+        } else if (isCurrentUser) {
+          return <Users className="h-4 w-4 text-white" />; // Current user
+        } else {
+          return <Users className="h-4 w-4 text-white" />; // Other users
+        }
+      };
       
       return (
         <div key={node.clientId}>
-          <div className={`${bgColor} rounded-lg p-3 mb-2 flex items-center justify-between`} style={{ marginLeft: paddingLeft }}>
+          <div 
+            className={`${bgColor} rounded-lg p-3 mb-2 flex items-center justify-between transition-all duration-200 hover:brightness-110`} 
+            style={{ marginLeft: paddingLeft }}
+          >
             <div className="flex items-center">
               <div className="mr-2 bg-white/20 rounded-full p-1.5">
-                {level === 0 ? (
-                  <Award className="h-4 w-4 text-white" />
-                ) : isCurrentUser ? (
-                  <Users className="h-4 w-4 text-white" />
-                ) : (
-                  <Users className="h-4 w-4 text-white" />
-                )}
+                {renderIcon()}
               </div>
               <div>
                 <p className="font-medium">{node.username}</p>
@@ -457,7 +483,7 @@ export default function MobileCasinoStats() {
           
           {node.children && node.children.length > 0 && (
             <div className="border-l-2 border-blue-800/50 ml-4">
-              {node.children.map((child: any) => 
+              {node.children.map((child) => 
                 renderNode(
                   child, 
                   level + 1, 
@@ -470,9 +496,51 @@ export default function MobileCasinoStats() {
       );
     };
     
+    // Add a summary section at the top of the hierarchy tree
+    const hierarchySummary = () => {
+      if (!hierarchy.hierarchy || hierarchy.hierarchy.length === 0) {
+        return null;
+      }
+      
+      // Count total nodes and depth of hierarchy
+      const totalNodes = hierarchy.hierarchy.length;
+      const userDepthInHierarchy = hierarchy.message?.split('->').length || 0;
+      
+      return (
+        <div className="mb-4 bg-[#001849] rounded-xl p-4 shadow-md">
+          <h3 className="font-medium mb-2">Hierarchy Summary</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs opacity-70">Total Members</p>
+              <p className="font-medium">{totalNodes}</p>
+            </div>
+            <div>
+              <p className="text-xs opacity-70">Your Level</p>
+              <p className="font-medium">{userDepthInHierarchy > 0 ? userDepthInHierarchy : 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-xs opacity-70">Direct Manager</p>
+              <p className="font-medium text-sm truncate">
+                {hierarchy.hierarchy.find(n => n.clientId === currentUser?.parentClientId)?.username || 'N/A'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs opacity-70">Top Level</p>
+              <p className="font-medium text-sm truncate">
+                {topLevelNodes.length > 0 ? topLevelNodes[0].username : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    };
+    
     return (
       <div className="space-y-3">
-        {hierarchyTree.map(node => renderNode(node))}
+        {hierarchySummary()}
+        <div className="space-y-3">
+          {hierarchyTree.map(node => renderNode(node))}
+        </div>
       </div>
     );
   };
