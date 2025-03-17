@@ -11,14 +11,16 @@ const accessAsync = promisify(fs.access);
 const readdirAsync = promisify(fs.readdir);
 
 /**
- * Simple file storage service to handle uploads and retrieval
- * This provides a basic abstraction that could later be swapped with S3 or other storage
+ * Enhanced file storage service to handle uploads and retrieval
+ * This provides a robust abstraction that could later be swapped with S3 or other storage
  */
 export class FileStorage {
   private baseDir: string;
+  private subDirs: string[];
   
   constructor(baseDir: string = './public/assets') {
     this.baseDir = baseDir;
+    this.subDirs = ['logos', 'images', 'uploads', 'receipts', 'icons', 'profile', 'banners', 'payments'];
   }
   
   /**
@@ -31,17 +33,17 @@ export class FileStorage {
     } catch (error) {
       // Create base directory if it doesn't exist
       await mkdirAsync(this.baseDir, { recursive: true });
+      console.log(`Created base directory: ${this.baseDir}`);
     }
     
-    const subDirs = ['logos', 'images', 'uploads', 'receipts'];
-    
     // Create subdirectories if they don't exist
-    for (const dir of subDirs) {
+    for (const dir of this.subDirs) {
       const dirPath = path.join(this.baseDir, dir);
       try {
         await accessAsync(dirPath, fs.constants.F_OK);
       } catch (error) {
         await mkdirAsync(dirPath, { recursive: true });
+        console.log(`Created subdirectory: ${dirPath}`);
       }
     }
   }

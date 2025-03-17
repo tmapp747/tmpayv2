@@ -225,17 +225,35 @@ export default function MobileDashboard() {
         </div>
         
         {/* Quick Action Buttons */}
-        <div className="flex justify-center gap-4 text-center text-xs px-4">
+        <div className="flex justify-center gap-2 text-center text-xs px-2">
+          <Link href="/mobile/banking">
+            <motion.div 
+              className="flex flex-col items-center space-y-2"
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="banking-btn with-ripple shadow-lg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 6.5C3 4.01472 5.01472 2 7.5 2H16.5C18.9853 2 21 4.01472 21 6.5V17.5C21 19.9853 18.9853 22 16.5 22H7.5C5.01472 22 3 19.9853 3 17.5V6.5Z" stroke="white" strokeWidth="2"/>
+                  <path d="M7 7H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M7 12H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M7 17H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <span>Banking Management</span>
+            </motion.div>
+          </Link>
+          
           <motion.div 
             className="flex flex-col items-center space-y-2"
             whileTap={{ scale: 0.95 }}
           >
             <div className="banking-btn with-ripple shadow-lg">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 4V20M20 12H4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
+                <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
               </svg>
             </div>
-            <span>Transfer</span>
+            <span>User Management</span>
           </motion.div>
           
           <motion.div 
@@ -243,19 +261,15 @@ export default function MobileDashboard() {
             whileTap={{ scale: 0.95 }}
           >
             <div className="banking-btn with-ripple shadow-lg">
-              <ArrowDownToLine className="h-6 w-6 text-white" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 6H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 12H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M3 6L7 10L3 6Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 18L17 14L21 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
-            <span>Receive</span>
-          </motion.div>
-          
-          <motion.div 
-            className="flex flex-col items-center space-y-2"
-            whileTap={{ scale: 0.95 }}
-          >
-            <div className="banking-btn with-ripple shadow-lg">
-              <CreditCard className="h-6 w-6 text-white" />
-            </div>
-            <span>Payment</span>
+            <span>Portals</span>
           </motion.div>
         </div>
         

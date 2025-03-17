@@ -113,11 +113,22 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-white/90">Current Balance</div>
             <div className="mastercard-logo">
-              <div className="flex">
-                <div className="w-7 h-7 bg-yellow-500 rounded-full"></div>
-                <div className="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
-              </div>
-              <div className="text-[8px] text-center text-white mt-1">mastercard</div>
+              <img 
+                src="/assets/logos/mastercard.svg" 
+                alt="Mastercard"
+                className="h-9 w-auto"
+                onError={(e) => {
+                  // Fallback to CSS circles if image fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = `
+                    <div class="flex">
+                      <div class="w-7 h-7 bg-yellow-500 rounded-full"></div>
+                      <div class="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
+                    </div>
+                    <div class="text-[8px] text-center text-white mt-1">mastercard</div>
+                  `;
+                }}
+              />
             </div>
           </div>
           <div className="my-4">
@@ -174,11 +185,22 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
         <div className="flex items-center justify-between">
           <div className="text-sm font-medium text-white/90">Current Balance</div>
           <div className="mastercard-logo">
-            <div className="flex">
-              <div className="w-7 h-7 bg-yellow-500 rounded-full"></div>
-              <div className="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
-            </div>
-            <div className="text-[8px] text-center text-white mt-1">mastercard</div>
+            <img 
+              src="/assets/logos/mastercard.svg" 
+              alt="Mastercard"
+              className="h-9 w-auto"
+              onError={(e) => {
+                // Fallback to CSS circles if image fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).parentElement!.innerHTML = `
+                  <div class="flex">
+                    <div class="w-7 h-7 bg-yellow-500 rounded-full"></div>
+                    <div class="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
+                  </div>
+                  <div class="text-[8px] text-center text-white mt-1">mastercard</div>
+                `;
+              }}
+            />
           </div>
         </div>
         
