@@ -3876,8 +3876,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expiredTransactions: { id: number, type: string }[] = [];
       
       // Find and update expired QR payments
-      const qrPayments = await storage.getAllQrPayments();
-      for (const qrPayment of qrPayments.values()) {
+      const qrPaymentsMap = storage.getAllQrPayments();
+      const qrPayments = Array.from(qrPaymentsMap.values());
+      for (const qrPayment of qrPayments) {
         if (qrPayment.status === 'pending' && new Date(qrPayment.expiresAt) < now) {
           await storage.updateQrPaymentStatus(qrPayment.id, 'expired');
           
@@ -3905,8 +3906,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find and update expired Telegram payments
-      const telegramPayments = await storage.getAllTelegramPayments();
-      for (const telegramPayment of telegramPayments.values()) {
+      const telegramPaymentsMap = storage.getAllTelegramPayments();
+      const telegramPayments = Array.from(telegramPaymentsMap.values());
+      for (const telegramPayment of telegramPayments) {
         if (telegramPayment.status === 'pending' && new Date(telegramPayment.expiresAt) < now) {
           await storage.updateTelegramPaymentStatus(telegramPayment.id, 'expired');
           
@@ -3955,8 +3957,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const remindersSent: { id: number, userId: number, type: string }[] = [];
       
       // Find pending QR payments that are about to expire
-      const qrPayments = await storage.getAllQrPayments();
-      for (const qrPayment of qrPayments.values()) {
+      const qrPaymentsMap = storage.getAllQrPayments();
+      const qrPayments = Array.from(qrPaymentsMap.values());
+      for (const qrPayment of qrPayments) {
         if (qrPayment.status === 'pending') {
           const expiryTime = new Date(qrPayment.expiresAt);
           const timeLeft = Math.max(0, expiryTime.getTime() - now.getTime());
@@ -3989,8 +3992,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Do the same for Telegram payments
-      const telegramPayments = await storage.getAllTelegramPayments();
-      for (const telegramPayment of telegramPayments.values()) {
+      const telegramPaymentsMap = storage.getAllTelegramPayments();
+      const telegramPayments = Array.from(telegramPaymentsMap.values());
+      for (const telegramPayment of telegramPayments) {
         if (telegramPayment.status === 'pending') {
           const expiryTime = new Date(telegramPayment.expiresAt);
           const timeLeft = Math.max(0, expiryTime.getTime() - now.getTime());
