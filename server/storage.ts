@@ -2494,6 +2494,100 @@ export class DbStorage extends MemStorage {
       return super.getActiveQrPaymentByUserId(userId);
     }
   }
+  
+  /**
+   * Override getAllQrPayments to fetch all QR payments from the database
+   * This is critical for providing accurate admin dashboard data
+   */
+  getAllQrPayments(): Map<number, QrPayment> {
+    try {
+      // First get the in-memory QR payments
+      const memQrPayments = super.getAllQrPayments();
+      
+      // Then asynchronously refresh from the database
+      this.refreshQrPaymentsFromDatabase();
+      
+      // Return current state immediately (will be updated in-memory for next call)
+      return memQrPayments;
+    } catch (error) {
+      console.error('Error getting all QR payments:', error);
+      // Fallback to in-memory data if database operation fails
+      return super.getAllQrPayments();
+    }
+  }
+  
+  /**
+   * Private helper to refresh QR payments from database
+   */
+  private async refreshQrPaymentsFromDatabase(): Promise<void> {
+    try {
+      // Fetch all QR payments from database
+      const dbQrPayments = await this.dbInstance.select().from(qrPayments);
+      
+      // Convert each to proper format and update in-memory storage
+      for (const dbQr of dbQrPayments) {
+        const qrPayment: QrPayment = {
+          ...dbQr,
+          // Make sure numeric values are returned as strings
+          amount: dbQr.amount ? dbQr.amount.toString() : "0",
+        };
+        
+        // Update the in-memory storage
+        this.qrPayments.set(qrPayment.id, qrPayment);
+      }
+      
+      console.log(`Refreshed ${dbQrPayments.length} QR payments from database`);
+    } catch (error) {
+      console.error('Error refreshing QR payments from database:', error);
+    }
+  }
+  
+  /**
+   * Override getAllTelegramPayments to fetch all Telegram payments from the database
+   * This is critical for providing accurate admin dashboard data
+   */
+  getAllTelegramPayments(): Map<number, TelegramPayment> {
+    try {
+      // First get the in-memory Telegram payments
+      const memTelegramPayments = super.getAllTelegramPayments();
+      
+      // Then asynchronously refresh from the database
+      this.refreshTelegramPaymentsFromDatabase();
+      
+      // Return current state immediately (will be updated in-memory for next call)
+      return memTelegramPayments;
+    } catch (error) {
+      console.error('Error getting all Telegram payments:', error);
+      // Fallback to in-memory data if database operation fails
+      return super.getAllTelegramPayments();
+    }
+  }
+  
+  /**
+   * Private helper to refresh Telegram payments from database
+   */
+  private async refreshTelegramPaymentsFromDatabase(): Promise<void> {
+    try {
+      // Fetch all Telegram payments from database
+      const dbTelegramPayments = await this.dbInstance.select().from(telegramPayments);
+      
+      // Convert each to proper format and update in-memory storage
+      for (const dbTelegram of dbTelegramPayments) {
+        const telegramPayment: TelegramPayment = {
+          ...dbTelegram,
+          // Make sure numeric values are returned as strings
+          amount: dbTelegram.amount ? dbTelegram.amount.toString() : "0",
+        };
+        
+        // Update the in-memory storage
+        this.telegramPayments.set(telegramPayment.id, telegramPayment);
+      }
+      
+      console.log(`Refreshed ${dbTelegramPayments.length} Telegram payments from database`);
+    } catch (error) {
+      console.error('Error refreshing Telegram payments from database:', error);
+    }
+  }
 }
 
 // Import database connection
