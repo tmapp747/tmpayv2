@@ -9,7 +9,7 @@ import { User as SelectUser } from "@shared/schema";
 import { casino747Api } from "./casino747Api";
 import { pool } from "./db";
 import pgSession from "connect-pg-simple";
-import { insertUserSchema } from "../shared/schema";
+import { insertUserSchema, supportedCurrencies } from "../shared/schema";
 import { z } from "zod";
 
 declare global {
@@ -244,6 +244,18 @@ export function setupAuth(app: Express) {
       // Check password security criteria
       const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/).regex(/[^A-Za-z0-9]/);
       passwordSchema.parse(registrationData.password);
+
+      // Validate email
+      const emailSchema = z.string().email();
+      emailSchema.parse(registrationData.email);
+
+      // Validate casinoId
+      const casinoIdSchema = z.string().nonempty();
+      casinoIdSchema.parse(registrationData.casinoId);
+
+      // Validate preferredCurrency
+      const preferredCurrencySchema = z.enum(supportedCurrencies);
+      preferredCurrencySchema.parse(registrationData.preferredCurrency);
 
       // Create new user
       const user = await storage.createUser({
