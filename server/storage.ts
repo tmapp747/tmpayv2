@@ -28,6 +28,8 @@ import {
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
+import { db } from "./db";
+import { DbStorage } from "./DbStorage";
 
 // Storage interface for all database operations
 export interface IStorage {
