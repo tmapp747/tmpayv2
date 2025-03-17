@@ -4,6 +4,7 @@ import { z } from "zod";
 
 // Currency definition - only supporting PHP (fiat), PHPT and USDT (crypto)
 export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
+export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
 
 // User schema
 export const users = pgTable("users", {
@@ -167,6 +168,43 @@ export const userPreferences = pgTable("user_preferences", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Payment methods table for admin-managed payment options
+export const paymentMethods = pgTable("payment_methods", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Display name of the payment method (e.g., "Maya Wallet")
+  type: text("type").notNull(), // Type of payment method: 'bank', 'wallet', 'cash', 'other'
+  accountName: text("account_name").notNull(), // Account owner's name
+  accountNumber: text("account_number").notNull(), // Account number, phone number, or identifier
+  bankName: text("bank_name"), // Bank name if applicable
+  branchName: text("branch_name"), // Branch name if applicable
+  instructions: text("instructions"), // Special instructions for this payment method
+  iconUrl: text("icon_url"), // URL to icon for this payment method
+  isActive: boolean("is_active").default(true), // Whether this payment method is currently active
+  sortOrder: integer("sort_order").default(0), // Order to display payment methods
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User payment methods for withdrawals and receiving funds
+export const userPaymentMethods = pgTable("user_payment_methods", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // User who owns this payment method
+  type: text("type").notNull(), // Type of payment method: 'bank', 'wallet', 'crypto', 'other'
+  name: text("name").notNull(), // Name for this payment method (e.g., "My Maya Account")
+  accountName: text("account_name").notNull(), // Account owner's name
+  accountNumber: text("account_number").notNull(), // Account number, phone number, or wallet address
+  bankName: text("bank_name"), // Bank name if applicable
+  branchName: text("branch_name"), // Branch name if applicable
+  swiftCode: text("swift_code"), // SWIFT/BIC code for international transfers
+  routingNumber: text("routing_number"), // Routing/ABA number for US banks
+  blockchainNetwork: text("blockchain_network"), // Network for crypto addresses (e.g., "ETH", "BTC")
+  additionalInfo: text("additional_info"), // Any additional information
+  isDefault: boolean("is_default").default(false), // Whether this is the default payment method for the user
+  isVerified: boolean("is_verified").default(false), // Whether this payment method has been verified
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
   id: true,
   createdAt: true,
@@ -186,6 +224,12 @@ export const insertManualPaymentSchema = createInsertSchema(manualPayments).omit
 });
 
 export const insertUserPreferenceSchema = createInsertSchema(userPreferences).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -313,6 +357,9 @@ export type InsertManualPayment = z.infer<typeof insertManualPaymentSchema>;
 
 export type UserPreference = typeof userPreferences.$inferSelect;
 export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
+
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
+export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
 
 // Add schema for Telegram payment requests
 export const generateTelegramPaymentSchema = z.object({
