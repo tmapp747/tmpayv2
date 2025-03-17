@@ -44,7 +44,7 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   
   // Format casino ID as a card number
   // Format client ID as card number
-  const formatClientId = (id: string | number | undefined) => {
+  const formatCardNumber = (id: string | number | undefined) => {
     if (!id) return '5282 3456 7890 1289';
     
     // Convert to string if it's a number
@@ -163,7 +163,8 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   const totalBalance = parseFloat(balance as string) + parseFloat(pendingBalance as string);
   
   // Use casinoId from the user record
-  const formattedCardNumber = formatClientId(casinoId);
+  // Make sure we use the correct function name
+  const formattedCardNumber = formatCardNumber(casinoId);
   
   // Use manager info instead of expiry date
   const managerInfo = getManagerInfo(data.user);
