@@ -46,13 +46,17 @@ export default function MobileWallet() {
       if (progress >= 100 && !refreshing) {
         setRefreshing(true);
         
-        // Simulate refresh by waiting and then resetting
+        // Actually refresh data by invalidating all important queries
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/user/info'] });
+        
+        // Reset the pull-to-refresh UI state after a short delay
         setTimeout(() => {
           setPullProgress(0);
           setTimeout(() => {
             setRefreshing(false);
           }, 300);
-        }, 1000);
+        }, 700); // Reduced to provide faster feedback
       }
     }
   };

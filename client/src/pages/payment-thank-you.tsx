@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PaymentStatusResponse {
   success: boolean;
@@ -35,6 +36,7 @@ export default function PaymentThankYou() {
   const [match, params] = useRoute("/payment/thank-you");
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const [loading, setLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "completed" | "failed" | "expired">("pending");
@@ -97,6 +99,9 @@ export default function PaymentThankYou() {
         if (data.status === "completed") {
           setPaymentStatus("completed");
           setLoading(false);
+          // Invalidate transactions cache to trigger immediate refresh on all screens
+          queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/user/info'] });
           // Show success toast
           toast({
             title: "Payment Successful",
@@ -142,7 +147,7 @@ export default function PaymentThankYou() {
 
     // Start checking payment status
     checkPaymentStatus();
-  }, [reference, pollingCount, setLocation, toast, amount]);
+  }, [reference, pollingCount, setLocation, toast, amount, queryClient]);
 
   // Helper function to determine the status badge color
   const getStatusBadge = (status: string) => {

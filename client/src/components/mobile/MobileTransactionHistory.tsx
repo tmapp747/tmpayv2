@@ -26,9 +26,11 @@ export default function MobileTransactionHistory() {
   const { data, isLoading, error, isFetching } = useQuery<{ success: boolean; transactions: Transaction[] }>({
     queryKey: ['/api/transactions'],
     enabled: true,
-    refetchInterval: 3000, // Poll every 3 seconds for faster real-time updates
+    refetchInterval: 1500, // Poll every 1.5 seconds for faster real-time updates
     staleTime: 0, // Consider data always stale to ensure fresh updates
     refetchOnWindowFocus: true, // Refetch when tab gets focus
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnReconnect: true, // Refetch when reconnecting after offline
   });
   
   // Cancel payment mutation
