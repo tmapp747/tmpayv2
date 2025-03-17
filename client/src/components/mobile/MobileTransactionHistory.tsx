@@ -151,7 +151,7 @@ export default function MobileTransactionHistory() {
   const hasTransactions = transactions.length > 0;
 
   return (
-    <div className="py-2">
+    <div className="py-2 pt-3">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <h3 className="text-lg font-semibold text-white mr-2">Recent Transactions</h3>

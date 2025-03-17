@@ -320,7 +320,7 @@ export default function MobileGCashDeposit() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="px-4 pb-6 space-y-6"
+            className="px-4 pb-6 pt-4 space-y-6"
           >
             {/* Instructions */}
             <div className="bg-white/5 rounded-xl p-4 backdrop-blur-md">

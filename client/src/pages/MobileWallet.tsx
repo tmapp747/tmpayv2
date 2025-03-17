@@ -113,7 +113,7 @@ export default function MobileWallet() {
       </header>
       
       {/* Main Content */}
-      <main className="space-y-6">
+      <main className="space-y-6 pt-4">
         {/* Balance Card */}
         <div className="px-4">
           <NewBalanceCard />
@@ -199,7 +199,7 @@ export default function MobileWallet() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="px-4 space-y-1"
+              className="px-4 pt-2 space-y-1"
             >
               {/* Use the enhanced MobileTransactionHistory component */}
               <MobileTransactionHistory />
@@ -211,7 +211,7 @@ export default function MobileWallet() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="px-4"
+              className="px-4 pt-2"
             >
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-medium text-white">Payment Methods</h2>
