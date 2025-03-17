@@ -90,7 +90,9 @@ function Router() {
       
       {/* Mobile-optimized routes */}
       <ProtectedRoute path="/mobile" component={MobileDashboard} />
+      <ProtectedRoute path="/mobile/wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile-wallet" component={MobileWallet} />
+      <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile-profile" component={MobileProfile} />
       
       {/* Admin routes */}
