@@ -1088,22 +1088,111 @@ export class MemStorage implements IStorage {
   }
 
   async getTelegramPayment(id: number): Promise<TelegramPayment | undefined> {
-    return this.telegramPayments.get(id);
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(telegramPayments)
+        .where(eq(telegramPayments.id, id))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to TelegramPayment type
+        const dbTelegram = result[0];
+        const telegramPayment: TelegramPayment = {
+          ...dbTelegram,
+          // Make sure numeric values are returned as strings
+          amount: dbTelegram.amount ? dbTelegram.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.telegramPayments.set(telegramPayment.id, telegramPayment);
+        
+        return telegramPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return this.telegramPayments.get(id);
+    } catch (error) {
+      console.error('Error fetching Telegram payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return this.telegramPayments.get(id);
+    }
   }
 
   async getTelegramPaymentByInvoiceCode(invoiceCode: string): Promise<TelegramPayment | undefined> {
-    return Array.from(this.telegramPayments.values()).find(
-      (payment) => payment.invoiceId === invoiceCode
-    );
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(telegramPayments)
+        .where(eq(telegramPayments.invoiceId, invoiceCode))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to TelegramPayment type
+        const dbTelegram = result[0];
+        const telegramPayment: TelegramPayment = {
+          ...dbTelegram,
+          // Make sure numeric values are returned as strings
+          amount: dbTelegram.amount ? dbTelegram.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.telegramPayments.set(telegramPayment.id, telegramPayment);
+        
+        return telegramPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.invoiceId === invoiceCode
+      );
+    } catch (error) {
+      console.error('Error fetching Telegram payment by invoice code from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.invoiceId === invoiceCode
+      );
+    }
   }
   
   async getTelegramPaymentByReference(reference: string): Promise<TelegramPayment | undefined> {
-    return Array.from(this.telegramPayments.values()).find(
-      (payment) => payment.telegramReference === reference
-    );
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(telegramPayments)
+        .where(eq(telegramPayments.telegramReference, reference))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to TelegramPayment type
+        const dbTelegram = result[0];
+        const telegramPayment: TelegramPayment = {
+          ...dbTelegram,
+          // Make sure numeric values are returned as strings
+          amount: dbTelegram.amount ? dbTelegram.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.telegramPayments.set(telegramPayment.id, telegramPayment);
+        
+        return telegramPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.telegramReference === reference
+      );
+    } catch (error) {
+      console.error('Error fetching Telegram payment by reference from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.telegramReference === reference
+      );
+    }
   }
 
   async updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment> {
+    // First update in memory
     const telegramPayment = await this.getTelegramPayment(id);
     if (!telegramPayment) throw new Error(`Telegram Payment with ID ${id} not found`);
     
@@ -1113,15 +1202,72 @@ export class MemStorage implements IStorage {
       updatedAt: new Date() 
     };
     this.telegramPayments.set(id, updatedPayment);
+    
+    // Then update in database
+    try {
+      await this.dbInstance.update(telegramPayments)
+        .set({
+          status,
+          updatedAt: new Date()
+        })
+        .where(eq(telegramPayments.id, id));
+      
+      console.log(`Updated Telegram payment status in database: ID=${id}, Status=${status}`);
+    } catch (error) {
+      console.error('Error updating Telegram payment status in database:', error);
+      // Continue with in-memory data even if DB update fails
+    }
+    
     return updatedPayment;
   }
 
   async getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined> {
-    return Array.from(this.telegramPayments.values()).find(
-      (payment) => payment.userId === userId && 
-                  (payment.status === 'pending') && 
-                  new Date() < payment.expiresAt
-    );
+    try {
+      // Get current date
+      const now = new Date();
+      
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(telegramPayments)
+        .where(
+          and(
+            eq(telegramPayments.userId, userId),
+            eq(telegramPayments.status, 'pending'),
+            sql`${telegramPayments.expiresAt} > ${now}`
+          )
+        )
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to TelegramPayment type
+        const dbTelegram = result[0];
+        const telegramPayment: TelegramPayment = {
+          ...dbTelegram,
+          // Make sure numeric values are returned as strings
+          amount: dbTelegram.amount ? dbTelegram.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.telegramPayments.set(telegramPayment.id, telegramPayment);
+        
+        return telegramPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.userId === userId && 
+                    (payment.status === 'pending') && 
+                    new Date() < payment.expiresAt
+      );
+    } catch (error) {
+      console.error('Error fetching active Telegram payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return Array.from(this.telegramPayments.values()).find(
+        (payment) => payment.userId === userId && 
+                    (payment.status === 'pending') && 
+                    new Date() < payment.expiresAt
+      );
+    }
   }
   
   // Get all Telegram payments (for admin dashboard)
@@ -2449,6 +2595,51 @@ export class DbStorage extends MemStorage {
     }
     
     return qrPayment;
+  }
+  
+  /**
+   * Override createTelegramPayment to persist to database
+   */
+  async createTelegramPayment(paymentData: InsertTelegramPayment): Promise<TelegramPayment> {
+    // First create in memory using parent class implementation
+    const telegramPayment = await super.createTelegramPayment(paymentData);
+    
+    // Then persist to database
+    try {
+      console.log('Persisting Telegram payment to database:', {
+        id: telegramPayment.id,
+        userId: telegramPayment.userId,
+        transactionId: telegramPayment.transactionId,
+        amount: telegramPayment.amount,
+        reference: telegramPayment.telegramReference
+      });
+
+      // Insert into the database
+      const inserted = await this.dbInstance.insert(telegramPayments).values({
+        id: telegramPayment.id,
+        userId: telegramPayment.userId,
+        transactionId: telegramPayment.transactionId,
+        payUrl: telegramPayment.payUrl,
+        amount: telegramPayment.amount,
+        currency: telegramPayment.currency,
+        expiresAt: telegramPayment.expiresAt,
+        telegramReference: telegramPayment.telegramReference,
+        invoiceId: telegramPayment.invoiceId,
+        status: telegramPayment.status,
+        createdAt: telegramPayment.createdAt,
+        updatedAt: telegramPayment.updatedAt
+      }).returning();
+      
+      if (inserted && inserted[0]) {
+        console.log(`Successfully created Telegram payment in database: ID=${telegramPayment.id}, Amount=${telegramPayment.amount}, Reference=${telegramPayment.telegramReference}`);
+      }
+    } catch (error) {
+      console.error('Error creating Telegram payment in database:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      // Continue with in-memory data even if DB persistence fails
+    }
+    
+    return telegramPayment;
   }
   
   /**
