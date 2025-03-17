@@ -1481,53 +1481,39 @@ export class DbStorage extends MemStorage {
       console.log('SQL Insert Query:', insertQuery.toSQL().sql);
       console.log('SQL Insert Values:', JSON.stringify(insertQuery.toSQL().params, null, 2));
       
-      // Try using raw SQL instead of Drizzle ORM for this critical insert
-      console.log('CRITICAL FIX: Trying raw SQL insert approach');
+      // Try a super simplified approach
+      console.log('CRITICAL FIX: Try minimal direct SQL approach');
       
-      // Build a raw SQL query to ensure casino_id is explicitly set
-      const rawSql = `
+      // Simple insertion with just the critical fields
+      const simpleInsertSql = `
         INSERT INTO users (
-          id, username, password, email, balance, pending_balance, balances, preferred_currency, 
-          is_vip, casino_id, casino_username, casino_client_id, top_manager, immediate_manager, 
-          casino_user_type, casino_balance, is_authorized, allowed_top_managers,
-          created_at, updated_at, hierarchy_level
+          username, password, email, casino_id, is_authorized, 
+          balance, pending_balance, preferred_currency, balances
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8,
-          $9, $10, $11, $12, $13, $14,
-          $15, $16, $17, $18,
-          $19, $20, $21
-        )
+          $1, $2, $3, $4, $5, 
+          $6, $7, $8, $9
+        ) RETURNING id
       `;
       
-      const rawParams = [
-        dbUser.id,
-        dbUser.username,
-        dbUser.password,
-        dbUser.email,
-        dbUser.balance,
-        dbUser.pending_balance,
-        JSON.stringify(dbUser.balances),
-        dbUser.preferred_currency,
-        dbUser.is_vip,
-        casinoIdValue, // Critical field - ensure it's set
-        dbUser.casino_username,
-        dbUser.casino_client_id,
-        dbUser.top_manager,
-        dbUser.immediate_manager,
-        dbUser.casino_user_type,
-        dbUser.casino_balance,
-        dbUser.is_authorized,
-        dbUser.allowed_top_managers,
-        dbUser.created_at,
-        dbUser.updated_at,
-        dbUser.hierarchy_level
+      // Only pass the most critical fields
+      const simpleParams = [
+        createdUser.username,
+        createdUser.password,
+        createdUser.email || '',
+        casinoIdValue, // Direct client ID from API, without prefix
+        createdUser.isAuthorized || false,
+        "0.00",
+        "0.00",
+        "PHP",
+        JSON.stringify(createdUser.balances || { PHP: "0", PHPT: "0", USDT: "0" })
       ];
       
-      console.log('RAW SQL:', rawSql);
-      console.log('RAW PARAMS:', JSON.stringify(rawParams.map((p, i) => i === 2 ? '[REDACTED]' : p), null, 2));
+      console.log('MINIMAL SQL:', simpleInsertSql);
+      console.log('MINIMAL PARAMS:', JSON.stringify(simpleParams.map((p, i) => i === 1 ? '[REDACTED]' : p), null, 2));
       
-      // Execute the raw SQL
-      await this.dbInstance.execute(sql.raw(rawSql, rawParams));
+      // Execute the simplified SQL
+      const result = await this.dbInstance.execute(sql.raw(simpleInsertSql, simpleParams));
+      console.log('DB result:', result);
 
       console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;

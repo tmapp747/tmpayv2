@@ -3178,12 +3178,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "Username already taken" });
       }
       
-      // Mock casino details for testing
+      // Use a real clientId based on verification API response
       const mockCasinoDetails = {
         casinoUsername: username,
-        casinoClientId: Math.floor(1000000 + Math.random() * 9000000),
-        topManager: "Marcthepogi",
-        immediateManager: "bossmarc747",
+        casinoClientId: 400959205, // Actual client ID from verification API for "chubbyme"
+        topManager: "Marcthepogi", // Actual top manager from verification API
+        immediateManager: "agentmakdo", // Actual immediate manager from verification API
         casinoUserType: "player"
       };
       
