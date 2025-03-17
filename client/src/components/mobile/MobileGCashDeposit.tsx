@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, QrCode, Check, CreditCard, AlertCircle } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { formatCurrency, cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ export default function MobileGCashDeposit() {
   const [successData, setSuccessData] = useState<any>(null);
   const { toast } = useToast();
   const [location, navigate] = useLocation();
+  const queryClient = useQueryClient();
 
   // Setup swipe back gesture
   const swipeHandlers = useSwipe({
@@ -141,7 +142,7 @@ export default function MobileGCashDeposit() {
     // Track consecutive errors 
     let consecutiveErrors = 0;
     
-    // Poll every 5 seconds
+    // Poll every 3 seconds for faster updates
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/payments/status/${refId}`, {
@@ -165,25 +166,40 @@ export default function MobileGCashDeposit() {
 
         if (data.status === "completed") {
           clearInterval(interval);
+          
+          // Store successful transaction data
           setSuccessData({
             amount: parseFloat(amount),
             newBalance: data.qrPayment?.amount || amount,
             transactionId: refId,
+            timestamp: new Date().toISOString(),
+            paymentMethod: 'GCash',
           });
+          
+          // Close modal and show success screen
           setIsModalOpen(false);
           setIsSuccess(true);
           
-          // Add to transaction history
+          // Invalidate queries to refresh transaction list and user balance
+          queryClient.invalidateQueries({queryKey: ['/api/transactions']});
+          queryClient.invalidateQueries({queryKey: ['/api/user/info']});
+          
+          // Notify user
           toast({
-            title: "Payment Successful",
+            title: "GCash Payment Successful",
             description: `₱${formatDisplayAmount(parseFloat(amount))} has been added to your wallet`,
             variant: "default",
           });
+          
         } else if (data.status === "failed" || data.status === "expired") {
           clearInterval(interval);
           setIsModalOpen(false);
+          
+          // Invalidate queries to ensure UI is up-to-date
+          queryClient.invalidateQueries({queryKey: ['/api/transactions']});
+          
           toast({
-            title: "Payment Failed",
+            title: "GCash Payment Failed",
             description: "Your payment was not completed. Please try again.",
             variant: "destructive",
           });
@@ -203,7 +219,7 @@ export default function MobileGCashDeposit() {
           });
         }
       }
-    }, 5000);
+    }, 3000);
 
     // Clear interval after 10 minutes (30 min is QR expiry)
     setTimeout(() => {
@@ -226,9 +242,17 @@ export default function MobileGCashDeposit() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-xl font-semibold text-white">GCash Deposit</h1>
-            <p className="text-sm text-blue-300">Fund your wallet instantly</p>
+          <div className="flex items-center">
+            <img 
+              src="/images/gcash.png" 
+              alt="GCash Logo" 
+              className="w-10 h-10 mr-3 rounded-xl shadow-lg"
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}
+            />
+            <div>
+              <h1 className="text-xl font-semibold text-white">GCash Deposit</h1>
+              <p className="text-sm text-blue-300">Fund your wallet instantly</p>
+            </div>
           </div>
         </div>
       </header>
@@ -339,13 +363,24 @@ export default function MobileGCashDeposit() {
 
       {/* Payment Modal - QR Code or Payment URL */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-[#001138] text-white border-blue-500/30 max-w-sm mx-auto">
+        <DialogContent className="bg-[#001138] text-white border-blue-500/30 max-w-sm mx-auto" aria-describedby="payment-description">
+          <DialogTitle className="sr-only">
+            {payUrl ? "Pay with GCash" : "Scan with GCash App"}
+          </DialogTitle>
+          
           <div className="text-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {payUrl ? "Pay with GCash" : "Scan with GCash App"}
-            </h2>
+            <div className="flex items-center justify-center mb-2">
+              <img 
+                src="/images/gcash.png" 
+                alt="GCash Logo" 
+                className="w-12 h-12 mr-2 rounded-xl shadow-md"
+              />
+              <h2 className="text-xl font-semibold">
+                {payUrl ? "Pay with GCash" : "Scan with GCash App"}
+              </h2>
+            </div>
             
-            <p className="text-sm text-blue-300 mt-1">
+            <p className="text-sm text-blue-300 mt-1" id="payment-description">
               Amount: <span className="text-white font-medium">₱{amount}</span>
             </p>
           </div>
@@ -393,11 +428,25 @@ export default function MobileGCashDeposit() {
             <p className="text-xs text-blue-300">
               This payment will expire in 30 minutes
             </p>
-            <div className="mt-4 flex justify-center">
-              <div className="animate-pulse flex items-center bg-blue-900/50 rounded-full px-3 py-1">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-xs">Waiting for payment...</span>
+            <div className="mt-4 flex flex-col items-center">
+              <div className="flex items-center mb-2">
+                <img 
+                  src="/images/gcash.png" 
+                  alt="GCash" 
+                  className="w-5 h-5 mr-2" 
+                />
+                <div className="animate-pulse flex items-center bg-blue-900/50 rounded-full px-3 py-1.5">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="text-xs ml-2">Waiting for GCash payment...</span>
+                </div>
               </div>
+              <p className="text-xs text-blue-200/80">
+                Secure payment processing via <span className="font-medium">GCash</span>
+              </p>
             </div>
           </div>
         </DialogContent>
@@ -418,9 +467,18 @@ function SuccessScreen({ amount, transactionId, onClose }: { amount: number, tra
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", delay: 0.2 }}
-        className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center mb-6 shadow-lg shadow-green-900/30"
+        className="relative"
       >
-        <Check className="h-10 w-10 text-white" />
+        <div className="w-20 h-20 rounded-full bg-green-600 flex items-center justify-center mb-6 shadow-lg shadow-green-900/30">
+          <Check className="h-10 w-10 text-white" />
+        </div>
+        <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1 shadow-lg">
+          <img 
+            src="/images/gcash.png" 
+            alt="GCash" 
+            className="w-8 h-8 rounded-full" 
+          />
+        </div>
       </motion.div>
       
       <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
@@ -431,13 +489,26 @@ function SuccessScreen({ amount, transactionId, onClose }: { amount: number, tra
       </div>
       
       <div className="bg-white/5 backdrop-blur-md rounded-xl p-4 w-full mb-8">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-500/20">
+          <span className="text-blue-300 text-sm">Payment Method</span>
+          <div className="flex items-center">
+            <img 
+              src="/images/gcash.png" 
+              alt="GCash" 
+              className="w-5 h-5 mr-1.5" 
+            />
+            <span className="text-white font-medium">GCash</span>
+          </div>
+        </div>
         <div className="flex justify-between text-sm mb-2">
           <span className="text-blue-300">Transaction ID:</span>
           <span className="text-white font-mono">{transactionId.substring(0, 8)}...</span>
         </div>
         <div className="flex justify-between text-sm mb-2">
           <span className="text-blue-300">Status:</span>
-          <span className="text-green-400">Completed</span>
+          <span className="text-green-400 flex items-center">
+            <Check className="h-3 w-3 mr-1" /> Completed
+          </span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-blue-300">Date & Time:</span>
