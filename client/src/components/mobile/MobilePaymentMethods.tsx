@@ -3,11 +3,46 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   PlusCircle, CreditCard, Trash2, Check, 
-  Wallet, Bank, CashIcon, PlusIcon, Star, XIcon
+  Wallet, Building, Plus, X, Star
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { PaymentMethod, UserPaymentMethod } from '@/lib/types';
+
+// Define interfaces for our payment method types
+interface PaymentMethod {
+  id: number;
+  name: string;
+  type: string;
+  accountName: string;
+  accountNumber: string;
+  bankName: string | null;
+  branchName: string | null;
+  instructions: string | null;
+  iconUrl: string | null;
+  isActive: boolean;
+  sortOrder: number | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+interface UserPaymentMethod {
+  id: number;
+  userId: number;
+  name: string;
+  type: string;
+  details: string;
+  accountName: string;
+  accountNumber: string;
+  bankName: string | null;
+  branchName: string | null;
+  swiftCode: string | null;
+  routingNumber: string | null;
+  additionalInfo: string | null;
+  isDefault: boolean;
+  isVerified: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
 
 interface PaymentMethodCardProps {
   method: UserPaymentMethod;
@@ -32,7 +67,7 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, onSetDefa
             method.type === 'crypto' ? 'bg-gradient-to-br from-orange-500 to-yellow-500' :
             'bg-gradient-to-br from-gray-500 to-slate-500'
           }`}>
-            {method.type === 'bank' && <Bank className="h-5 w-5 text-white" />}
+            {method.type === 'bank' && <Building className="h-5 w-5 text-white" />}
             {method.type === 'wallet' && <Wallet className="h-5 w-5 text-white" />}
             {method.type === 'crypto' && <CreditCard className="h-5 w-5 text-white" />}
             {(method.type !== 'bank' && method.type !== 'wallet' && method.type !== 'crypto') && 
@@ -135,7 +170,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-medium text-white">Add Payment Method</h3>
         <button onClick={onCancel} className="text-white/70">
-          <XIcon className="h-5 w-5" />
+          <X className="h-5 w-5" />
         </button>
       </div>
       
@@ -348,7 +383,7 @@ export default function MobilePaymentMethods() {
                   onClick={() => setShowAddForm(true)}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center justify-center mx-auto"
                 >
-                  <PlusIcon className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Payment Method
                 </button>
               </div>
@@ -373,7 +408,7 @@ export default function MobilePaymentMethods() {
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowAddForm(true)}
                 >
-                  <PlusIcon className="h-5 w-5 text-white/50 mr-2" />
+                  <Plus className="h-5 w-5 text-white/50 mr-2" />
                   <span className="text-white/50 font-medium">Add New Payment Method</span>
                 </motion.div>
               )}
