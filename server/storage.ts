@@ -1649,6 +1649,350 @@ export class MemStorage implements IStorage {
       (pref) => pref.userId === userId
     );
   }
+  
+  // Payment Methods operations (admin-managed)
+  async createPaymentMethod(method: InsertPaymentMethod): Promise<PaymentMethod> {
+    const id = this.paymentMethodIdCounter++;
+    const now = new Date();
+    
+    const paymentMethod: PaymentMethod = {
+      ...method,
+      id,
+      isActive: method.isActive ?? true, // Default to active if not specified
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.paymentMethods.set(id, paymentMethod);
+    
+    // Also save to database for persistence
+    try {
+      await db.insert(paymentMethods).values({
+        ...method,
+        id,
+        isActive: method.isActive ?? true,
+        createdAt: now,
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error('Error inserting payment method to database:', error);
+    }
+    
+    return paymentMethod;
+  }
+  
+  async getPaymentMethod(id: number): Promise<PaymentMethod | undefined> {
+    // First check in-memory cache
+    const cachedMethod = this.paymentMethods.get(id);
+    if (cachedMethod) return cachedMethod;
+    
+    // If not in cache, try to fetch from database
+    try {
+      const result = await db.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.id, id)
+      });
+      
+      if (result) {
+        // Add to cache for future requests
+        this.paymentMethods.set(id, result);
+        return result;
+      }
+    } catch (error) {
+      console.error('Error fetching payment method from database:', error);
+    }
+    
+    return undefined;
+  }
+  
+  async getPaymentMethodByName(name: string): Promise<PaymentMethod | undefined> {
+    // First check in-memory cache
+    const cachedMethod = Array.from(this.paymentMethods.values()).find(
+      method => method.name.toLowerCase() === name.toLowerCase()
+    );
+    
+    if (cachedMethod) return cachedMethod;
+    
+    // If not in cache, try to fetch from database
+    try {
+      const result = await db.query.paymentMethods.findFirst({
+        where: sql`LOWER(${paymentMethods.name}) = LOWER(${name})`
+      });
+      
+      if (result) {
+        // Add to cache for future requests
+        this.paymentMethods.set(result.id, result);
+        return result;
+      }
+    } catch (error) {
+      console.error('Error fetching payment method by name from database:', error);
+    }
+    
+    return undefined;
+  }
+  
+  async updatePaymentMethod(id: number, updates: Partial<PaymentMethod>): Promise<PaymentMethod> {
+    const method = await this.getPaymentMethod(id);
+    if (!method) throw new Error(`Payment method with ID ${id} not found`);
+    
+    const updatedMethod = {
+      ...method,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.paymentMethods.set(id, updatedMethod);
+    
+    // Also update in database
+    try {
+      await db.update(paymentMethods)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(paymentMethods.id, id));
+    } catch (error) {
+      console.error('Error updating payment method in database:', error);
+    }
+    
+    return updatedMethod;
+  }
+  
+  async deletePaymentMethod(id: number): Promise<boolean> {
+    const method = await this.getPaymentMethod(id);
+    if (!method) return false;
+    
+    // Remove from memory
+    const memoryResult = this.paymentMethods.delete(id);
+    
+    // Also remove from database
+    try {
+      await db.delete(paymentMethods)
+        .where(eq(paymentMethods.id, id));
+    } catch (error) {
+      console.error('Error deleting payment method from database:', error);
+      
+      // If database delete fails, restore the in-memory entry
+      if (memoryResult) {
+        this.paymentMethods.set(id, method);
+      }
+      
+      return false;
+    }
+    
+    return memoryResult;
+  }
+  
+  async getPaymentMethods(type?: string, isActive?: boolean): Promise<PaymentMethod[]> {
+    // Start with fetching from database to ensure we have the latest data
+    try {
+      let query = db.select().from(paymentMethods);
+      
+      if (type) {
+        query = query.where(eq(paymentMethods.type, type));
+      }
+      
+      if (isActive !== undefined) {
+        query = query.where(eq(paymentMethods.isActive, isActive));
+      }
+      
+      const results = await query;
+      
+      // Update our in-memory cache
+      for (const method of results) {
+        this.paymentMethods.set(method.id, method);
+      }
+    } catch (error) {
+      console.error('Error fetching payment methods from database:', error);
+    }
+    
+    // Return filtered methods from in-memory cache
+    let methods = Array.from(this.paymentMethods.values());
+    
+    if (type) {
+      methods = methods.filter(method => method.type === type);
+    }
+    
+    if (isActive !== undefined) {
+      methods = methods.filter(method => method.isActive === isActive);
+    }
+    
+    return methods;
+  }
+  
+  // User Payment Methods operations (user-managed for withdrawals)
+  async createUserPaymentMethod(method: InsertUserPaymentMethod): Promise<UserPaymentMethod> {
+    const id = this.userPaymentMethodIdCounter++;
+    const now = new Date();
+    
+    const userPaymentMethod: UserPaymentMethod = {
+      ...method,
+      id,
+      isDefault: method.isDefault ?? false, // Default to not default
+      isVerified: method.isVerified ?? false, // Default to not verified
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.userPaymentMethods.set(id, userPaymentMethod);
+    
+    // Also save to database for persistence
+    try {
+      await db.insert(userPaymentMethods).values({
+        ...method,
+        id,
+        isDefault: method.isDefault ?? false,
+        isVerified: method.isVerified ?? false,
+        createdAt: now,
+        updatedAt: now
+      });
+      
+      // If this is set as default, clear other defaults for this user
+      if (method.isDefault) {
+        await this.clearOtherDefaultPaymentMethods(method.userId, id);
+      }
+    } catch (error) {
+      console.error('Error inserting user payment method to database:', error);
+    }
+    
+    return userPaymentMethod;
+  }
+  
+  async getUserPaymentMethod(id: number): Promise<UserPaymentMethod | undefined> {
+    // First check in-memory cache
+    const cachedMethod = this.userPaymentMethods.get(id);
+    if (cachedMethod) return cachedMethod;
+    
+    // If not in cache, try to fetch from database
+    try {
+      const result = await db.query.userPaymentMethods.findFirst({
+        where: eq(userPaymentMethods.id, id)
+      });
+      
+      if (result) {
+        // Add to cache for future requests
+        this.userPaymentMethods.set(id, result);
+        return result;
+      }
+    } catch (error) {
+      console.error('Error fetching user payment method from database:', error);
+    }
+    
+    return undefined;
+  }
+  
+  async getUserPaymentMethodsByUserId(userId: number, type?: string): Promise<UserPaymentMethod[]> {
+    // Start with fetching from database to ensure we have the latest data
+    try {
+      let query = db.select().from(userPaymentMethods)
+        .where(eq(userPaymentMethods.userId, userId));
+      
+      if (type) {
+        query = query.where(eq(userPaymentMethods.type, type));
+      }
+      
+      const results = await query;
+      
+      // Update our in-memory cache
+      for (const method of results) {
+        this.userPaymentMethods.set(method.id, method);
+      }
+    } catch (error) {
+      console.error('Error fetching user payment methods from database:', error);
+    }
+    
+    // Return filtered methods from in-memory cache
+    let methods = Array.from(this.userPaymentMethods.values())
+      .filter(method => method.userId === userId);
+    
+    if (type) {
+      methods = methods.filter(method => method.type === type);
+    }
+    
+    return methods;
+  }
+  
+  async updateUserPaymentMethod(id: number, updates: Partial<UserPaymentMethod>): Promise<UserPaymentMethod> {
+    const method = await this.getUserPaymentMethod(id);
+    if (!method) throw new Error(`User payment method with ID ${id} not found`);
+    
+    const updatedMethod = {
+      ...method,
+      ...updates,
+      updatedAt: new Date()
+    };
+    
+    this.userPaymentMethods.set(id, updatedMethod);
+    
+    // Also update in database
+    try {
+      await db.update(userPaymentMethods)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(userPaymentMethods.id, id));
+      
+      // If this is set as default, clear other defaults for this user
+      if (updates.isDefault) {
+        await this.clearOtherDefaultPaymentMethods(method.userId, id);
+      }
+    } catch (error) {
+      console.error('Error updating user payment method in database:', error);
+    }
+    
+    return updatedMethod;
+  }
+  
+  async deleteUserPaymentMethod(id: number): Promise<boolean> {
+    const method = await this.getUserPaymentMethod(id);
+    if (!method) return false;
+    
+    // Remove from memory
+    const memoryResult = this.userPaymentMethods.delete(id);
+    
+    // Also remove from database
+    try {
+      await db.delete(userPaymentMethods)
+        .where(eq(userPaymentMethods.id, id));
+    } catch (error) {
+      console.error('Error deleting user payment method from database:', error);
+      
+      // If database delete fails, restore the in-memory entry
+      if (memoryResult) {
+        this.userPaymentMethods.set(id, method);
+      }
+      
+      return false;
+    }
+    
+    return memoryResult;
+  }
+  
+  async setDefaultUserPaymentMethod(userId: number, methodId: number): Promise<UserPaymentMethod> {
+    const method = await this.getUserPaymentMethod(methodId);
+    if (!method) throw new Error(`User payment method with ID ${methodId} not found`);
+    
+    if (method.userId !== userId) {
+      throw new Error(`Payment method ${methodId} does not belong to user ${userId}`);
+    }
+    
+    // Clear other default methods for this user
+    await this.clearOtherDefaultPaymentMethods(userId, methodId);
+    
+    // Set this method as default
+    return this.updateUserPaymentMethod(methodId, { isDefault: true });
+  }
+  
+  // Helper method to clear other default payment methods for a user
+  private async clearOtherDefaultPaymentMethods(userId: number, exceptMethodId: number): Promise<void> {
+    const userMethods = await this.getUserPaymentMethodsByUserId(userId);
+    
+    for (const method of userMethods) {
+      if (method.id !== exceptMethodId && method.isDefault) {
+        await this.updateUserPaymentMethod(method.id, { isDefault: false });
+      }
+    }
+  }
 }
 
 // Create a singleton instance of the storage

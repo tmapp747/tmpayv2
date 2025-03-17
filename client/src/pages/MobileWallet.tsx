@@ -9,6 +9,7 @@ import {
 import NewBalanceCard from '@/components/NewBalanceCard';
 import BottomNavBar from '@/components/navigation/BottomNavBar';
 import MobileTransactionHistory from '@/components/mobile/MobileTransactionHistory';
+import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods';
 import { formatCurrency } from '@/lib/utils';
 
 export default function MobileWallet() {
