@@ -6,6 +6,8 @@ import {
   telegramPayments,
   manualPayments,
   userPreferences,
+  paymentMethods,
+  userPaymentMethods,
   supportedCurrencies,
   type User, 
   type InsertUser,
@@ -19,6 +21,10 @@ import {
   type InsertManualPayment,
   type UserPreference,
   type InsertUserPreference,
+  type PaymentMethod,
+  type InsertPaymentMethod,
+  type UserPaymentMethod,
+  type InsertUserPaymentMethod,
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
@@ -114,6 +120,22 @@ export interface IStorage {
   updateUserPreference(userId: number, key: string, value: any): Promise<UserPreference>;
   deleteUserPreference(userId: number, key: string): Promise<boolean>;
   getUserPreferences(userId: number): Promise<UserPreference[]>;
+  
+  // Payment Methods operations (admin-managed)
+  createPaymentMethod(method: InsertPaymentMethod): Promise<PaymentMethod>;
+  getPaymentMethod(id: number): Promise<PaymentMethod | undefined>;
+  getPaymentMethodByName(name: string): Promise<PaymentMethod | undefined>;
+  updatePaymentMethod(id: number, updates: Partial<PaymentMethod>): Promise<PaymentMethod>;
+  deletePaymentMethod(id: number): Promise<boolean>;
+  getPaymentMethods(type?: string, isActive?: boolean): Promise<PaymentMethod[]>;
+  
+  // User Payment Methods operations (user-managed for withdrawals)
+  createUserPaymentMethod(method: InsertUserPaymentMethod): Promise<UserPaymentMethod>;
+  getUserPaymentMethod(id: number): Promise<UserPaymentMethod | undefined>;
+  getUserPaymentMethodsByUserId(userId: number, type?: string): Promise<UserPaymentMethod[]>;
+  updateUserPaymentMethod(id: number, updates: Partial<UserPaymentMethod>): Promise<UserPaymentMethod>;
+  deleteUserPaymentMethod(id: number): Promise<boolean>;
+  setDefaultUserPaymentMethod(userId: number, methodId: number): Promise<UserPaymentMethod>;
 }
 
 // In-memory storage implementation
@@ -124,6 +146,8 @@ export class MemStorage implements IStorage {
   private telegramPayments: Map<number, TelegramPayment>;
   private manualPayments: Map<number, ManualPayment>;
   private userPreferences: Map<number, UserPreference>;
+  private paymentMethods: Map<number, PaymentMethod>;
+  private userPaymentMethods: Map<number, UserPaymentMethod>;
   
   private userIdCounter: number;
   private transactionIdCounter: number;

@@ -235,6 +235,12 @@ export const insertPaymentMethodSchema = createInsertSchema(paymentMethods).omit
   updatedAt: true,
 });
 
+export const insertUserPaymentMethodSchema = createInsertSchema(userPaymentMethods).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // API Request schemas for casino and payment provider
 export const generateQrCodeSchema = z.object({
   userId: z.number(),
@@ -360,6 +366,9 @@ export type InsertUserPreference = z.infer<typeof insertUserPreferenceSchema>;
 
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
 export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
+
+export type UserPaymentMethod = typeof userPaymentMethods.$inferSelect;
+export type InsertUserPaymentMethod = z.infer<typeof insertUserPaymentMethodSchema>;
 
 // Add schema for Telegram payment requests
 export const generateTelegramPaymentSchema = z.object({
