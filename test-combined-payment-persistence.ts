@@ -19,7 +19,7 @@ import {
   InsertManualPayment,
   InsertTransaction
 } from './shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 function generateTestReference(): string {
   return `TEST-${Math.random().toString(36).substring(2, 10)}-${Date.now()}`;
@@ -163,6 +163,14 @@ async function testTelegramPaymentPersistence(transactionId: number) {
   console.log('\n=== Testing Telegram Payment Persistence ===');
   
   try {
+    // First, check if there are existing telegram payments and determine the next ID
+    const existingPayments = await db.select({ maxId: sql`MAX(id)` }).from(telegramPayments);
+    const nextId = (existingPayments[0]?.maxId ?? 0) + 1;
+    
+    // Reset the sequence to ensure we don't get a primary key violation
+    await db.execute(sql`SELECT setval('telegram_payments_id_seq', ${nextId - 1}, true)`);
+    console.log(`Reset telegram payments sequence to start from ID: ${nextId}`);
+    
     // Generate a unique reference for this test
     const reference = generateTestReference();
     const invoiceCode = 'INV-' + Date.now();
@@ -182,7 +190,7 @@ async function testTelegramPaymentPersistence(transactionId: number) {
       expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
     };
     
-    // Insert directly into the database but let the database auto-generate the ID
+    // Insert directly into the database and let the sequence auto-generate the ID
     const inserted = await db.insert(telegramPayments).values({
       userId: telegramData.userId,
       transactionId: telegramData.transactionId,
