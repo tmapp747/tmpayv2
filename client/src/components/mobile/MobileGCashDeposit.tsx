@@ -130,6 +130,9 @@ export default function MobileGCashDeposit() {
         // Show the payment modal
         setIsModalOpen(true);
 
+        // Immediately invalidate transactions query to show the pending transaction
+        queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+
         // Start polling for payment status
         pollPaymentStatus(data.qrPayment.directPayReference);
       } else {
@@ -153,7 +156,7 @@ export default function MobileGCashDeposit() {
     // Track consecutive errors 
     let consecutiveErrors = 0;
     
-    // Poll every 3 seconds for faster updates
+    // Poll every 1.5 seconds for faster updates
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`/api/payments/status/${refId}`, {
@@ -264,7 +267,7 @@ export default function MobileGCashDeposit() {
           });
         }
       }
-    }, 3000);
+    }, 1500);
 
     // Clear interval after 10 minutes (30 min is QR expiry)
     setTimeout(() => {
