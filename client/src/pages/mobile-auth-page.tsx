@@ -82,20 +82,30 @@ export default function MobileAuthPage() {
     mutationFn: async (data: UsernameVerificationFormValues) => {
       setIsLoading(true);
       try {
+        // Add userType defaulting to "player"
+        const requestData = {
+          ...data,
+          userType: "player" // Mobile flow always uses player type
+        };
+        
+        console.log('Verifying username with data:', JSON.stringify(requestData, null, 2));
+        
         const response = await fetch('/api/auth/verify-username', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(requestData)
         });
         
+        const responseData = await response.json();
+        console.log('Username verification response:', JSON.stringify(responseData, null, 2));
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Failed to verify username');
+          throw new Error(responseData.message || 'Failed to verify username');
         }
         
-        return await response.json();
+        return responseData;
       } finally {
         setIsLoading(false);
       }
@@ -104,14 +114,28 @@ export default function MobileAuthPage() {
       setVerifiedUsername(usernameForm.getValues().username);
       setVerificationResponse(data);
       
+      // Add haptic feedback on successful verification
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate(50);
+      }
+      
       if (data.accountExists) {
+        console.log('Account exists, directing to login');
         setCurrentStep('login');
       } else {
+        console.log('New account, directing to registration');
         setCurrentStep('register');
       }
     },
     onError: (error: Error) => {
       console.error('Verification error:', error);
+      
+      // Vibrate for error (longer pattern)
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate([100, 50, 100]);
+      }
     }
   });
 
@@ -120,29 +144,54 @@ export default function MobileAuthPage() {
     mutationFn: async (data: LoginFormValues) => {
       setIsLoading(true);
       try {
+        // Add userType for consistent API
+        const loginData = {
+          ...data,
+          userType: "player" // Mobile flow always uses player type
+        };
+        
+        console.log('Submitting login with session-based auth:', loginData.username);
+        
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(data)
+          body: JSON.stringify(loginData),
+          credentials: 'include' // Important for session cookies
         });
         
+        const responseData = await response.json();
+        console.log('Login response status:', response.status);
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Login failed');
+          throw new Error(responseData.message || 'Login failed');
         }
         
-        return await response.json();
+        return responseData;
       } finally {
         setIsLoading(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Login successful, redirecting to dashboard');
+      
+      // Add haptic feedback on successful login
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate(100);
+      }
+      
       navigate('/mobile');
     },
     onError: (error: Error) => {
       console.error('Login error:', error);
+      
+      // Vibrate for error (longer pattern)
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate([100, 50, 100]);
+      }
     }
   });
 
@@ -152,26 +201,30 @@ export default function MobileAuthPage() {
       setIsLoading(true);
       try {
         // Add casino data from verification if available
+        // Use defaults for userType if not explicitly provided
         const registerData = {
           ...data,
+          userType: "player", // Mobile flow always uses player type
           casinoUsername: verificationResponse?.casinoUsername || undefined,
           clientId: verificationResponse?.clientId || undefined,
           topManager: verificationResponse?.topManager || undefined,
           immediateManager: verificationResponse?.immediateManager || undefined,
-          userType: verificationResponse?.userType || undefined
+          casinoUserType: verificationResponse?.userType || undefined // Note: casinoUserType not userType
         };
         
-        console.log('Registration data:', JSON.stringify(registerData));
+        console.log('Registration data:', JSON.stringify(registerData, null, 2));
         
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(registerData)
+          body: JSON.stringify(registerData),
+          credentials: 'include' // Important for session cookies
         });
         
         const responseData = await response.json();
+        console.log('Registration response status:', response.status, responseData);
         
         if (!response.ok) {
           throw new Error(responseData.message || 'Registration failed');
@@ -182,11 +235,25 @@ export default function MobileAuthPage() {
         setIsLoading(false);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Registration successful, redirecting to dashboard');
+      
+      // Add haptic feedback on successful registration
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate(100);
+      }
+      
       navigate('/mobile');
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);
+      
+      // Vibrate for error (longer pattern)
+      const haptic = window.navigator as any;
+      if (haptic.vibrate) {
+        haptic.vibrate([100, 50, 100]);
+      }
     }
   });
 
