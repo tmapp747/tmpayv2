@@ -391,6 +391,93 @@ section, main > div, .auth-card, .card-info {
   border-color: var(--border);
 }
 
+/* Banking app specific styles */
+.banking-card {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  border-radius: 24px;
+  padding: 20px;
+  color: white;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.banking-app {
+  background-color: #00174F;
+  min-height: 100vh;
+  color: white;
+}
+
+.banking-btn {
+  background-color: #002D87;
+  color: white;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.banking-btn:active {
+  transform: scale(0.95);
+  background-color: #003FAC;
+}
+
+.banking-nav {
+  background-color: #002D87;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 12px 0;
+  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.banking-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  color: #667085;
+  font-size: 12px;
+}
+
+.banking-nav-item.active {
+  color: white;
+}
+
+.banking-nav-item.active svg {
+  color: white;
+  fill: #1D4ED8;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.transaction-icon {
+  background-color: #002D87;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.transaction-amount-positive {
+  color: #4ADE80;
+}
+
+.transaction-amount-negative {
+  color: #F87171;
+}
+
 .casino-button {
   @apply rounded-lg relative overflow-hidden border;
   background-color: var(--card);
