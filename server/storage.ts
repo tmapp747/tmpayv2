@@ -1521,8 +1521,17 @@ export class DbStorage extends MemStorage {
         console.log('INSERT RESULT:', JSON.stringify(result.rows || {}));
         
         if (result.rows && result.rows.length > 0) {
-          console.log('DB insert successful, new ID:', result.rows[0].id);
-          createdUser.id = result.rows[0].id;
+          const newId = result.rows[0].id;
+          console.log('DB insert successful, new ID:', newId);
+          
+          // Important fix: Update in-memory storage with the new ID
+          const oldId = createdUser.id;
+          createdUser.id = newId;
+          
+          // Remove the old entry and add the new one with updated ID
+          this.updateInMemoryUser(oldId, newId, createdUser);
+          
+          console.log(`Updated in-memory user ID from ${oldId} to ${newId}`);
         }
       } catch (poolError) {
         console.error('Direct pool query failed:', poolError instanceof Error ? poolError.message : String(poolError));
@@ -1573,8 +1582,31 @@ export class DbStorage extends MemStorage {
 
   // Override update methods to persist changes
   async updateUserAccessToken(id: number, token: string | null | undefined, expiresIn: number = 3600): Promise<User> {
-    // First update in memory
-    const user = await super.updateUserAccessToken(id, token, expiresIn);
+    // First check if the user exists in memory
+    let user = this.users.get(id);
+    
+    if (!user) {
+      // Try to load user from database if not found in memory
+      try {
+        const dbUser = await this.dbInstance.select().from(users).where(eq(users.id, id)).limit(1);
+        if (dbUser && dbUser.length > 0) {
+          // Convert DB user to memory format
+          user = this.convertDbUserToMemoryFormat(dbUser[0]);
+          
+          // Add to memory map
+          this.users.set(id, user);
+          console.log(`Loaded user ${user.username} (ID: ${id}) from database on demand`);
+        } else {
+          throw new Error(`User with ID ${id} not found in database or memory`);
+        }
+      } catch (dbError) {
+        console.error(`Failed to find user with ID ${id} in database:`, dbError);
+        throw new Error(`User with ID ${id} not found`);
+      }
+    }
+    
+    // Now update in memory
+    user = await super.updateUserAccessToken(id, token, expiresIn);
     
     // Then persist to database
     try {
