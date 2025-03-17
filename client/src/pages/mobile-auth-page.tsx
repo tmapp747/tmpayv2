@@ -306,12 +306,21 @@ export default function MobileAuthPage() {
           
           <div className="text-xl font-semibold tracking-wide">
             {currentStep === 'username' ? 'Sign In' : 
-             currentStep === 'login' ? 'Welcome Back' : 'Create Account'}
+             currentStep === 'login' ? 'Login' : 'Create Account'}
           </div>
           
           <div className="w-10">
             {/* Spacer for alignment */}
           </div>
+        </div>
+        
+        {/* 747 Logo */}
+        <div className="flex justify-center mt-6">
+          <img 
+            src="/assets/logos/747-logo.png" 
+            alt="747 Logo" 
+            className="h-16 object-contain"
+          />
         </div>
       </div>
       
@@ -328,7 +337,7 @@ export default function MobileAuthPage() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-semibold mb-2">Welcome</h1>
+                <h1 className="text-2xl font-semibold mb-2">747 E-Loading Wallet</h1>
                 <p className="text-white/70">Enter your username to continue</p>
               </div>
               
@@ -383,7 +392,7 @@ export default function MobileAuthPage() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-semibold mb-2">Welcome Back</h1>
+                <h1 className="text-2xl font-semibold mb-2">747 E-Loading Wallet</h1>
                 <p className="text-white/70">Enter your password to sign in</p>
               </div>
               
@@ -455,7 +464,7 @@ export default function MobileAuthPage() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h1 className="text-2xl font-semibold mb-2">Create Account</h1>
+                <h1 className="text-2xl font-semibold mb-2">747 E-Loading Wallet</h1>
                 <p className="text-white/70">Choose a password for your new account</p>
               </div>
               
