@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NewBalanceCard from '@/components/NewBalanceCard';
 import BottomNavBar from '@/components/navigation/BottomNavBar';
-import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, CreditCard, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, CreditCard, CheckCircle2, BarChart3 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@/lib/types';
 import MobileTransactionsList from '@/components/mobile/MobileTransactionsList';
+import MobileCasinoStats from '@/components/mobile/MobileCasinoStats';
 
 export default function MobileDashboard() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -247,8 +248,22 @@ export default function MobileDashboard() {
           </Link>
         </div>
         
-        {/* Transactions List */}
+        {/* Casino Statistics Section */}
         <div className="px-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-medium">Casino Stats</h2>
+            <div className="flex items-center gap-1 text-sm text-blue-300 with-ripple">
+              <BarChart3 className="h-4 w-4" />
+              <span>Real-time</span>
+            </div>
+          </div>
+          
+          {/* Casino Statistics */}
+          <MobileCasinoStats />
+        </div>
+        
+        {/* Transactions List */}
+        <div className="px-4 mt-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-medium">Last Transaction</h2>
             <Link href="/mobile/wallet" className="text-sm text-blue-300 flex items-center with-ripple">
