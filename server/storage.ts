@@ -1389,17 +1389,19 @@ export class DbStorage extends MemStorage {
       // Log the casino ID for debugging
       console.log(`DEBUG: User casinoId before DB persistence: "${createdUser.casinoId}"`);
       
-      // CRITICAL FIX: Ensure casinoId is never null for database insertion
-      // Generate a fallback ID if needed using client ID
+      // CRITICAL FIX: Use casinoClientId directly without adding 747- prefix
+      // As per user requirements, we should use the exact data from the API
       let casinoIdValue = createdUser.casinoId;
+      
+      // If casinoId is missing but we have casinoClientId, use that directly as a string
       if (!casinoIdValue && createdUser.casinoClientId) {
-        casinoIdValue = `747-${createdUser.casinoClientId}`;
-        console.log(`Generated casinoId ${casinoIdValue} from casinoClientId ${createdUser.casinoClientId}`);
+        casinoIdValue = String(createdUser.casinoClientId);
+        console.log(`Using casinoClientId directly for casinoId: ${casinoIdValue}`);
       }
       
-      // Still no value? This would be extremely unusual but let's handle it
+      // If we still don't have a value (highly unlikely), create a fallback
       if (!casinoIdValue) {
-        casinoIdValue = `747-${Date.now()}`; // Last resort fallback
+        casinoIdValue = String(Date.now()); // Last resort fallback
         console.log(`WARNING: Using timestamp fallback for casinoId: ${casinoIdValue}`);
       }
       
@@ -1474,8 +1476,58 @@ export class DbStorage extends MemStorage {
         casino_auth_token_expiry: dbUser.casino_auth_token_expiry
       };
       
-      // Use the standard Drizzle insert with the properly structured object
-      await this.dbInstance.insert(users).values(userInsertData);
+      // Generate and log the actual SQL query for debugging
+      const insertQuery = this.dbInstance.insert(users).values(userInsertData);
+      console.log('SQL Insert Query:', insertQuery.toSQL().sql);
+      console.log('SQL Insert Values:', JSON.stringify(insertQuery.toSQL().params, null, 2));
+      
+      // Try using raw SQL instead of Drizzle ORM for this critical insert
+      console.log('CRITICAL FIX: Trying raw SQL insert approach');
+      
+      // Build a raw SQL query to ensure casino_id is explicitly set
+      const rawSql = `
+        INSERT INTO users (
+          id, username, password, email, balance, pending_balance, balances, preferred_currency, 
+          is_vip, casino_id, casino_username, casino_client_id, top_manager, immediate_manager, 
+          casino_user_type, casino_balance, is_authorized, allowed_top_managers,
+          created_at, updated_at, hierarchy_level
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8,
+          $9, $10, $11, $12, $13, $14,
+          $15, $16, $17, $18,
+          $19, $20, $21
+        )
+      `;
+      
+      const rawParams = [
+        dbUser.id,
+        dbUser.username,
+        dbUser.password,
+        dbUser.email,
+        dbUser.balance,
+        dbUser.pending_balance,
+        JSON.stringify(dbUser.balances),
+        dbUser.preferred_currency,
+        dbUser.is_vip,
+        casinoIdValue, // Critical field - ensure it's set
+        dbUser.casino_username,
+        dbUser.casino_client_id,
+        dbUser.top_manager,
+        dbUser.immediate_manager,
+        dbUser.casino_user_type,
+        dbUser.casino_balance,
+        dbUser.is_authorized,
+        dbUser.allowed_top_managers,
+        dbUser.created_at,
+        dbUser.updated_at,
+        dbUser.hierarchy_level
+      ];
+      
+      console.log('RAW SQL:', rawSql);
+      console.log('RAW PARAMS:', JSON.stringify(rawParams.map((p, i) => i === 2 ? '[REDACTED]' : p), null, 2));
+      
+      // Execute the raw SQL
+      await this.dbInstance.execute(sql.raw(rawSql, rawParams));
 
       console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;
