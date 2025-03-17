@@ -1515,26 +1515,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/payments/gcash/generate-qr", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated, or use default user for payment processing
-      let user;
+      let user: User;
       
       if (req.isAuthenticated() && req.user) {
         // User is already logged in
-        user = req.user;
+        user = req.user as User;
         console.log(`Authenticated user ${user.username} (ID: ${user.id}) is making a GCash deposit`);
       } else {
         // Auto-login with default user for payment processing
         console.log("No authenticated user found, using default user for payment");
         
         // Use "Wakay" as default user for anonymous payments
-        user = await storage.getUserByUsername("Wakay");
+        const defaultUser = await storage.getUserByUsername("Wakay");
         
-        if (!user) {
+        if (!defaultUser) {
           console.error("Default user (Wakay) not found in database");
           return res.status(500).json({
             success: false,
             message: "Payment system configuration error. Please contact support."
           });
         }
+        
+        user = defaultUser;
         
         // Log in the user to create a session
         req.login(user, (err) => {
@@ -1573,6 +1575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create a transaction record first
       const transactionReference = randomUUID();
+      console.log(`[TRANSACTION] Creating new GCash deposit transaction for user ${user.username} (ID: ${user.id}), amount: ${amount}, reference: ${transactionReference}`);
+      
       const transaction = await storage.createTransaction({
         userId: user.id,
         type: "deposit",
@@ -1582,6 +1586,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentReference: transactionReference,
         metadata: { initiatedAt: new Date().toISOString(), autoLogin: !req.isAuthenticated(), anonymous: req.isAuthenticated() ? false : true }
       });
+      
+      console.log(`[TRANSACTION] Created transaction ID: ${transaction.id} for user ${user.username}, status: ${transaction.status}`);
+      
+      // Verify the transaction was saved
+      const savedTransaction = await storage.getTransaction(transaction.id);
+      if (!savedTransaction) {
+        console.error(`[TRANSACTION] Failed to retrieve saved transaction with ID: ${transaction.id}`);
+      } else {
+        console.log(`[TRANSACTION] Successfully verified transaction ID: ${savedTransaction.id} with status: ${savedTransaction.status}`);
+      }
       
       // Call DirectPay API to generate GCash payment link
       const { qrCodeData, directPayReference, payUrl, expiresAt } = await directPayGenerateQRCode(
@@ -1616,11 +1630,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "pending"
       });
       
+      console.log(`[TRANSACTION] Created QR payment ID: ${qrPayment.id} for transaction ID: ${transaction.id}`);
+      
+      // Verify transactions in database before responding to ensure they're visible immediately
+      const userTransactions = await storage.getTransactionsByUserId(user.id);
+      console.log(`[TRANSACTION] User ${user.username} has ${userTransactions.length} transactions in database`);
+      
+      if (userTransactions.length > 0) {
+        console.log(`[TRANSACTION] Latest transaction ID: ${userTransactions[0].id}, status: ${userTransactions[0].status}, amount: ${userTransactions[0].amount}`);
+      } else {
+        console.error(`[TRANSACTION] Warning: User ${user.username} has 0 transactions after creating one. This indicates a database consistency issue.`);
+      }
+      
       // Return the QR code data to the client
       return res.json({
         success: true,
         qrPayment,
-        transaction
+        transaction,
+        transactionsCount: userTransactions.length
       });
     } catch (error) {
       console.error("Generate QR error:", error);
