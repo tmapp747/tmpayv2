@@ -299,9 +299,11 @@ export default function MobileAuthPage() {
                 navigate('/');
               }
             }}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md"
+            className="w-auto h-10 flex items-center justify-center px-3 rounded-full bg-white/10 backdrop-blur-md"
+            aria-label="Go back"
           >
-            <ArrowLeft className="h-5 w-5 text-white" />
+            <ArrowLeft className="h-5 w-5 text-white mr-1" />
+            <span className="text-sm font-medium">Back</span>
           </button>
           
           <div className="text-xl font-semibold tracking-wide">
