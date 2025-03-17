@@ -82,8 +82,9 @@ export default function MobileTransactionsList() {
         return "Transfer";
       default:
         // Safely handle type formatting
-        return typeof type === 'string' 
-          ? type.charAt(0).toUpperCase() + type.slice(1)
+        const transactionType = type as string; // Force type assertion since we've already checked it's a string
+        return transactionType
+          ? transactionType.charAt(0).toUpperCase() + transactionType.slice(1)
           : 'Transaction';
     }
   };
@@ -119,7 +120,7 @@ export default function MobileTransactionsList() {
 
   return (
     <AnimatePresence>
-      <div className="space-y-5">
+      <div className="space-y-5 pt-2">
         {recentTransactions.map((transaction, index) => (
           <motion.div 
             key={transaction.id} 
@@ -160,9 +161,13 @@ export default function MobileTransactionsList() {
                   ? 'text-gray-400'
                   : 'text-yellow-400'
               }`}>
-                {typeof transaction.status === 'string'
-                  ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)
-                  : 'Unknown'}
+                {(() => {
+                  // Safely handle status formatting
+                  const status = transaction.status as string; // Force type assertion
+                  return status
+                    ? status.charAt(0).toUpperCase() + status.slice(1)
+                    : 'Unknown';
+                })()}
               </span>
             </div>
           </motion.div>

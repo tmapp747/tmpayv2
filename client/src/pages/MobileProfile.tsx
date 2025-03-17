@@ -59,7 +59,7 @@ export default function MobileProfile() {
       </header>
       
       {/* Main Content */}
-      <main className="space-y-6 px-4">
+      <main className="space-y-6 px-4 pt-5">
         {/* Profile Card */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
