@@ -64,8 +64,22 @@ export default function MobileCasinoStats() {
   // Fetch casino statistics
   const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery<CasinoStatistics>({
     queryKey: ['/api/casino/user-stats', userData?.user?.username],
+    queryFn: async () => {
+      if (!userData?.user?.username) throw new Error("Username not available");
+      
+      console.log("Fetching stats for user:", userData.user.username);
+      const response = await fetch(`/api/casino/user-stats/${userData.user.username}`);
+      
+      if (!response.ok) {
+        console.error("Failed to fetch stats:", response.status, response.statusText);
+        throw new Error("Failed to fetch casino statistics");
+      }
+      
+      return response.json();
+    },
     enabled: !!userData?.user?.username,
     refetchInterval: 30000, // Refresh every 30 seconds
+    retry: 2,
   });
 
   // Fetch hierarchy data
@@ -106,14 +120,30 @@ export default function MobileCasinoStats() {
       : <TrendingDown className="h-4 w-4 text-red-500" />;
   };
 
-  const renderStatCard = (title: string, value: string | number, icon: JSX.Element, bgColor: string) => (
+  // Helper function to safely format currency
+  const safeCurrency = (value: string | number | undefined | null): string => {
+    if (value === undefined || value === null) return '₱0.00';
+    
+    // Convert to string if it's already a formatted currency string
+    if (typeof value === 'string' && value.includes('₱')) return value;
+    
+    try {
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      return formatCurrency(numValue);
+    } catch (e) {
+      console.error('Error formatting currency:', e);
+      return '₱0.00';
+    }
+  };
+  
+  const renderStatCard = (title: string, value: string | number | undefined | null, icon: JSX.Element, bgColor: string) => (
     <div className={`${bgColor} rounded-xl p-3 flex items-center shadow-md`}>
       <div className="mr-3 bg-white/20 rounded-full p-2">
         {icon}
       </div>
       <div>
         <p className="text-xs opacity-80">{title}</p>
-        <p className="font-bold">{value}</p>
+        <p className="font-bold">{safeCurrency(value)}</p>
       </div>
     </div>
   );
@@ -175,16 +205,16 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Deposits</span>
-                    <span className="font-medium text-green-400">{formatCurrency(statistics.totalDeposit)}</span>
+                    <span className="font-medium text-green-400">{safeCurrency(statistics.totalDeposit)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Withdrawals</span>
-                    <span className="font-medium text-red-400">{formatCurrency(statistics.totalWithdrawal)}</span>
+                    <span className="font-medium text-red-400">{safeCurrency(statistics.totalWithdrawal)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-1 border-t border-gray-700">
                     <span className="text-sm font-medium">Net Cash Flow</span>
-                    <span className={`font-medium ${(statistics.totalDeposit - statistics.totalWithdrawal) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatCurrency(statistics.totalDeposit - statistics.totalWithdrawal)}
+                    <span className={`font-medium ${(statistics?.totalDeposit || 0) - (statistics?.totalWithdrawal || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {safeCurrency((statistics?.totalDeposit || 0) - (statistics?.totalWithdrawal || 0))}
                     </span>
                   </div>
                 </div>
@@ -215,15 +245,15 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Bet Amount</span>
-                    <span className="font-medium">{formatCurrency(statistics.totalBet)}</span>
+                    <span className="font-medium">{safeCurrency(statistics.totalBet)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Win Amount</span>
-                    <span className="font-medium text-green-400">{formatCurrency(statistics.totalWin)}</span>
+                    <span className="font-medium text-green-400">{safeCurrency(statistics.totalWin)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Wagered Amount</span>
-                    <span className="font-medium">{formatCurrency(statistics.wageredAmount)}</span>
+                    <span className="font-medium">{safeCurrency(statistics.wageredAmount)}</span>
                   </div>
                 </div>
               </motion.div>
@@ -253,19 +283,19 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Daily</span>
-                    <span className="font-medium">{formatCurrency(turnOver.daily)}</span>
+                    <span className="font-medium">{safeCurrency(turnOver?.daily)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Weekly</span>
-                    <span className="font-medium">{formatCurrency(turnOver.weekly)}</span>
+                    <span className="font-medium">{safeCurrency(turnOver?.weekly)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Monthly</span>
-                    <span className="font-medium">{formatCurrency(turnOver.monthly)}</span>
+                    <span className="font-medium">{safeCurrency(turnOver?.monthly)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Yearly</span>
-                    <span className="font-medium">{formatCurrency(turnOver.yearly)}</span>
+                    <span className="font-medium">{safeCurrency(turnOver?.yearly)}</span>
                   </div>
                 </div>
               </motion.div>
