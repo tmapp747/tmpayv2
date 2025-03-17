@@ -691,12 +691,19 @@ export class DbStorage implements IStorage {
 
   async updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction> {
     try {
-      // Get current transaction to update
-      const currentTransaction = await this.dbInstance.select().from(transactions).where(eq(transactions.id, id));
-      if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
-      
-      const transaction = currentTransaction[0];
-      const statusHistory = transaction.statusHistory || [];
+      // Use transaction to ensure atomic update
+      return await this.dbInstance.transaction(async (tx) => {
+        // Get current transaction to update with row lock
+        const currentTransaction = await tx
+          .select()
+          .from(transactions)
+          .where(eq(transactions.id, id))
+          .forUpdate();
+          
+        if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
+        
+        const transaction = currentTransaction[0];
+        const statusHistory = transaction.statusHistory || [];
       
       // Add new status history entry
       statusHistory.push({
