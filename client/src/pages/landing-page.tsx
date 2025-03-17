@@ -158,18 +158,24 @@ export default function LandingPage() {
               </Link>
             </motion.div>
             
-            {/* Admin sign-in link */}
+            {/* Admin sign-in link and mobile version link */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.6 }}
-              className="mt-6"
+              className="mt-6 flex space-x-3"
             >
               <Link 
                 href="/admin/auth" 
                 className="text-sm px-4 py-2 rounded-full bg-gray-800/50 border border-gray-700 text-blue-300 hover:text-blue-200 hover:bg-gray-700/60 transition-all duration-200"
               >
                 Admin Sign In
+              </Link>
+              <Link 
+                href="/mobile" 
+                className="text-sm px-4 py-2 rounded-full bg-purple-900/50 border border-purple-700 text-purple-300 hover:text-purple-200 hover:bg-purple-800/60 transition-all duration-200"
+              >
+                Mobile Version
               </Link>
             </motion.div>
           </motion.div>

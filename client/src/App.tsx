@@ -12,6 +12,7 @@ import AuthPage from "@/pages/auth-page";
 import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
 import ColorComparison from "@/pages/ColorComparison";
+import MobileDashboard from "@/pages/MobileDashboard";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -60,6 +61,9 @@ function Router() {
           <ColorComparison />
         </Layout>
       )} />
+      
+      {/* Mobile-optimized routes */}
+      <Route path="/mobile" component={MobileDashboard} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />

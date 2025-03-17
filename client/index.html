@@ -88,48 +88,73 @@
       setTimeout(preventHorizontalScroll, 300); // After orientation change completes
     });
     
-    // Add tap feedback - 300ms is too slow on mobile
+    // Simpler tap feedback implementation
     document.addEventListener('DOMContentLoaded', function() {
-      // Add active state to buttons when tapped
-      document.body.addEventListener('touchstart', function(e) {
-        if (e.target.tagName === 'BUTTON' || 
-            e.target.closest('button') || 
-            e.target.closest('[role="button"]') ||
-            e.target.closest('a') ||
-            e.target.closest('.mobile-clickable')) {
-          
-          const element = e.target.tagName === 'BUTTON' || e.target.closest('button') || 
-                          e.target.closest('[role="button"]') || e.target.closest('a') || 
-                          e.target.closest('.mobile-clickable');
-                          
-          if (element) {
-            element.classList.add('active-tap');
-            
-            // Create ripple effect for material design feel
-            if (element.classList.contains('with-ripple')) {
-              const rect = element.getBoundingClientRect();
-              const x = e.touches[0].clientX - rect.left;
-              const y = e.touches[0].clientY - rect.top;
-              
-              const ripple = document.createElement('span');
-              ripple.classList.add('ripple-effect');
-              ripple.style.left = x + 'px';
-              ripple.style.top = y + 'px';
-              
-              element.appendChild(ripple);
-              
-              setTimeout(() => {
-                ripple.remove();
-              }, 600);
-            }
+      // Add tap effect CSS class
+      const style = document.createElement('style');
+      style.textContent = `
+        .with-ripple {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .active-tap {
+          opacity: 0.7 !important;
+          transform: scale(0.98) !important;
+          transition: transform 0.1s, opacity 0.1s !important;
+        }
+        
+        @keyframes rippleEffect {
+          to {
+            transform: scale(2.5);
+            opacity: 0;
           }
         }
-      }, false);
+        
+        .mobile-tap-target {
+          user-select: none;
+          -webkit-user-select: none;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+      `;
+      document.head.appendChild(style);
       
-      document.body.addEventListener('touchend', function(e) {
-        const activeElements = document.querySelectorAll('.active-tap');
-        activeElements.forEach(el => el.classList.remove('active-tap'));
-      }, false);
+      // Function to add mobile-friendly classes to interactive elements
+      function enhanceElements() {
+        const elements = document.querySelectorAll('button, [role="button"], a, .mobile-clickable, .with-ripple');
+        elements.forEach(el => {
+          el.classList.add('mobile-tap-target');
+        });
+      }
+      
+      // Run once on load and periodically check for new elements
+      enhanceElements();
+      setInterval(enhanceElements, 2000); // Check every 2 seconds for new elements
+      
+      // Simpler touch start handler
+      function handleTouchStart(e) {
+        const target = e.target;
+        
+        if (target.tagName === 'BUTTON' || 
+            target.hasAttribute('role') && target.getAttribute('role') === 'button' ||
+            target.tagName === 'A' || 
+            target.classList.contains('mobile-clickable')) {
+          target.classList.add('active-tap');
+        }
+      }
+      
+      // Touch end/cancel handler
+      function handleTouchEnd() {
+        document.querySelectorAll('.active-tap').forEach(el => {
+          el.classList.remove('active-tap');
+        });
+      }
+      
+      // Add event listeners
+      document.addEventListener('touchstart', handleTouchStart, false);
+      document.addEventListener('touchend', handleTouchEnd, false);
+      document.addEventListener('touchcancel', handleTouchEnd, false);
     });
     
     // Detect platform for special styling
