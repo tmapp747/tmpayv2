@@ -14,6 +14,8 @@ import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
 import ColorComparison from "@/pages/ColorComparison";
 import MobileDashboard from "@/pages/MobileDashboard";
+import MobileWallet from "@/pages/MobileWallet";
+import MobileProfile from "@/pages/MobileProfile";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -22,8 +24,30 @@ import AdminAuth from "@/pages/admin/admin-auth";
 import AdminDashboard from "@/pages/admin/admin-dashboard";
 import EnhancedAdminDashboard from "@/pages/admin/enhanced-admin-dashboard";
 import { ThemeProvider } from "@/hooks/use-theme";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect } from "react";
+import { useLocation } from "wouter";
 
 function Router() {
+  const isMobile = useIsMobile();
+  const [location, navigate] = useLocation();
+
+  // Redirect to appropriate version based on device
+  useEffect(() => {
+    // Only redirect specific routes and only on initial page load or direct navigation
+    if (isMobile) {
+      if (location === "/dashboard") navigate("/mobile");
+      if (location === "/wallet") navigate("/mobile-wallet");
+      if (location === "/profile") navigate("/mobile-profile");
+      if (location === "/auth") navigate("/mobile-auth");
+    } else {
+      // Redirect mobile routes to desktop if on desktop
+      if (location === "/mobile") navigate("/dashboard");
+      if (location === "/mobile-wallet") navigate("/wallet");
+      if (location === "/mobile-profile") navigate("/profile");
+    }
+  }, [isMobile, location, navigate]);
+
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
@@ -66,6 +90,8 @@ function Router() {
       
       {/* Mobile-optimized routes */}
       <ProtectedRoute path="/mobile" component={MobileDashboard} />
+      <ProtectedRoute path="/mobile-wallet" component={MobileWallet} />
+      <ProtectedRoute path="/mobile-profile" component={MobileProfile} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
