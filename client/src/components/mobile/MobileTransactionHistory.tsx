@@ -1,13 +1,26 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw } from "lucide-react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw, Ban, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatCurrency, formatDate, getStatusColor, getTimeAgo } from "@/lib/utils";
 import { Transaction } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function MobileTransactionHistory() {
   const [filter, setFilter] = useState<string | null>(null);
+  const [cancelingTransactionId, setCancelingTransactionId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
   const { data, isLoading, error, isFetching } = useQuery<{ success: boolean; transactions: Transaction[] }>({
@@ -16,6 +29,19 @@ export default function MobileTransactionHistory() {
     refetchInterval: 3000, // Poll every 3 seconds for faster real-time updates
     staleTime: 0, // Consider data always stale to ensure fresh updates
     refetchOnWindowFocus: true, // Refetch when tab gets focus
+  });
+  
+  // Cancel payment mutation
+  const cancelPaymentMutation = useMutation({
+    mutationFn: async (referenceId: string) => {
+      const url = `/api/payments/cancel/${referenceId}`;
+      const response = await apiRequest(url, 'POST');
+      return response;
+    },
+    onSuccess: () => {
+      // Invalidate transactions query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+    },
   });
   
   const getStatusIcon = (status: string) => {
@@ -264,10 +290,81 @@ export default function MobileTransactionHistory() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Add cancel option for pending transactions with GCash QR payments */}
+                  {transaction.status === 'pending' && 
+                   transaction.method?.toLowerCase().includes('gcash') && 
+                   transaction.paymentReference && (
+                    <div className="mt-2 border-t border-white/10 pt-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button 
+                            className="w-full py-1.5 px-3 bg-red-500/10 text-red-400 rounded-md text-xs flex items-center justify-center"
+                            aria-label="Cancel payment"
+                          >
+                            <Ban size={12} className="mr-1" />
+                            Cancel Payment
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="bg-[#001138] border border-blue-900/50 text-white">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel GCash Payment?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-blue-200">
+                              Are you sure you want to cancel this pending GCash payment of ₱{formatCurrency(Number(transaction.amount), '')}?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-4">
+                            <AlertDialogCancel className="bg-blue-950/50 text-white border-blue-900/50 hover:bg-blue-900/30">
+                              Keep Payment
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                if (transaction.paymentReference) {
+                                  cancelPaymentMutation.mutate(transaction.paymentReference);
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                              disabled={cancelPaymentMutation.isPending}
+                            >
+                              {cancelPaymentMutation.isPending ? (
+                                <div className="flex items-center">
+                                  <Loader2 size={14} className="animate-spin mr-1" />
+                                  Canceling...
+                                </div>
+                              ) : (
+                                "Yes, Cancel"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
                 </motion.div>
               ))}
           </div>
         </AnimatePresence>
+      )}
+      
+      {/* Show status message when canceling payments */}
+      {cancelPaymentMutation.isSuccess && (
+        <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
+          <div className="bg-green-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
+            <Check size={16} className="mr-2" />
+            Payment successfully canceled
+          </div>
+        </div>
+      )}
+      
+      {cancelPaymentMutation.isError && (
+        <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
+          <div className="bg-red-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
+            <AlertCircle size={16} className="mr-2" />
+            {cancelPaymentMutation.error instanceof Error 
+              ? cancelPaymentMutation.error.message 
+              : "Failed to cancel payment"}
+          </div>
+        </div>
       )}
     </div>
   );
