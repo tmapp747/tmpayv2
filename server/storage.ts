@@ -28,7 +28,6 @@ import {
   type Currency,
   type CurrencyBalances
 } from "@shared/schema";
-import { db } from "./db";
 import { DbStorage } from "./DbStorage";
 
 // Storage interface for all database operations
@@ -3352,8 +3351,11 @@ export class DbStorage extends MemStorage {
   }
 }
 
-// Import database connection
+// Import database connection from db.ts
 import { db } from './db';
 
-// Export storage instance
+// Create database storage instance
 export const storage = new DbStorage(db);
+
+// Log database storage initialization
+console.log('Database storage initialized and connected to PostgreSQL');
