@@ -7,12 +7,28 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Format currency
-export function formatCurrency(amount: number | string, currency = "₱"): string {
-  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  return `${currency} ${numAmount.toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+export function formatCurrency(amount: number | string | undefined | null, currency = "₱"): string {
+  // Handle undefined, null or empty string
+  if (amount === undefined || amount === null || amount === '') {
+    return `${currency} 0.00`;
+  }
+  
+  try {
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    
+    // Check for NaN
+    if (isNaN(numAmount)) {
+      return `${currency} 0.00`;
+    }
+    
+    return `${currency} ${numAmount.toLocaleString("en-PH", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  } catch (error) {
+    console.error("Error formatting currency:", error);
+    return `${currency} 0.00`;
+  }
 }
 
 // Format date

@@ -120,21 +120,7 @@ export default function MobileCasinoStats() {
       : <TrendingDown className="h-4 w-4 text-red-500" />;
   };
 
-  // Helper function to safely format currency
-  const safeCurrency = (value: string | number | undefined | null): string => {
-    if (value === undefined || value === null) return '₱0.00';
-    
-    // Convert to string if it's already a formatted currency string
-    if (typeof value === 'string' && value.includes('₱')) return value;
-    
-    try {
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
-      return formatCurrency(numValue);
-    } catch (e) {
-      console.error('Error formatting currency:', e);
-      return '₱0.00';
-    }
-  };
+  // We don't need the helper function anymore as formatCurrency now handles null/undefined values
   
   const renderStatCard = (title: string, value: string | number | undefined | null, icon: JSX.Element, bgColor: string) => (
     <div className={`${bgColor} rounded-xl p-3 flex items-center shadow-md`}>
@@ -143,7 +129,7 @@ export default function MobileCasinoStats() {
       </div>
       <div>
         <p className="text-xs opacity-80">{title}</p>
-        <p className="font-bold">{safeCurrency(value)}</p>
+        <p className="font-bold">{formatCurrency(value)}</p>
       </div>
     </div>
   );
@@ -205,7 +191,7 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Deposits</span>
-                    <span className="font-medium text-green-400">{safeCurrency(statistics.totalDeposit)}</span>
+                    <span className="font-medium text-green-400">{formatCurrency(statistics.totalDeposit)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Withdrawals</span>
