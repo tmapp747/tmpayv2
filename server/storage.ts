@@ -2299,6 +2299,189 @@ export class DbStorage extends MemStorage {
       return super.getTransactionByNonce(nonce);
     }
   }
+
+  /**
+   * Override createQrPayment to persist to database
+   */
+  async createQrPayment(qrPaymentData: InsertQrPayment): Promise<QrPayment> {
+    // First create in memory using parent class implementation
+    const qrPayment = await super.createQrPayment(qrPaymentData);
+    
+    // Then persist to database
+    try {
+      console.log('Persisting QR payment to database:', {
+        id: qrPayment.id,
+        userId: qrPayment.userId,
+        transactionId: qrPayment.transactionId,
+        amount: qrPayment.amount,
+        reference: qrPayment.directPayReference
+      });
+
+      // Insert into the database
+      const inserted = await this.dbInstance.insert(qrPayments).values({
+        id: qrPayment.id,
+        userId: qrPayment.userId,
+        transactionId: qrPayment.transactionId,
+        qrCodeData: qrPayment.qrCodeData,
+        payUrl: qrPayment.payUrl,
+        amount: qrPayment.amount,
+        expiresAt: qrPayment.expiresAt,
+        directPayReference: qrPayment.directPayReference,
+        status: qrPayment.status,
+        createdAt: qrPayment.createdAt,
+        updatedAt: qrPayment.updatedAt
+      }).returning();
+      
+      if (inserted && inserted[0]) {
+        console.log(`Successfully created QR payment in database: ID=${qrPayment.id}, Amount=${qrPayment.amount}, Reference=${qrPayment.directPayReference}`);
+      }
+    } catch (error) {
+      console.error('Error creating QR payment in database:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      // Continue with in-memory data even if DB persistence fails
+    }
+    
+    return qrPayment;
+  }
+  
+  /**
+   * Override getQrPayment to retrieve from database first
+   */
+  async getQrPayment(id: number): Promise<QrPayment | undefined> {
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(qrPayments)
+        .where(eq(qrPayments.id, id))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to QrPayment type
+        const dbQr = result[0];
+        const qrPayment: QrPayment = {
+          ...dbQr,
+          // Make sure numeric values are returned as strings
+          amount: dbQr.amount ? dbQr.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.qrPayments.set(qrPayment.id, qrPayment);
+        
+        return qrPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return super.getQrPayment(id);
+    } catch (error) {
+      console.error('Error fetching QR payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return super.getQrPayment(id);
+    }
+  }
+  
+  /**
+   * Override getQrPaymentByReference to retrieve from database first
+   */
+  async getQrPaymentByReference(reference: string): Promise<QrPayment | undefined> {
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(qrPayments)
+        .where(eq(qrPayments.directPayReference, reference))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to QrPayment type
+        const dbQr = result[0];
+        const qrPayment: QrPayment = {
+          ...dbQr,
+          // Make sure numeric values are returned as strings
+          amount: dbQr.amount ? dbQr.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.qrPayments.set(qrPayment.id, qrPayment);
+        
+        return qrPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return super.getQrPaymentByReference(reference);
+    } catch (error) {
+      console.error('Error fetching QR payment by reference from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return super.getQrPaymentByReference(reference);
+    }
+  }
+  
+  /**
+   * Override updateQrPaymentStatus to update in database
+   */
+  async updateQrPaymentStatus(id: number, status: string): Promise<QrPayment> {
+    // First update in memory
+    const qrPayment = await super.updateQrPaymentStatus(id, status);
+    
+    // Then update in database
+    try {
+      await this.dbInstance.update(qrPayments)
+        .set({
+          status,
+          updatedAt: new Date()
+        })
+        .where(eq(qrPayments.id, id));
+      
+      console.log(`Updated QR payment status in database: ID=${id}, Status=${status}`);
+    } catch (error) {
+      console.error('Error updating QR payment status in database:', error);
+      // Continue with in-memory data even if DB update fails
+    }
+    
+    return qrPayment;
+  }
+  
+  /**
+   * Override getActiveQrPaymentByUserId to check database first
+   */
+  async getActiveQrPaymentByUserId(userId: number): Promise<QrPayment | undefined> {
+    try {
+      // Get current date
+      const now = new Date();
+      
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(qrPayments)
+        .where(
+          and(
+            eq(qrPayments.userId, userId),
+            eq(qrPayments.status, 'pending'),
+            sql`${qrPayments.expiresAt} > ${now}`
+          )
+        )
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to QrPayment type
+        const dbQr = result[0];
+        const qrPayment: QrPayment = {
+          ...dbQr,
+          // Make sure numeric values are returned as strings
+          amount: dbQr.amount ? dbQr.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.qrPayments.set(qrPayment.id, qrPayment);
+        
+        return qrPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return super.getActiveQrPaymentByUserId(userId);
+    } catch (error) {
+      console.error('Error fetching active QR payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return super.getActiveQrPaymentByUserId(userId);
+    }
+  }
 }
 
 // Import database connection
