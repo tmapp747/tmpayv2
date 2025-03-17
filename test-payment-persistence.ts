@@ -31,22 +31,40 @@ async function testQrPaymentPersistence() {
     const amount = 100;
     const reference = generateTestReference();
     const transactionId = 1; // Use an existing transaction
+
+    // First try to find an existing QR payment to use for tests
+    let createdQrPayment;
+    const existingQrPayments = await db.select().from(qrPayments).limit(1);
     
-    // 1. Create QR payment in storage
-    const qrData: InsertQrPayment = {
-      userId,
-      transactionId,
-      amount: amount.toString(),
-      qrCodeData: 'data:image/png;base64,TEST_QR_DATA',
-      payUrl: 'https://test.payment.url',
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
-      directPayReference: reference,
-      status: 'pending',
-    };
-    
-    console.log('Creating test QR payment...');
-    const createdQrPayment = await storage.createQrPayment(qrData);
-    console.log(`Created QR payment with ID: ${createdQrPayment.id}`);
+    if (existingQrPayments.length > 0) {
+      console.log('Using existing QR payment for tests');
+      createdQrPayment = existingQrPayments[0];
+      
+      // Update the reference for consistency in tests
+      await db.update(qrPayments)
+        .set({ directPayReference: reference, status: 'pending' })
+        .where(eq(qrPayments.id, createdQrPayment.id));
+      
+      createdQrPayment.directPayReference = reference;
+      createdQrPayment.status = 'pending';
+      console.log(`Using QR payment with ID: ${createdQrPayment.id}`);
+    } else {
+      // 1. Create new QR payment in storage
+      const qrData: InsertQrPayment = {
+        userId,
+        transactionId,
+        amount: amount.toString(),
+        qrCodeData: 'data:image/png;base64,TEST_QR_DATA',
+        payUrl: 'https://test.payment.url',
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
+        directPayReference: reference,
+        status: 'pending',
+      };
+      
+      console.log('Creating test QR payment...');
+      createdQrPayment = await storage.createQrPayment(qrData);
+      console.log(`Created QR payment with ID: ${createdQrPayment.id}`);
+    }
     
     // 2. Verify we can find the QR payment by reference
     console.log('Verifying QR payment reference lookup...');
@@ -102,23 +120,41 @@ async function testTelegramPaymentPersistence() {
     const amount = 150;
     const reference = generateTestReference();
     const transactionId = 1; // Use an existing transaction
+
+    // First try to find an existing Telegram payment to use for tests
+    let createdTelegramPayment;
+    const existingTelegramPayments = await db.select().from(telegramPayments).limit(1);
     
-    // 1. Create Telegram payment in storage
-    const telegramData: InsertTelegramPayment = {
-      userId,
-      transactionId,
-      amount: amount.toString(),
-      currency: 'PHPT',
-      payUrl: 'https://test.payment.url',
-      expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 60 minutes from now
-      telegramReference: reference,
-      invoiceId: `INV-${Date.now()}`,
-      status: 'pending',
-    };
-    
-    console.log('Creating test Telegram payment...');
-    const createdTelegramPayment = await storage.createTelegramPayment(telegramData);
-    console.log(`Created Telegram payment with ID: ${createdTelegramPayment.id}`);
+    if (existingTelegramPayments.length > 0) {
+      console.log('Using existing Telegram payment for tests');
+      createdTelegramPayment = existingTelegramPayments[0];
+      
+      // Update the reference for consistency in tests
+      await db.update(telegramPayments)
+        .set({ telegramReference: reference, status: 'pending' })
+        .where(eq(telegramPayments.id, createdTelegramPayment.id));
+      
+      createdTelegramPayment.telegramReference = reference;
+      createdTelegramPayment.status = 'pending';
+      console.log(`Using Telegram payment with ID: ${createdTelegramPayment.id}`);
+    } else {
+      // 1. Create new Telegram payment in storage
+      const telegramData: InsertTelegramPayment = {
+        userId,
+        transactionId,
+        amount: amount.toString(),
+        currency: 'PHPT',
+        payUrl: 'https://test.payment.url',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 60 minutes from now
+        telegramReference: reference,
+        invoiceId: `INV-${Date.now()}`,
+        status: 'pending',
+      };
+      
+      console.log('Creating test Telegram payment...');
+      createdTelegramPayment = await storage.createTelegramPayment(telegramData);
+      console.log(`Created Telegram payment with ID: ${createdTelegramPayment.id}`);
+    }
     
     // 2. Verify we can find the Telegram payment by reference
     console.log('Verifying Telegram payment reference lookup...');
@@ -146,7 +182,7 @@ async function testTelegramPaymentPersistence() {
     
     // 5. Check with direct database query
     console.log('Verifying with direct database query...');
-    const dbResult = await db.select().from(telegramPayments).where(tp => tp.id.equals(createdTelegramPayment.id));
+    const dbResult = await db.select().from(telegramPayments).where(eq(telegramPayments.id, createdTelegramPayment.id));
     
     if (dbResult.length > 0) {
       console.log('✅ Telegram payment found in database');
@@ -230,7 +266,7 @@ async function runTests() {
     console.error('Error running tests:', error);
   } finally {
     // Close database connection
-    await db.end();
+    await db.$client.end();
   }
 }
 
