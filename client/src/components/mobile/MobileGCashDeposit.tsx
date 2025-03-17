@@ -18,7 +18,18 @@ export default function MobileGCashDeposit() {
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [successData, setSuccessData] = useState<any>(null);
+  // Define interface for transaction success data
+  interface SuccessData {
+    amount: number;
+    newBalance: string | number;
+    transactionId: string;
+    timestamp: string;
+    paymentMethod: string;
+    statusUpdatedAt?: string;
+    completedAt?: string;
+  }
+  
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
   const { toast } = useToast();
   const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
@@ -163,17 +174,37 @@ export default function MobileGCashDeposit() {
         }
         
         const data = await res.json();
+        
+        // Log real-time status updates
+        console.log(`GCash payment status update [${new Date().toLocaleTimeString()}]:`, {
+          reference: refId,
+          status: data.status,
+          qrPayment: data.qrPayment ? {
+            status: data.qrPayment.status,
+            amount: data.qrPayment.amount,
+            updatedAt: data.qrPayment.updatedAt,
+            statusUpdatedAt: data.qrPayment.statusUpdatedAt,
+            completedAt: data.qrPayment.completedAt,
+          } : null
+        });
 
         if (data.status === "completed") {
           clearInterval(interval);
           
-          // Store successful transaction data
+          // Get completion timestamp either from API response or use current time
+          const completionTimestamp = data.qrPayment?.completedAt || 
+                                      data.qrPayment?.statusUpdatedAt || 
+                                      new Date().toISOString();
+          
+          // Store successful transaction data with timestamp information
           setSuccessData({
             amount: parseFloat(amount),
             newBalance: data.qrPayment?.amount || amount,
             transactionId: refId,
-            timestamp: new Date().toISOString(),
+            timestamp: completionTimestamp,
             paymentMethod: 'GCash',
+            statusUpdatedAt: data.qrPayment?.statusUpdatedAt || completionTimestamp,
+            completedAt: data.qrPayment?.completedAt || completionTimestamp
           });
           
           // Close modal and show success screen
@@ -183,6 +214,14 @@ export default function MobileGCashDeposit() {
           // Invalidate queries to refresh transaction list and user balance
           queryClient.invalidateQueries({queryKey: ['/api/transactions']});
           queryClient.invalidateQueries({queryKey: ['/api/user/info']});
+          
+          // Log completion details
+          console.log("Payment completed:", {
+            reference: refId,
+            amount: parseFloat(amount),
+            completedAt: completionTimestamp,
+            status: "completed"
+          });
           
           // Notify user
           toast({
@@ -197,6 +236,12 @@ export default function MobileGCashDeposit() {
           
           // Invalidate queries to ensure UI is up-to-date
           queryClient.invalidateQueries({queryKey: ['/api/transactions']});
+          
+          console.log("Payment failed or expired:", {
+            reference: refId,
+            status: data.status,
+            timestamp: new Date().toISOString()
+          });
           
           toast({
             title: "GCash Payment Failed",
@@ -258,10 +303,13 @@ export default function MobileGCashDeposit() {
       </header>
 
       <AnimatePresence mode="wait">
-        {isSuccess ? (
+        {isSuccess && successData ? (
           <SuccessScreen 
             amount={successData.amount} 
             transactionId={successData.transactionId}
+            timestamp={successData.timestamp}
+            completedAt={successData.completedAt}
+            statusUpdatedAt={successData.statusUpdatedAt}
             onClose={() => navigate("/mobile/wallet")}
           />
         ) : (
@@ -456,7 +504,21 @@ export default function MobileGCashDeposit() {
 }
 
 // Success screen component
-function SuccessScreen({ amount, transactionId, onClose }: { amount: number, transactionId: string, onClose: () => void }) {
+function SuccessScreen({ 
+  amount, 
+  transactionId, 
+  onClose, 
+  timestamp, 
+  completedAt, 
+  statusUpdatedAt 
+}: { 
+  amount: number, 
+  transactionId: string, 
+  onClose: () => void,
+  timestamp?: string,
+  completedAt?: string,
+  statusUpdatedAt?: string
+}) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -512,8 +574,26 @@ function SuccessScreen({ amount, transactionId, onClose }: { amount: number, tra
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-blue-300">Date & Time:</span>
-          <span className="text-white">{new Date().toLocaleString()}</span>
+          <span className="text-white">
+            {completedAt 
+              ? new Date(completedAt).toLocaleString() 
+              : timestamp 
+                ? new Date(timestamp).toLocaleString()
+                : new Date().toLocaleString()
+            }
+          </span>
         </div>
+        {statusUpdatedAt && (
+          <div className="flex justify-between text-sm mt-2 pt-2 border-t border-blue-500/20">
+            <span className="text-blue-300">Status Updated:</span>
+            <span className="text-blue-200 text-xs flex items-center">
+              {new Date(statusUpdatedAt).toLocaleString()}
+              <span className="ml-1 bg-green-500/20 rounded-sm px-1 py-0.5 text-[10px] text-green-300">
+                LIVE
+              </span>
+            </span>
+          </div>
+        )}
       </div>
       
       <Button 

@@ -29,6 +29,14 @@ export interface Transaction {
   paymentReference?: string;
   transactionId?: string;
   casinoReference?: string;
+  // Status tracking fields
+  statusUpdatedAt?: string | Date;
+  statusHistory?: Array<{status: string, timestamp: string, note?: string}>;
+  completedAt?: string | Date;
+  // Financial tracking
+  balanceBefore?: string | number;
+  balanceAfter?: string | number;
+  fee?: string | number;
   // 747 Casino-specific fields
   casinoClientId?: number;
   casinoUsername?: string;

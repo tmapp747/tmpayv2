@@ -149,3 +149,32 @@ export function isDevelopmentMode(): boolean {
     window.location.hostname === 'localhost' || 
     window.location.hostname === '127.0.0.1';
 }
+
+// Get relative time (e.g., "5 minutes ago")
+export function getTimeAgo(date: Date | string): string {
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - dateObj.getTime();
+  
+  // Convert to seconds, minutes, hours
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffSecs / 60);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSecs < 60) {
+    return diffSecs <= 5 ? 'just now' : `${diffSecs} seconds ago`;
+  } else if (diffMins < 60) {
+    return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+  } else if (diffDays < 7) {
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+  } else {
+    return dateObj.toLocaleDateString('en-PH', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+}

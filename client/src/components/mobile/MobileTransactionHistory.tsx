@@ -1,17 +1,21 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Check, X, Clock, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils";
+import { formatCurrency, formatDate, getStatusColor, getTimeAgo } from "@/lib/utils";
 import { Transaction } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 
 export default function MobileTransactionHistory() {
   const [filter, setFilter] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
-  const { data, isLoading, error } = useQuery<{ success: boolean; transactions: Transaction[] }>({
+  const { data, isLoading, error, isFetching } = useQuery<{ success: boolean; transactions: Transaction[] }>({
     queryKey: ['/api/transactions'],
     enabled: true,
-    refetchInterval: 5000, // Poll every 5 seconds to show real-time updates
+    refetchInterval: 3000, // Poll every 3 seconds for faster real-time updates
+    staleTime: 0, // Consider data always stale to ensure fresh updates
+    refetchOnWindowFocus: true, // Refetch when tab gets focus
   });
   
   const getStatusIcon = (status: string) => {
@@ -92,8 +96,15 @@ export default function MobileTransactionHistory() {
   return (
     <div className="py-2">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-white">Recent Transactions</h3>
-        <div className="flex space-x-1">
+        <div className="flex items-center">
+          <h3 className="text-lg font-semibold text-white mr-2">Recent Transactions</h3>
+          {isFetching && (
+            <div className="animate-pulse flex items-center">
+              <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping"></span>
+            </div>
+          )}
+        </div>
+        <div className="flex space-x-1 items-center">
           <button 
             className={`px-2 py-1 text-xs rounded-full ${filter === 'gcash' 
               ? 'bg-blue-600 text-white' 
@@ -109,6 +120,20 @@ export default function MobileTransactionHistory() {
             onClick={() => setFilter(filter === 'casino' ? null : 'casino')}
           >
             Casino
+          </button>
+          
+          <button 
+            className="ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/5 text-blue-300"
+            onClick={() => {
+              // Trigger a manual refresh
+              const queryClient = window.queryClient;
+              if (queryClient) {
+                queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+              }
+            }}
+            aria-label="Refresh transactions"
+          >
+            <RefreshCcw size={12} />
           </button>
         </div>
       </div>
@@ -147,9 +172,30 @@ export default function MobileTransactionHistory() {
                           <h4 className="text-white text-sm font-medium">
                             {getTransactionTypeLabel(transaction.type, transaction.method || '')}
                           </h4>
-                          <p className="text-blue-300 text-xs">
-                            {formatDate(transaction.createdAt)}
-                          </p>
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-blue-300 text-xs flex items-center">
+                              <span className="mr-1">
+                                {formatDate(transaction.createdAt)}
+                              </span>
+                            </p>
+                            {transaction.status === 'completed' && (
+                              <div className="flex items-center">
+                                {transaction.completedAt && (
+                                  <Badge variant="outline" className="text-[10px] bg-green-500/10 border-green-500/20 text-green-400 px-1.5 py-0 h-4 rounded-sm">
+                                    Completed {new Date(transaction.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            {transaction.statusUpdatedAt && transaction.status === 'pending' && (
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="text-[10px] bg-yellow-500/10 border-yellow-500/20 text-yellow-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                  <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
+                                  Processing
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className={`text-sm font-semibold ${
@@ -170,6 +216,9 @@ export default function MobileTransactionHistory() {
                                 : 'text-yellow-400'
                             }`}>
                               {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                              {transaction.completedAt && transaction.status === 'completed' && 
+                                ` at ${new Date(transaction.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
+                              }
                             </span>
                           </div>
                         </div>
