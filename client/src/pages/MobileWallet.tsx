@@ -113,7 +113,7 @@ export default function MobileWallet() {
       </header>
       
       {/* Main Content */}
-      <main className="space-y-6 pt-4">
+      <main className="space-y-6 pt-6">
         {/* Balance Card */}
         <div className="px-4">
           <NewBalanceCard />
