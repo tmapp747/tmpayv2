@@ -11,7 +11,8 @@ import {
   Copy, 
   ExternalLink, 
   Smartphone,
-  Phone
+  Phone,
+  ChevronDown
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -519,25 +520,20 @@ export default function MobileGCashDeposit() {
                     className="w-full rounded-lg border border-blue-500/20"
                     style={{ 
                       height: "280px", 
-                      overflow: "hidden", // Make iframe non-scrollable
-                      scrolling: "no" // Additional attribute for older browsers
+                      overflow: "hidden" // Make iframe non-scrollable
                     }}
                     title="GCash Payment"
-                    scrolling="no" // HTML attribute for iframe 
                   />
                   
-                  {/* QR Code overlay covering more of the button area */}
+                  {/* Simple overlay to block the button area without QR code */}
                   <div className="absolute bottom-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/95 rounded-bl-lg rounded-tr-none p-2 border border-blue-500/40 shadow-lg" 
                     style={{ width: "180px", height: "130px" }}>
-                    {/* QR Code with payment URL */}
-                    <div className="p-1 bg-white rounded-lg h-full w-full flex flex-col items-center justify-center">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(payUrl || '')}`}
-                        alt="Payment QR Code"
-                        className="w-full h-auto object-contain"
-                        style={{ maxHeight: "110px" }}
-                      />
-                      <span className="text-[8px] text-gray-500 mt-1">Scan to pay</span>
+                    <div className="h-full w-full flex flex-col items-center justify-center">
+                      <div className="text-xs font-medium text-blue-200 flex flex-col items-center">
+                        <span>Use QR code below</span>
+                        <Smartphone className="mt-2 mb-2 h-4 w-4 text-blue-300" />
+                        <ChevronDown className="h-4 w-4 text-blue-300 animate-bounce" />
+                      </div>
                     </div>
                   </div>
                 </div>
