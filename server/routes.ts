@@ -1713,11 +1713,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const beforeTransactions = await storage.getTransactionsByUserId(user.id);
       console.log(`[DEBUG] BEFORE: User ${username} (ID: ${user.id}) has ${beforeTransactions.length} transactions`);
       
-      // Create a new unique reference
-      const testReference = `TEST-${username}-${Date.now()}`;
+      // Create a new unique reference with the username
+      const testReference = generateTransactionReference(username);
       
       // Create a transaction
-      let transaction: Transaction;
+      let transaction;
       try {
         transaction = await storage.createTransaction({
           userId: user.id,
@@ -1894,8 +1894,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/debug/direct-pay-gcash", async (req: Request, res: Response) => {
     try {
       const amount = 100; // Test with minimum amount
-      const testReference = `TEST-${Date.now()}`;
       const testUsername = "debug_user";
+      const testReference = generateTransactionReference(testUsername);
       const webhookUrl = `${req.protocol}://${req.get('host')}/api/webhook/directpay/payment`;
       const redirectUrl = `${req.protocol}://${req.get('host')}/payment/thank-you?reference=${testReference}&amount=${amount}&username=${encodeURIComponent(testUsername)}`;
       
@@ -1981,8 +1981,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the authenticated user from the request
       const user = (req as any).user;
       
-      // Validate request with manualPaymentSchema
-      const { amount, paymentMethod, notes, reference } = manualPaymentSchema.parse(req.body);
+      // Validate request with manualPaymentSchema - we'll generate our own reference
+      const { amount, paymentMethod, notes } = manualPaymentSchema.omit({ reference: true }).parse(req.body);
+      
+      // Generate a unique reference including the username for better tracking
+      const reference = generateTransactionReference(user.username);
       
       // Check required fields
       if (!req.body.proofImageUrl) {
