@@ -3187,8 +3187,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         casinoUserType: "player"
       };
       
-      // Generate unique casino ID
-      const casinoId = `747-${mockCasinoDetails.casinoClientId}`;
+      // Use the casinoClientId directly without prefix - fix for db persistence issue
+      const casinoId = String(mockCasinoDetails.casinoClientId);
       
       // Hash password
       const hashedPassword = await hashPassword(password);
@@ -3202,7 +3202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pendingBalance: "0",
         isVip: false,
         isAuthorized: true,
-        casinoId,
+        casinoId, // Just the client ID as string, without the "747-" prefix
         casinoUsername: mockCasinoDetails.casinoUsername,
         casinoClientId: mockCasinoDetails.casinoClientId,
         topManager: mockCasinoDetails.topManager,

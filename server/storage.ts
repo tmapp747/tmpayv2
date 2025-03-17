@@ -1439,8 +1439,43 @@ export class DbStorage extends MemStorage {
         password: '[REDACTED]' // Don't log the actual password
       }, null, 2));
       
-      // Insert with explicit fields
-      await this.dbInstance.insert(users).values(dbUser);
+      // CRITICAL FIX: Use simplified insert focusing only on the casino_id field
+      console.log(`CRITICAL: Using direct database insert with explicit casino_id=${casinoIdValue}`);
+      
+      // Create a structured object with known types for the insert
+      const userInsertData = {
+        id: dbUser.id,
+        username: dbUser.username,
+        password: dbUser.password,
+        email: dbUser.email,
+        balance: dbUser.balance,
+        pending_balance: dbUser.pending_balance,
+        balances: dbUser.balances,
+        preferred_currency: dbUser.preferred_currency,
+        is_vip: dbUser.is_vip,
+        casino_id: casinoIdValue, // Use our guaranteed non-null value
+        casino_username: dbUser.casino_username,
+        casino_client_id: dbUser.casino_client_id,
+        top_manager: dbUser.top_manager,
+        immediate_manager: dbUser.immediate_manager,
+        casino_user_type: dbUser.casino_user_type,
+        casino_balance: dbUser.casino_balance,
+        is_authorized: dbUser.is_authorized,
+        // Special handling for array types
+        allowed_top_managers: dbUser.allowed_top_managers || [],
+        hierarchy_level: dbUser.hierarchy_level,
+        created_at: dbUser.created_at,
+        updated_at: dbUser.updated_at,
+        access_token: dbUser.access_token,
+        access_token_expiry: dbUser.access_token_expiry,
+        refresh_token: dbUser.refresh_token,
+        refresh_token_expiry: dbUser.refresh_token_expiry,
+        casino_auth_token: dbUser.casino_auth_token,
+        casino_auth_token_expiry: dbUser.casino_auth_token_expiry
+      };
+      
+      // Use the standard Drizzle insert with the properly structured object
+      await this.dbInstance.insert(users).values(userInsertData);
 
       console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;
