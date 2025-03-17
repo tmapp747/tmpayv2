@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import NewBalanceCard from '@/components/NewBalanceCard';
 import BottomNavBar from '@/components/navigation/BottomNavBar';
+import MobileTransactionHistory from '@/components/mobile/MobileTransactionHistory';
 import { formatCurrency } from '@/lib/utils';
 
 export default function MobileWallet() {
@@ -18,49 +19,7 @@ export default function MobileWallet() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
-  // Demo transactions for the wallet page
-  const transactions = [
-    { 
-      id: 1, 
-      title: 'Casino Deposit', 
-      amount: -500, 
-      time: '09:23 AM', 
-      date: '12.03.2025',
-      type: 'casino_deposit',
-      status: 'completed',
-      icon: <ArrowUpRight className="h-6 w-6 text-white" />
-    },
-    { 
-      id: 2, 
-      title: 'GCash Deposit', 
-      amount: 1000, 
-      time: '11:45 AM', 
-      date: '11.03.2025',
-      type: 'deposit',
-      status: 'completed',
-      icon: <ArrowDownToLine className="h-6 w-6 text-white" />
-    },
-    { 
-      id: 3, 
-      title: 'Casino Withdraw', 
-      amount: 750, 
-      time: '04:30 PM', 
-      date: '10.03.2025',
-      type: 'casino_withdraw',
-      status: 'completed',
-      icon: <ArrowDownToLine className="h-6 w-6 text-white" />
-    },
-    { 
-      id: 4, 
-      title: 'Pending Transfer', 
-      amount: -250, 
-      time: '06:12 PM', 
-      date: '09.03.2025',
-      type: 'transfer',
-      status: 'pending',
-      icon: <ArrowUpRight className="h-6 w-6 text-white" />
-    }
-  ];
+  // Enhanced with real-time transaction history
   
   // Handle pull-to-refresh interaction
   const onTouchStart = (e: React.TouchEvent) => {
@@ -237,52 +196,8 @@ export default function MobileWallet() {
               transition={{ duration: 0.2 }}
               className="px-4 space-y-1"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-medium text-white">Transaction History</h2>
-                <Link href="/history" className="text-sm text-blue-300 flex items-center">
-                  View All <ChevronRight className="h-4 w-4 ml-1" />
-                </Link>
-              </div>
-              
-              <div className="space-y-4">
-                {transactions.map((tx, index) => (
-                  <motion.div 
-                    key={tx.id} 
-                    className="transaction-item bg-white/5 backdrop-blur-md rounded-xl p-3"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <motion.div 
-                        className={`transaction-icon shadow-md ${
-                          tx.type === 'deposit' || tx.type === 'casino_withdraw' 
-                            ? 'bg-gradient-to-br from-green-500 to-green-600' 
-                            : 'bg-gradient-to-br from-blue-500 to-blue-600'
-                        }`}
-                        whileHover={{ scale: 1.05 }}
-                      >
-                        {tx.icon}
-                      </motion.div>
-                      <div>
-                        <h3 className="font-medium text-white">{tx.title}</h3>
-                        <div className="flex items-center">
-                          <p className="text-xs text-gray-400">{tx.time} • {tx.date}</p>
-                          {tx.status === 'pending' && (
-                            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-yellow-500/20 text-yellow-300 rounded">Pending</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={tx.amount > 0 ? 'transaction-amount-positive font-semibold' : 'transaction-amount-negative font-semibold'}>
-                        {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              {/* Use the enhanced MobileTransactionHistory component */}
+              <MobileTransactionHistory />
             </motion.div>
           ) : (
             <motion.div 
