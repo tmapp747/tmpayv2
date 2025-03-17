@@ -310,43 +310,105 @@ const QRDeposit = () => {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="bg-primary text-white border-secondary/30 sm:max-w-md">
           <DialogTitle className="text-xl font-semibold text-center">
-            {payUrl ? "Pay with GCash" : "Scan with GCash App"}
+            Pay with GCash
           </DialogTitle>
           
-          {payUrl ? (
-            // If we have a payment URL, show the iframe or redirect button
-            <div className="w-full mx-auto">
-              {/* PayURL can be used in an iframe or as a redirect */}
-              <iframe 
-                src={payUrl} 
-                className="w-full rounded-lg border border-secondary/20"
-                style={{ height: "400px" }}
-                title="GCash Payment"
-              />
-              <div className="flex justify-center mt-3">
-                <Button 
-                  variant="outline" 
-                  className="text-xs border-secondary/20 hover:bg-secondary/20"
-                  onClick={() => window.open(payUrl, '_blank')}
-                >
-                  Open in New Window
-                </Button>
-              </div>
+          <div className="flex flex-col space-y-4">
+            {/* Tabs for switching between Payment Page and QR Code */}
+            <div className="flex border-b border-secondary/20">
+              <button 
+                className={`py-2 px-4 ${payUrl && !qrData ? 'border-b-2 border-secondary text-white' : 'text-gray-400'}`}
+                onClick={() => {
+                  if (payUrl) {
+                    // Prioritize showing payment URL in iframe
+                    setQrData(null);
+                  }
+                }}
+              >
+                Pay Online
+              </button>
+              <button 
+                className={`py-2 px-4 ${qrData ? 'border-b-2 border-secondary text-white' : 'text-gray-400'}`}
+                onClick={() => {
+                  // If we have a qrData (or can generate one from payUrl), prioritize showing QR
+                  if (qrData || payUrl) {
+                    setQrData(qrData || payUrl);
+                  }
+                }}
+              >
+                Scan QR
+              </button>
             </div>
-          ) : (
-            // Otherwise show the QR code image
-            <div className="p-4 bg-white rounded-lg mx-auto" style={{ maxWidth: "280px" }}>
-              {qrData && qrData.includes('<iframe') ? (
-                <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
-              ) : (
-                <img 
-                  src={qrData || '/images/placeholder-qr.png'} 
-                  alt="GCash QR Code"
-                  className="w-full h-auto"
+
+            {/* Content area - shows either payment iframe or QR code */}
+            {(payUrl && !qrData) ? (
+              // Payment URL in iframe
+              <div className="w-full mx-auto">
+                <iframe 
+                  src={payUrl} 
+                  className="w-full rounded-lg border border-secondary/20"
+                  style={{ height: "400px" }}
+                  title="GCash Payment"
                 />
-              )}
-            </div>
-          )}
+                <div className="flex justify-center mt-3">
+                  <Button 
+                    variant="outline" 
+                    className="text-xs border-secondary/20 hover:bg-secondary/20"
+                    onClick={() => window.open(payUrl, '_blank')}
+                  >
+                    Open in New Window
+                  </Button>
+                </div>
+                <div className="text-center mt-3">
+                  <Button
+                    variant="secondary"
+                    className="text-xs"
+                    onClick={() => {
+                      // Switch to QR code view
+                      setQrData(payUrl);
+                    }}
+                  >
+                    <QrCode className="mr-2 h-4 w-4" />
+                    Show QR Code for Scanning
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              // QR code view
+              <div className="flex flex-col items-center">
+                <div className="p-4 bg-white rounded-lg mx-auto mb-3" style={{ maxWidth: "280px" }}>
+                  {qrData && qrData.includes('<iframe') ? (
+                    <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
+                  ) : qrData ? (
+                    <img 
+                      src={qrData} 
+                      alt="GCash QR Code"
+                      className="w-full h-auto"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-64 w-64">
+                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* If both options are available, show button to switch to iframe */}
+                {payUrl && (
+                  <Button
+                    variant="secondary"
+                    className="text-xs"
+                    onClick={() => {
+                      // Switch to payment view
+                      setQrData(null);
+                    }}
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Switch to Online Payment
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           
           <div className="text-center">
             <p className="text-sm text-gray-300 mb-2">
