@@ -3745,6 +3745,296 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // New endpoint to cancel a pending payment
+  app.post("/api/payments/cancel/:referenceId", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { referenceId } = req.params;
+      const userId = (req as any).user.id;
+      
+      if (!referenceId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Reference ID is required" 
+        });
+      }
+      
+      // Check QR payments first
+      const qrPayment = await storage.getQrPaymentByReference(referenceId);
+      if (qrPayment) {
+        // Verify the payment belongs to the authenticated user
+        if (qrPayment.userId !== userId) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to cancel this payment" 
+          });
+        }
+        
+        // Check if payment can be cancelled (only pending payments can be cancelled)
+        if (qrPayment.status !== 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: `Cannot cancel payment with status: ${qrPayment.status}`
+          });
+        }
+        
+        // Update QR payment status to cancelled
+        await storage.updateQrPaymentStatus(qrPayment.id, 'cancelled');
+        
+        // Update corresponding transaction status
+        const transaction = await storage.getTransaction(qrPayment.transactionId);
+        if (transaction) {
+          await storage.updateTransactionStatus(transaction.id, 'cancelled');
+          await storage.addStatusHistoryEntry(
+            transaction.id, 
+            'cancelled', 
+            'Cancelled by user'
+          );
+          
+          // Reduce pending balance in user account
+          const user = await storage.getUser(userId);
+          if (user) {
+            const amount = parseFloat(qrPayment.amount.toString());
+            // Subtract from the user's pending balance
+            await storage.updateUserPendingBalance(userId, -amount);
+          }
+        }
+        
+        return res.json({
+          success: true,
+          message: "Payment cancelled successfully",
+          qrPayment: { ...qrPayment, status: 'cancelled' }
+        });
+      }
+      
+      // Check Telegram payments 
+      const telegramPayment = await storage.getTelegramPaymentByReference(referenceId);
+      if (telegramPayment) {
+        // Verify the payment belongs to the authenticated user
+        if (telegramPayment.userId !== userId) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to cancel this payment" 
+          });
+        }
+        
+        // Check if payment can be cancelled (only pending payments can be cancelled)
+        if (telegramPayment.status !== 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: `Cannot cancel payment with status: ${telegramPayment.status}`
+          });
+        }
+        
+        // Update Telegram payment status to cancelled
+        await storage.updateTelegramPaymentStatus(telegramPayment.id, 'cancelled');
+        
+        // Update corresponding transaction status
+        const transaction = await storage.getTransaction(telegramPayment.transactionId);
+        if (transaction) {
+          await storage.updateTransactionStatus(transaction.id, 'cancelled');
+          await storage.addStatusHistoryEntry(
+            transaction.id, 
+            'cancelled', 
+            'Cancelled by user'
+          );
+          
+          // Reduce pending balance in user account
+          const user = await storage.getUser(userId);
+          if (user) {
+            const amount = parseFloat(telegramPayment.amount.toString());
+            // Subtract from the user's pending balance
+            await storage.updateUserPendingBalance(userId, -amount);
+          }
+        }
+        
+        return res.json({
+          success: true,
+          message: "Payment cancelled successfully",
+          telegramPayment: { ...telegramPayment, status: 'cancelled' }
+        });
+      }
+      
+      // If we get here, the payment wasn't found
+      return res.status(404).json({
+        success: false,
+        message: "Payment not found"
+      });
+    } catch (error) {
+      console.error("Error cancelling payment:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to cancel payment"
+      });
+    }
+  });
+  
+  // Endpoint to automatically clean up expired transactions
+  app.post("/api/payments/cleanup-expired", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const expiredTransactions: { id: number, type: string }[] = [];
+      
+      // Find and update expired QR payments
+      const qrPayments = await storage.getAllQrPayments();
+      for (const qrPayment of qrPayments.values()) {
+        if (qrPayment.status === 'pending' && new Date(qrPayment.expiresAt) < now) {
+          await storage.updateQrPaymentStatus(qrPayment.id, 'expired');
+          
+          // Update the associated transaction
+          const transaction = await storage.getTransaction(qrPayment.transactionId);
+          if (transaction && transaction.status === 'pending') {
+            await storage.updateTransactionStatus(transaction.id, 'expired');
+            await storage.addStatusHistoryEntry(
+              transaction.id, 
+              'expired', 
+              'QR payment expired automatically'
+            );
+            
+            // Reduce pending balance in user account
+            const user = await storage.getUser(qrPayment.userId);
+            if (user) {
+              const amount = parseFloat(qrPayment.amount.toString());
+              // Subtract from the user's pending balance
+              await storage.updateUserPendingBalance(qrPayment.userId, -amount);
+            }
+            
+            expiredTransactions.push({ id: transaction.id, type: 'qr_payment' });
+          }
+        }
+      }
+      
+      // Find and update expired Telegram payments
+      const telegramPayments = await storage.getAllTelegramPayments();
+      for (const telegramPayment of telegramPayments.values()) {
+        if (telegramPayment.status === 'pending' && new Date(telegramPayment.expiresAt) < now) {
+          await storage.updateTelegramPaymentStatus(telegramPayment.id, 'expired');
+          
+          // Update the associated transaction
+          const transaction = await storage.getTransaction(telegramPayment.transactionId);
+          if (transaction && transaction.status === 'pending') {
+            await storage.updateTransactionStatus(transaction.id, 'expired');
+            await storage.addStatusHistoryEntry(
+              transaction.id, 
+              'expired', 
+              'Telegram payment expired automatically'
+            );
+            
+            // Reduce pending balance in user account
+            const user = await storage.getUser(telegramPayment.userId);
+            if (user) {
+              const amount = parseFloat(telegramPayment.amount.toString());
+              // Subtract from the user's pending balance
+              await storage.updateUserPendingBalance(telegramPayment.userId, -amount);
+            }
+            
+            expiredTransactions.push({ id: transaction.id, type: 'telegram_payment' });
+          }
+        }
+      }
+      
+      return res.json({
+        success: true,
+        message: `Cleaned up ${expiredTransactions.length} expired payments`,
+        expiredTransactions
+      });
+    } catch (error) {
+      console.error("Error cleaning up expired payments:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to clean up expired payments"
+      });
+    }
+  });
+  
+  // Endpoint to send transaction status notifications (for pending payments)
+  app.post("/api/payments/send-reminders", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const cutoffTime = new Date(now.getTime() - 15 * 60 * 1000); // 15 minutes ago
+      const remindersSent: { id: number, userId: number, type: string }[] = [];
+      
+      // Find pending QR payments that are about to expire
+      const qrPayments = await storage.getAllQrPayments();
+      for (const qrPayment of qrPayments.values()) {
+        if (qrPayment.status === 'pending') {
+          const expiryTime = new Date(qrPayment.expiresAt);
+          const timeLeft = Math.max(0, expiryTime.getTime() - now.getTime());
+          const minutesLeft = Math.floor(timeLeft / (60 * 1000));
+          
+          // If less than 10 minutes left before expiry and hasn't received a reminder yet
+          if (minutesLeft <= 10 && minutesLeft > 0) {
+            const transaction = await storage.getTransaction(qrPayment.transactionId);
+            const user = await storage.getUser(qrPayment.userId);
+            
+            if (transaction && user) {
+              // Check if we have already sent a reminder for this payment
+              const reminderSentKey = `reminder_sent_${qrPayment.id}`;
+              const reminderSent = await storage.getUserPreference(user.id, reminderSentKey);
+              
+              // If no reminder has been sent yet
+              if (!reminderSent) {
+                // In a real implementation, you'd send an email or push notification here
+                console.log(`REMINDER: Payment for ${qrPayment.amount} will expire in ${minutesLeft} minutes. User: ${user.username}, Reference: ${transaction.paymentReference}`);
+                
+                // Mark that we've sent a reminder
+                await storage.updateUserPreference(user.id, reminderSentKey, 'true');
+                
+                // Record for our response
+                remindersSent.push({ id: qrPayment.id, userId: user.id, type: 'qr_payment' });
+              }
+            }
+          }
+        }
+      }
+      
+      // Do the same for Telegram payments
+      const telegramPayments = await storage.getAllTelegramPayments();
+      for (const telegramPayment of telegramPayments.values()) {
+        if (telegramPayment.status === 'pending') {
+          const expiryTime = new Date(telegramPayment.expiresAt);
+          const timeLeft = Math.max(0, expiryTime.getTime() - now.getTime());
+          const minutesLeft = Math.floor(timeLeft / (60 * 1000));
+          
+          // If less than 10 minutes left before expiry and hasn't received a reminder yet
+          if (minutesLeft <= 10 && minutesLeft > 0) {
+            const transaction = await storage.getTransaction(telegramPayment.transactionId);
+            const user = await storage.getUser(telegramPayment.userId);
+            
+            if (transaction && user) {
+              // Check if we have already sent a reminder for this payment
+              const reminderSentKey = `reminder_sent_${telegramPayment.id}`;
+              const reminderSent = await storage.getUserPreference(user.id, reminderSentKey);
+              
+              // If no reminder has been sent yet
+              if (!reminderSent) {
+                // In a real implementation, you'd send an email or push notification here
+                console.log(`REMINDER: Payment for ${telegramPayment.amount} will expire in ${minutesLeft} minutes. User: ${user.username}, Reference: ${transaction.paymentReference}`);
+                
+                // Mark that we've sent a reminder
+                await storage.updateUserPreference(user.id, reminderSentKey, 'true');
+                
+                // Record for our response
+                remindersSent.push({ id: telegramPayment.id, userId: user.id, type: 'telegram_payment' });
+              }
+            }
+          }
+        }
+      }
+      
+      return res.json({
+        success: true,
+        message: `Sent ${remindersSent.length} payment reminders`,
+        remindersSent
+      });
+    } catch (error) {
+      console.error("Error sending payment reminders:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send payment reminders"
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
