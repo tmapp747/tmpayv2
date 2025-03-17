@@ -186,7 +186,7 @@ export default function MobileAuthPage() {
       }
     },
     onSuccess: (data) => {
-      console.log('Login successful, redirecting to dashboard');
+      console.log('Login successful, redirecting to mobile wallet');
       
       // Add haptic feedback on successful login
       const haptic = window.navigator as any;
@@ -194,7 +194,7 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      navigate('/mobile');
+      navigate('/mobile/wallet');
     },
     onError: (error: Error) => {
       console.error('Login error:', error);
@@ -248,7 +248,7 @@ export default function MobileAuthPage() {
       }
     },
     onSuccess: (data) => {
-      console.log('Registration successful, redirecting to dashboard');
+      console.log('Registration successful, redirecting to mobile wallet');
       
       // Add haptic feedback on successful registration
       const haptic = window.navigator as any;
@@ -256,7 +256,7 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      navigate('/mobile');
+      navigate('/mobile/wallet');
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);
