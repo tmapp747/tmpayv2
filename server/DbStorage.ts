@@ -139,7 +139,29 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getAllUsers(): Promise<Map<number, User>> {
+  getAllUsers(): Map<number, User> {
+    // For compatibility with the interface, this returns a Map directly
+    // Instead of a Promise<Map> which would break the interface contract
+    const userMap = new Map<number, User>();
+    
+    try {
+      // Start an async process to populate this map but return immediately
+      this.refreshUsersFromDatabase().catch(error => {
+        console.error('[DB] Error refreshing users from database:', error);
+      });
+      
+      if (DB_DEBUG) console.log(`[DB] Returning user map with initial size: ${userMap.size}`);
+      return userMap;
+    } catch (error) {
+      console.error('[DB] Error in getAllUsers:', error);
+      return new Map();
+    }
+  }
+  
+  /**
+   * Private helper to refresh users from the database
+   */
+  private async refreshUsersFromDatabase(): Promise<void> {
     try {
       const result = await this.dbInstance.select().from(users);
       const userMap = new Map<number, User>();
@@ -148,11 +170,9 @@ export class DbStorage implements IStorage {
         userMap.set(user.id, user);
       }
       
-      if (DB_DEBUG) console.log(`[DB] Retrieved all users: ${result.length}`);
-      return userMap;
+      if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} users from database`);
     } catch (error) {
-      console.error('[DB] Error retrieving all users:', error);
-      return new Map();
+      console.error('[DB] Error refreshing users from database:', error);
     }
   }
 
@@ -1149,7 +1169,29 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getAllQrPayments(): Promise<Map<number, QrPayment>> {
+  getAllQrPayments(): Map<number, QrPayment> {
+    // For compatibility with the interface, this returns a Map directly
+    // Instead of a Promise<Map> which would break the interface contract
+    const qrPaymentMap = new Map<number, QrPayment>();
+    
+    try {
+      // Start an async process to populate this map but return immediately
+      this.refreshQrPaymentsFromDatabase().catch(error => {
+        console.error('[DB] Error refreshing QR payments from database:', error);
+      });
+      
+      if (DB_DEBUG) console.log(`[DB] Returning QR payment map with initial size: ${qrPaymentMap.size}`);
+      return qrPaymentMap;
+    } catch (error) {
+      console.error('[DB] Error in getAllQrPayments:', error);
+      return new Map();
+    }
+  }
+  
+  /**
+   * Private helper to refresh QR payments from the database
+   */
+  private async refreshQrPaymentsFromDatabase(): Promise<void> {
     try {
       const result = await this.dbInstance.select().from(qrPayments);
       const qrPaymentMap = new Map<number, QrPayment>();
@@ -1158,11 +1200,9 @@ export class DbStorage implements IStorage {
         qrPaymentMap.set(payment.id, payment);
       }
       
-      if (DB_DEBUG) console.log(`[DB] Retrieved all QR payments: ${result.length}`);
-      return qrPaymentMap;
+      if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} QR payments from database`);
     } catch (error) {
-      console.error('[DB] Error retrieving all QR payments:', error);
-      return new Map();
+      console.error('[DB] Error refreshing QR payments from database:', error);
     }
   }
 
