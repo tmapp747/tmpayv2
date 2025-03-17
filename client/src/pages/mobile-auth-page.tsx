@@ -316,13 +316,17 @@ export default function MobileAuthPage() {
           </div>
         </div>
         
-        {/* 747 Logo */}
+        {/* 747 Logo with enhanced glow effect */}
         <div className="flex justify-center mt-6">
-          <img 
-            src="/assets/logos/747-logo.png" 
-            alt="747 Logo" 
-            className="h-16 object-contain"
-          />
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl transform scale-110"></div>
+            <div className="absolute inset-0 rounded-full bg-white/20 blur-md"></div>
+            <img 
+              src="/assets/logos/747-logo.png" 
+              alt="747 Logo" 
+              className="h-16 object-contain relative z-10 drop-shadow-lg"
+            />
+          </div>
         </div>
       </div>
       
