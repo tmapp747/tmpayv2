@@ -74,8 +74,32 @@ export default function MobileAuthPage() {
     if (verifiedUsername) {
       loginForm.setValue('username', verifiedUsername);
       registerForm.setValue('username', verifiedUsername);
+
+      console.log('Setting verified username and casino details');
+      
+      // Apply casino details from verification response to registration form
+      if (verificationResponse) {
+        console.log('Verification response details:', verificationResponse);
+        
+        // Set these values to the form for consistent structure with standard auth flow
+        if (verificationResponse.topManager) {
+          registerForm.setValue('topManager', verificationResponse.topManager);
+        }
+        
+        if (verificationResponse.immediateManager) {
+          registerForm.setValue('immediateManager', verificationResponse.immediateManager);
+        }
+        
+        if (verificationResponse.userType) {
+          registerForm.setValue('casinoUserType', verificationResponse.userType);
+        }
+        
+        if (verificationResponse.clientId) {
+          registerForm.setValue('clientId', verificationResponse.clientId);
+        }
+      }
     }
-  }, [verifiedUsername]);
+  }, [verifiedUsername, verificationResponse, loginForm, registerForm]);
 
   // Username verification mutation
   const verifyUsernameMutation = useMutation({
