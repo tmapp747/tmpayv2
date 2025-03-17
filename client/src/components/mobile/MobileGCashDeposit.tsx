@@ -513,15 +513,22 @@ export default function MobileGCashDeposit() {
               <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 mb-4 relative">
                 {/* The iframe is positioned as relative */}
                 <div className="relative">
+                  {/* Non-scrollable iframe */}
                   <iframe 
                     src={payUrl} 
                     className="w-full rounded-lg border border-blue-500/20"
-                    style={{ height: "330px" }}
+                    style={{ 
+                      height: "280px", 
+                      overflow: "hidden", // Make iframe non-scrollable
+                      scrolling: "no" // Additional attribute for older browsers
+                    }}
                     title="GCash Payment"
+                    scrolling="no" // HTML attribute for iframe 
                   />
                   
-                  {/* QR Code overlay covering just 1/3 of the bottom of the iframe */}
-                  <div className="absolute bottom-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/95 rounded-bl-lg rounded-tr-none p-2 border border-blue-500/40 shadow-lg" style={{ width: "130px", height: "130px" }}>
+                  {/* QR Code overlay covering more of the button area */}
+                  <div className="absolute bottom-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/95 rounded-bl-lg rounded-tr-none p-2 border border-blue-500/40 shadow-lg" 
+                    style={{ width: "180px", height: "130px" }}>
                     {/* QR Code with payment URL */}
                     <div className="p-1 bg-white rounded-lg h-full w-full flex flex-col items-center justify-center">
                       <img 
@@ -533,6 +540,21 @@ export default function MobileGCashDeposit() {
                       <span className="text-[8px] text-gray-500 mt-1">Scan to pay</span>
                     </div>
                   </div>
+                </div>
+                
+                {/* Centered QR code below the iframe */}
+                <div className="mt-4 flex flex-col items-center">
+                  <div className="bg-white p-3 rounded-lg shadow-md mb-2" style={{ width: "150px", height: "150px" }}>
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(payUrl || '')}`}
+                      alt="Payment QR Code"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-blue-300 text-center">
+                    <Smartphone className="h-3 w-3 inline mr-1" />
+                    Scan with another device to pay
+                  </p>
                 </div>
               </div>
               
