@@ -1386,6 +1386,9 @@ export class DbStorage extends MemStorage {
       console.log(`DbStorage: Persisting user to database: ${createdUser.username}`);
       
       // Ensure all fields match the database schema with proper naming
+      // Log the casino ID for debugging
+      console.log(`DEBUG: User casinoId before DB persistence: "${createdUser.casinoId}"`);
+      
       const dbUser = {
         id: createdUser.id,
         username: createdUser.username,
@@ -1396,7 +1399,7 @@ export class DbStorage extends MemStorage {
         balances: createdUser.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
         preferred_currency: createdUser.preferredCurrency || 'PHP',
         is_vip: createdUser.isVip || false,
-        casino_id: createdUser.casinoId, // Use the casinoId directly from user object
+        casino_id: createdUser.casinoId || `747-${createdUser.casinoClientId}`, // Fallback to constructing from casinoClientId
         casino_username: createdUser.casinoUsername,
         casino_client_id: createdUser.casinoClientId,
         top_manager: createdUser.topManager,
@@ -1415,6 +1418,12 @@ export class DbStorage extends MemStorage {
         created_at: createdUser.createdAt,
         updated_at: createdUser.updatedAt
       };
+      
+      // Debug log right before insertion
+      console.log('DEBUG: dbUser object for insertion:', JSON.stringify({
+        ...dbUser,
+        password: '[REDACTED]' // Don't log the actual password
+      }, null, 2));
       
       // Insert with explicit fields
       await this.dbInstance.insert(users).values(dbUser);
