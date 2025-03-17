@@ -243,34 +243,38 @@ export default function MobileDashboard() {
             </motion.div>
           </Link>
           
-          <motion.div 
-            className="flex flex-col items-center space-y-2"
-            whileTap={{ scale: 0.95 }}
-          >
-            <div className="banking-btn with-ripple shadow-lg">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
-                <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
-              </svg>
-            </div>
-            <span>User Management</span>
-          </motion.div>
+          <Link href="/mobile/profile">
+            <motion.div 
+              className="flex flex-col items-center space-y-2"
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="banking-btn with-ripple shadow-lg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
+                  <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
+                </svg>
+              </div>
+              <span>User Management</span>
+            </motion.div>
+          </Link>
           
-          <motion.div 
-            className="flex flex-col items-center space-y-2"
-            whileTap={{ scale: 0.95 }}
-          >
-            <div className="banking-btn with-ripple shadow-lg">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 6H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 12H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M3 6L7 10L3 6Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M21 18L17 14L21 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <span>Portals</span>
-          </motion.div>
+          <Link href="/mobile/portals" target="_blank">
+            <motion.div 
+              className="flex flex-col items-center space-y-2"
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="banking-btn with-ripple shadow-lg">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 6H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M3 12H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M3 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  <path d="M3 6L7 10L3 6Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M21 18L17 14L21 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span>Portals</span>
+            </motion.div>
+          </Link>
         </div>
         
         {/* Transactions List */}
@@ -307,7 +311,10 @@ export default function MobileDashboard() {
                   </div>
                   <div className="text-right">
                     <p className={tx.amount > 0 ? 'transaction-amount-positive font-semibold' : 'transaction-amount-negative font-semibold'}>
-                      {tx.amount > 0 ? '+' : ''}{tx.amount.toFixed(2)}
+                      {tx.amount > 0 ? '+₱' : '-₱'}{Math.abs(tx.amount).toLocaleString('en-PH', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
                     </p>
                   </div>
                 </motion.div>
