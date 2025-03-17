@@ -1,63 +1,55 @@
+@import './styles/colors.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Base styles for both light and dark modes */
 :root {
-  --color-lime: #BAFF00;
   --app-height: 100%;
   
-  /* Light mode variables - vibrant, attractive design */
-  --light-background: #F0F2F5;
-  --light-foreground: #1A1A1A;
+  /* Light mode variables - based on the new design */
+  --light-background: hsl(220, 100%, 97%);
+  --light-foreground: hsl(220, 100%, 10%);
   --light-card: #FFFFFF;
-  --light-card-foreground: #1A1A1A;
-  --light-primary: hsl(142, 76%, 36%);
+  --light-card-foreground: hsl(220, 100%, 10%);
+  --light-primary: hsl(217, 100%, 50%);
   --light-primary-foreground: #FFFFFF;
-  --light-secondary: #E5E7EB;
-  --light-secondary-foreground: #18181B;
-  --light-muted: #F4F4F5;
-  --light-muted-foreground: #6B7280;
-  --light-accent: #F0F0F0;
-  --light-accent-foreground: #18181B;
-  --light-border: #E2E8F0;
-  --light-input: #F5F5F5;
-  --light-ring: hsl(142, 76%, 36%);
-  --light-section: #686F7A;
-  --light-section-foreground: #FFFFFF;
-  --light-button-green: #10b981;
-  --light-button-blue: #3b82f6;
-  --light-button-red: #ef4444;
+  --light-secondary: hsl(210, 50%, 95%);
+  --light-secondary-foreground: hsl(220, 100%, 30%);
+  --light-muted: hsl(210, 20%, 95%);
+  --light-muted-foreground: hsl(220, 10%, 50%);
+  --light-accent: hsl(210, 100%, 95%);
+  --light-accent-foreground: hsl(220, 100%, 30%);
+  --light-border: hsl(210, 20%, 90%);
+  --light-input: #FFFFFF;
+  --light-ring: hsl(217, 100%, 50%);
+  --light-button-green: hsl(140, 100%, 45%);
+  --light-button-blue: hsl(217, 100%, 50%);
+  --light-button-red: hsl(350, 100%, 60%);
   --light-button-foreground: #FFFFFF;
-  --light-card-gradient-1: linear-gradient(135deg, #c7d2fe, #e0e7ff);
-  --light-card-gradient-2: linear-gradient(135deg, #bfdbfe, #dbeafe);
-  --light-card-gradient-3: linear-gradient(135deg, #a7f3d0, #d1fae5);
+  --light-card-gradient: linear-gradient(135deg, hsl(195, 100%, 50%), hsl(174, 100%, 45%));
   
-  /* Dark mode variables - vibrant, attractive design */
-  --dark-background: #0f172a;
-  --dark-foreground: #F9FAFB;
-  --dark-card: #1E293B;
-  --dark-card-foreground: #F9FAFB;
-  --dark-primary: hsl(142, 76%, 36%);
+  /* Dark mode variables - based on the new design */
+  --dark-background: hsl(220, 90%, 10%);
+  --dark-foreground: #FFFFFF;
+  --dark-card: hsl(218, 80%, 15%);
+  --dark-card-foreground: #FFFFFF;
+  --dark-primary: hsl(217, 100%, 50%);
   --dark-primary-foreground: #FFFFFF;
-  --dark-secondary: #1F2937;
-  --dark-secondary-foreground: #F3F4F6;
-  --dark-muted: #1E293B;
-  --dark-muted-foreground: #9CA3AF;
-  --dark-accent: #212B3B;
-  --dark-accent-foreground: #F3F4F6;
-  --dark-border: #2D3748;
-  --dark-input: #1E293B;
-  --dark-ring: hsl(142, 76%, 36%);
-  --dark-section: #374151;
-  --dark-section-foreground: #F3F4F6;
-  --dark-button-green: #059669;
-  --dark-button-blue: #2563eb;
-  --dark-button-red: #dc2626;
+  --dark-secondary: hsl(218, 70%, 20%);
+  --dark-secondary-foreground: #FFFFFF;
+  --dark-muted: hsl(218, 30%, 22%);
+  --dark-muted-foreground: hsl(220, 10%, 70%);
+  --dark-accent: hsl(218, 80%, 25%);
+  --dark-accent-foreground: #FFFFFF;
+  --dark-border: hsl(220, 50%, 25%);
+  --dark-input: hsl(218, 70%, 20%);
+  --dark-ring: hsl(217, 100%, 50%);
+  --dark-button-green: hsl(140, 100%, 45%);
+  --dark-button-blue: hsl(217, 100%, 60%);
+  --dark-button-red: hsl(350, 100%, 60%);
   --dark-button-foreground: #FFFFFF;
-  --dark-card-gradient-1: linear-gradient(135deg, #1e3a8a, #1e40af);
-  --dark-card-gradient-2: linear-gradient(135deg, #155e75, #0e7490);
-  --dark-card-gradient-3: linear-gradient(135deg, #065f46, #047857);
+  --dark-card-gradient: linear-gradient(135deg, hsl(195, 100%, 50%), hsl(174, 100%, 45%));
 }
 
 /* Light mode theme */
@@ -177,16 +169,31 @@ h3, h4, h5, h6 {
 /* Form elements */
 .form-label, 
 .FormLabel, 
-label[class*="FormLabel"],
-input, select, textarea, button {
-  background-color: #1A1A1A !important;
+label[class*="FormLabel"] {
+  color: var(--text-light);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+input, select, textarea {
+  background-color: var(--dark-input) !important;
+  color: var(--text-light) !important;
+  border-color: var(--dark-border) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1rem !important;
+}
+
+button {
+  background-color: var(--primary) !important;
   color: white !important;
-  border-color: #333333 !important;
+  border: none !important;
+  border-radius: 0.75rem !important;
+  padding: 0.75rem 1.25rem !important;
 }
 
 /* Input placeholders */
 ::placeholder {
-  color: #AAAAAA;
+  color: var(--text-muted);
   opacity: 1;
 }
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48px" height="30px" viewBox="0 0 48 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="mastercard" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="background" fill="#FFFFFF" x="0" y="0" width="48" height="30" rx="4"></rect>
+        <g id="circles" transform="translate(9.000000, 5.000000)">
+            <circle id="red-circle" fill="#EB001B" cx="10.5" cy="10.5" r="10.5"></circle>
+            <circle id="yellow-circle" fill="#F79E1B" cx="20.5" cy="10.5" r="10.5"></circle>
+            <path d="M15.5,3 C19.4,5.2 22,8.5 22,12.5 C22,16.5 19.4,19.8 15.5,22 C11.6,19.8 9,16.5 9,12.5 C9,8.5 11.6,5.2 15.5,3 Z" id="overlap" fill="#FF5F00"></path>
+        </g>
+    </g>
+</svg>

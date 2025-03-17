@@ -1278,6 +1278,54 @@ export class DbStorage extends MemStorage {
     this.dbInstance = dbInstance;
     this.initializeFromDb();
   }
+  
+  // Helper method to safely update user IDs in memory storage
+  private updateInMemoryUser(oldId: number, newId: number, user: User): void {
+    // Get all users from parent class
+    const allUsers = super.getAllUsers();
+    // Remove old entry if it exists
+    if (allUsers.has(oldId)) {
+      allUsers.delete(oldId);
+    }
+    // Add with new ID
+    allUsers.set(newId, user);
+    console.log(`Memory storage updated: User ${user.username} ID changed from ${oldId} to ${newId}`);
+  }
+  
+  // Helper method to convert DB format to memory format
+  private convertDbUserToMemoryFormat(dbUser: any): User {
+    if (!dbUser) return undefined as any;
+    
+    return {
+      id: dbUser.id,
+      username: dbUser.username,
+      password: dbUser.password,
+      email: dbUser.email || '',
+      balance: dbUser.balance || '0',
+      pendingBalance: dbUser.pending_balance || '0',
+      balances: dbUser.balances || { PHP: '0', PHPT: '0', USDT: '0' },
+      preferredCurrency: dbUser.preferred_currency || 'PHP',
+      isVip: dbUser.is_vip || false,
+      casinoId: dbUser.casino_id || '',
+      casinoUsername: dbUser.casino_username,
+      casinoClientId: dbUser.casino_client_id,
+      topManager: dbUser.top_manager,
+      immediateManager: dbUser.immediate_manager,
+      casinoUserType: dbUser.casino_user_type,
+      casinoBalance: dbUser.casino_balance || '0',
+      isAuthorized: dbUser.is_authorized || false,
+      allowedTopManagers: dbUser.allowed_top_managers || [],
+      accessToken: dbUser.access_token,
+      accessTokenExpiry: dbUser.access_token_expiry,
+      refreshToken: dbUser.refresh_token,
+      refreshTokenExpiry: dbUser.refresh_token_expiry,
+      casinoAuthToken: dbUser.casino_auth_token,
+      casinoAuthTokenExpiry: dbUser.casino_auth_token_expiry,
+      hierarchyLevel: dbUser.hierarchy_level || 0,
+      createdAt: dbUser.created_at,
+      updatedAt: dbUser.updated_at
+    };
+  }
 
   // Initialize memory store from database
   private async initializeFromDb() {
@@ -1583,7 +1631,7 @@ export class DbStorage extends MemStorage {
   // Override update methods to persist changes
   async updateUserAccessToken(id: number, token: string | null | undefined, expiresIn: number = 3600): Promise<User> {
     // First check if the user exists in memory
-    let user = this.users.get(id);
+    let user = super.getUser(id);
     
     if (!user) {
       // Try to load user from database if not found in memory
@@ -1594,7 +1642,7 @@ export class DbStorage extends MemStorage {
           user = this.convertDbUserToMemoryFormat(dbUser[0]);
           
           // Add to memory map
-          this.users.set(id, user);
+          this.insertUserDirect(user);
           console.log(`Loaded user ${user.username} (ID: ${id}) from database on demand`);
         } else {
           throw new Error(`User with ID ${id} not found in database or memory`);
@@ -1628,8 +1676,31 @@ export class DbStorage extends MemStorage {
   }
 
   async updateUserRefreshToken(id: number, token: string | null | undefined, expiresIn: number = 2592000): Promise<User> {
-    // First update in memory
-    const user = await super.updateUserRefreshToken(id, token, expiresIn);
+    // First check if the user exists in memory
+    let user = super.getUser(id);
+    
+    if (!user) {
+      // Try to load user from database if not found in memory
+      try {
+        const dbUser = await this.dbInstance.select().from(users).where(eq(users.id, id)).limit(1);
+        if (dbUser && dbUser.length > 0) {
+          // Convert DB user to memory format
+          user = this.convertDbUserToMemoryFormat(dbUser[0]);
+          
+          // Add to memory map
+          this.insertUserDirect(user);
+          console.log(`Loaded user ${user.username} (ID: ${id}) from database on demand for refresh token update`);
+        } else {
+          throw new Error(`User with ID ${id} not found in database or memory`);
+        }
+      } catch (dbError) {
+        console.error(`Failed to find user with ID ${id} in database:`, dbError);
+        throw new Error(`User with ID ${id} not found`);
+      }
+    }
+    
+    // Now update in memory
+    user = await super.updateUserRefreshToken(id, token, expiresIn);
     
     // Then persist to database
     try {
