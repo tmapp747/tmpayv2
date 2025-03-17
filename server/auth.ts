@@ -9,6 +9,8 @@ import { User as SelectUser } from "@shared/schema";
 import { casino747Api } from "./casino747Api";
 import { pool } from "./db";
 import pgSession from "connect-pg-simple";
+import { insertUserSchema } from "../shared/schema";
+import { z } from "zod";
 
 declare global {
   namespace Express {
@@ -160,7 +162,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         // Look up the user - use case-insensitive search
-        const user = await storage.getUserByUsername(username);
+        const user = await storage.getUserByUsername(username.toLowerCase());
         
         if (!user) {
           console.log(`Login failed: no user found with username "${username}"`);
@@ -230,14 +232,24 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      // Validate registration data using insertUserSchema
+      const registrationData = insertUserSchema.parse(req.body);
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(registrationData.username.toLowerCase());
       if (existingUser) {
         return res.status(400).json({ success: false, message: "Username already exists" });
       }
 
+      // Check password security criteria
+      const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/).regex(/[^A-Za-z0-9]/);
+      passwordSchema.parse(registrationData.password);
+
+      // Create new user
       const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
+        ...registrationData,
+        username: registrationData.username.toLowerCase(),
+        password: await hashPassword(registrationData.password),
       });
 
       req.login(user, (err) => {
@@ -251,6 +263,9 @@ export function setupAuth(app: Express) {
         res.status(201).json({ success: true, user: userResponse, message: "User registered successfully" });
       });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ success: false, message: error.errors });
+      }
       next(error);
     }
   });
