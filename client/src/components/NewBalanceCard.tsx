@@ -42,8 +42,7 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
     setCardRotation({ x: 0, y: 0 });
   };
   
-  // Format casino ID as a card number
-  // Format client ID as card number
+  // Format casino client ID as a card number
   const formatCardNumber = (id: string | number | undefined) => {
     if (!id) return '5282 3456 7890 1289';
     
@@ -68,20 +67,6 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
       setRefreshing(false);
     }, 1000);
   };
-  
-  // Display top manager and immediate manager info instead of expiry date
-  const getManagerInfo = (user: User | undefined) => {
-    if (!user) return 'MM/YY';
-    if (!user.topManager && !user.immediateManager) return 'No Managers';
-    
-    // Return partial information to fit in the card footer
-    const top = user.topManager ? user.topManager.substring(0, 8) : '-';
-    const immediate = user.immediateManager ? user.immediateManager.substring(0, 8) : '-';
-    
-    return `${top}/${immediate}`;
-  };
-  
-  // We no longer need the expiry date function as we're using manager info instead
   
   if (isLoading) {
     return (
@@ -162,17 +147,13 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   
   const totalBalance = parseFloat(balance as string) + parseFloat(pendingBalance as string);
   
-  // Use casinoId from the user record
-  // Make sure we use the correct function name
-  const formattedCardNumber = formatCardNumber(casinoId);
-  
-  // Use manager info instead of expiry date
-  const managerInfo = getManagerInfo(data.user);
+  // Use casinoClientId or casinoId from the user record (whichever is available)
+  const formattedCardNumber = formatCardNumber(casinoClientId || casinoId);
   
   return (
     <motion.div 
       ref={cardRef}
-      className={`rounded-[24px] mx-4 p-5 h-56 overflow-hidden w-auto shadow-2xl ${className}`}
+      className={`rounded-[24px] mx-4 p-5 h-64 overflow-hidden w-auto shadow-2xl ${className}`}
       style={{ 
         perspective: "1000px",
         transform: `rotateX(${cardRotation.x}deg) rotateY(${cardRotation.y}deg)` 
@@ -237,10 +218,21 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
           </motion.h3>
         </div>
         
-        {/* Card Number and Manager Info */}
-        <div className="text-sm text-white flex justify-between mt-auto">
-          <div>{showBalance ? formattedCardNumber : '5282 3456 **** ****'}</div>
-          <div>{managerInfo}</div>
+        {/* Card Number */}
+        <div>
+          <div className="text-sm text-white">
+            {showBalance ? formattedCardNumber : '5282 3456 **** ****'}
+          </div>
+        </div>
+        
+        {/* Manager Info - styled as requested with colored badges */}
+        <div className="flex flex-col gap-1 text-xs mt-2">
+          <div className="bg-green-500 text-white px-2 py-0.5 rounded-md text-[10px] whitespace-nowrap w-fit">
+            TOPMANAGER: {topManager || 'None'}
+          </div>
+          <div className="bg-purple-800 text-white px-2 py-0.5 rounded-md text-[10px] whitespace-nowrap w-fit">
+            IMMEDIATE: {immediateManager || 'None'}
+          </div>
         </div>
       </div>
     </motion.div>
