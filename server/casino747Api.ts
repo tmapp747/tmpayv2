@@ -102,18 +102,20 @@ export class Casino747Api {
    */
   async getUserBalance(clientId: number, username: string) {
     try {
-      // Make sure we have a valid auth token
-      const authToken = await this.getAuthToken(username);
+      // Get auth token using the top manager's token for reliability
+      const topManager = "Marcthepogi"; // Default top manager with valid token
+      const authToken = await this.getTopManagerToken(topManager);
       
-      console.log(`DEBUG: Making balance request for ${username} with clientId ${clientId}`);
-      console.log(`DEBUG: Using token: ${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`);
+      console.log(`🔍 Making balance request for ${username} with clientId ${clientId}`);
+      console.log(`🔑 Using ${topManager}'s token: ${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`);
       
-      // Create the request payload exactly as specified in the API documentation
+      // Create the request payload with required fields
       const requestData = {
         authToken,
         platform: this.defaultPlatform,
-        clientId,
-        username
+        clientId: parseInt(clientId.toString()), // Ensure clientId is number
+        username: username.trim(), // Clean username
+        currency: "PHP" // Default currency
       };
       
       console.log(`DEBUG: Request data: ${JSON.stringify(requestData)}`);

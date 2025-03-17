@@ -65,11 +65,11 @@ args = "npm install"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "# Start development server "
+args = "# Start development server with proper host binding"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
+args = "HOST=0.0.0.0 npm run dev"
 
 [[workflows.workflow]]
 name = "Test Mode"
