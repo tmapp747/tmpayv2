@@ -43,14 +43,18 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   };
   
   // Format casino ID as a card number
-  const formatCasinoId = (id: string) => {
+  // Format casino client ID as card number
+  const formatCasinoId = (id: string | number | undefined) => {
     if (!id) return '5282 3456 7890 1289';
     
+    // Convert to string if it's a number
+    const idStr = id.toString();
+    
     // Pad with zeros to ensure it's at least 16 digits
-    const paddedId = id.padStart(16, '0');
+    const paddedId = idStr.padStart(16, '0');
     
     // Format as credit card number
-    return paddedId.match(/.{1,4}/g)?.join(' ') || id;
+    return paddedId.match(/.{1,4}/g)?.join(' ') || idStr;
   };
   
   const handleRefresh = async () => {
@@ -61,13 +65,19 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
     }, 1000);
   };
   
-  // Get current expiry date (09/25 format - always 2 years from now)
-  const getExpiryDate = () => {
-    const date = new Date();
-    const month = date.getMonth() + 1;
-    const year = (date.getFullYear() + 2) % 100;
-    return `${month.toString().padStart(2, '0')}/${year.toString().padStart(2, '0')}`;
+  // Display top manager and immediate manager info instead of expiry date
+  const getManagerInfo = (user: User | undefined) => {
+    if (!user) return 'MM/YY';
+    if (!user.topManager && !user.immediateManager) return 'No Managers';
+    
+    // Return partial information to fit in the card footer
+    const top = user.topManager ? user.topManager.substring(0, 8) : '-';
+    const immediate = user.immediateManager ? user.immediateManager.substring(0, 8) : '-';
+    
+    return `${top}/${immediate}`;
   };
+  
+  // We no longer need the expiry date function as we're using manager info instead
   
   if (isLoading) {
     return (
@@ -116,17 +126,19 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
           </div>
           <div className="text-xs text-white pt-4 flex justify-between mt-4">
             <div>5282 3456 **** ****</div>
-            <div>09/25</div>
+            <div>MGRS/USER</div>
           </div>
         </div>
       </motion.div>
     );
   }
   
-  const { balance, pendingBalance, casinoBalance, casinoId, username } = data.user;
+  const { balance, pendingBalance, casinoBalance, casinoId, casinoClientId, username, topManager, immediateManager } = data.user;
   const totalBalance = parseFloat(balance as string) + parseFloat(pendingBalance as string);
-  const formattedCardNumber = formatCasinoId(casinoId);
-  const expiryDate = getExpiryDate();
+  // Use casinoClientId instead of casinoId for the card number
+  const formattedCardNumber = formatCasinoId(casinoClientId);
+  // Use manager info instead of expiry date
+  const managerInfo = getManagerInfo(data.user);
   
   return (
     <motion.div 
@@ -178,17 +190,17 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            ${showBalance ? (totalBalance).toLocaleString('en-US', {
+            ₱{showBalance ? (totalBalance).toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             }) : '••••••••'}
           </motion.h3>
         </div>
         
-        {/* Card Number and Expiry */}
+        {/* Card Number and Manager Info */}
         <div className="text-sm text-white flex justify-between mt-auto">
           <div>{showBalance ? formattedCardNumber : '5282 3456 **** ****'}</div>
-          <div>{expiryDate}</div>
+          <div>{managerInfo}</div>
         </div>
       </div>
     </motion.div>

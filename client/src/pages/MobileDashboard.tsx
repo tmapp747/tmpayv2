@@ -5,6 +5,7 @@ import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, Cred
 import { Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { User } from '@/lib/types';
 
 export default function MobileDashboard() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -15,6 +16,12 @@ export default function MobileDashboard() {
   const queryClient = useQueryClient();
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [paginationDots, setPaginationDots] = useState([true, false, false]);
+  
+  // Fetch user data
+  const { data, isLoading, error } = useQuery<{ user: User }>({
+    queryKey: ['/api/user/info'],
+    retry: 1,
+  });
   
   // Demo transactions that match reference design
   const transactions = [
@@ -135,13 +142,22 @@ export default function MobileDashboard() {
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
               <img 
-                src="https://i.pravatar.cc/40?img=8" 
+                src="/assets/logos/user-avatar.png" 
                 alt="Profile" 
+                onError={(e) => {
+                  // Default to initials if avatar fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center', 'bg-blue-600');
+                  (e.target as HTMLImageElement).parentElement!.innerHTML = 
+                    `<span class="text-white text-lg font-bold">${data?.user?.username?.substring(0, 2).toUpperCase() || 'U'}</span>`;
+                }}
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="flex items-center" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
-              <span className="font-medium">David</span>
+              <span className="font-medium">
+                {data?.user?.username || 'User'}
+              </span>
               <ChevronDown size={16} className="ml-1" />
             </div>
           </div>
