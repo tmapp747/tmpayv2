@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, 
@@ -10,7 +10,8 @@ import {
   Share2, 
   Copy, 
   ExternalLink, 
-  Smartphone 
+  Smartphone,
+  Phone
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export default function MobileGCashDeposit() {
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
   // Define interface for transaction success data
   interface SuccessData {
     amount: number;
@@ -286,6 +288,58 @@ export default function MobileGCashDeposit() {
     }, 10 * 60 * 1000);
   };
 
+  // Handle copying payment URL to clipboard
+  const handleCopyLink = useCallback(() => {
+    if (!payUrl) return;
+    
+    navigator.clipboard.writeText(payUrl)
+      .then(() => {
+        setCopySuccess(true);
+        toast({
+          title: "Link Copied",
+          description: "Payment link copied to clipboard",
+        });
+        
+        // Reset copy success state after 2 seconds
+        setTimeout(() => setCopySuccess(false), 2000);
+      })
+      .catch(err => {
+        console.error("Failed to copy link: ", err);
+        toast({
+          title: "Copy Failed",
+          description: "Could not copy link to clipboard",
+          variant: "destructive",
+        });
+      });
+  }, [payUrl, toast]);
+  
+  // Handle sharing payment link to other apps
+  const handleShareLink = useCallback(() => {
+    if (!payUrl) return;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: "GCash Payment",
+        text: `Pay ₱${amount} via GCash`,
+        url: payUrl
+      })
+        .then(() => {
+          toast({
+            title: "Link Shared",
+            description: "Payment link shared successfully",
+          });
+        })
+        .catch(err => {
+          console.error("Share failed:", err);
+          // Fall back to copy if sharing fails
+          handleCopyLink();
+        });
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      handleCopyLink();
+    }
+  }, [payUrl, amount, handleCopyLink, toast]);
+
   const presetAmounts = [100, 200, 500, 1000, 5000];
 
   return (
@@ -342,10 +396,16 @@ export default function MobileGCashDeposit() {
               <ol className="text-sm text-blue-100 space-y-2 list-decimal pl-5">
                 <li>Select or enter your desired amount</li>
                 <li>Tap "Generate QR Code"</li>
-                <li>Scan the QR with your GCash app or use the payment link</li>
+                <li>Scan the QR with your GCash app <strong>or</strong> share the payment link to another device</li>
                 <li>Confirm payment in your GCash app</li>
                 <li>Wait for confirmation (typically instant)</li>
               </ol>
+              <div className="mt-2 flex items-start bg-blue-900/30 rounded-md p-2 text-xs">
+                <Phone className="h-3.5 w-3.5 mr-1.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <p className="text-blue-200">
+                  <strong>New:</strong> You can now share the payment URL to pay using another device!
+                </p>
+              </div>
             </div>
 
             {/* Amount Selection */}
@@ -454,32 +514,85 @@ export default function MobileGCashDeposit() {
                 <iframe 
                   src={payUrl} 
                   className="w-full rounded-lg border border-blue-500/20"
-                  style={{ height: "400px" }}
+                  style={{ height: "300px" }}
                   title="GCash Payment"
                 />
               </div>
-              <div className="flex justify-center">
+              
+              {/* Cross-device payment options */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
                 <Button 
                   variant="outline" 
-                  className="text-sm border-blue-500/20 hover:bg-blue-500/20 shadow-lg"
+                  size="sm"
+                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
+                  onClick={handleShareLink}
+                >
+                  <div className="flex flex-col items-center text-xs">
+                    <Share2 className="h-4 w-4 mb-1" />
+                    <span>Share</span>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60",
+                    copySuccess && "bg-green-900/40 border-green-500/30"
+                  )}
+                  onClick={handleCopyLink}
+                >
+                  <div className="flex flex-col items-center text-xs">
+                    <Copy className="h-4 w-4 mb-1" />
+                    <span>{copySuccess ? "Copied" : "Copy link"}</span>
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
                   onClick={() => window.open(payUrl, '_blank')}
                 >
-                  Open in GCash App
+                  <div className="flex flex-col items-center text-xs">
+                    <ExternalLink className="h-4 w-4 mb-1" />
+                    <span>Open</span>
+                  </div>
                 </Button>
+              </div>
+              
+              <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                <p className="text-blue-200 text-xs mb-2 flex items-start">
+                  <Phone className="h-4 w-4 mr-2 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <span>
+                    You can also pay using <strong>another device</strong> by sharing this payment link or scanning the QR code.
+                  </span>
+                </p>
               </div>
             </div>
           ) : (
-            // Otherwise show the QR code image
-            <div className="p-4 bg-white rounded-lg mx-auto" style={{ maxWidth: "280px" }}>
-              {qrData && qrData.includes('<iframe') ? (
-                <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
-              ) : (
-                <img 
-                  src={qrData || '/images/placeholder-qr.png'} 
-                  alt="GCash QR Code"
-                  className="w-full h-auto"
-                />
-              )}
+            // Otherwise show the QR code image with cross-device instructions
+            <div className="mx-auto space-y-4">
+              <div className="p-4 bg-white rounded-lg mx-auto" style={{ maxWidth: "280px" }}>
+                {qrData && qrData.includes('<iframe') ? (
+                  <div dangerouslySetInnerHTML={{ __html: qrData }} className="w-full" />
+                ) : (
+                  <img 
+                    src={qrData || '/images/placeholder-qr.png'} 
+                    alt="GCash QR Code"
+                    className="w-full h-auto"
+                  />
+                )}
+              </div>
+              
+              <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
+                <p className="text-blue-200 text-xs mb-2 flex items-start">
+                  <Smartphone className="h-4 w-4 mr-2 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <span>
+                    <strong>Scan the QR code</strong> with your GCash app or another device to complete payment.
+                  </span>
+                </p>
+              </div>
             </div>
           )}
           
