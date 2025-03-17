@@ -1277,6 +1277,7 @@ export class MemStorage implements IStorage {
 
   // Manual Payment operations
   async createManualPayment(paymentData: InsertManualPayment): Promise<ManualPayment> {
+    // First create in memory using parent class implementation
     const id = this.manualPaymentIdCounter++;
     const now = new Date();
     
@@ -1298,20 +1299,116 @@ export class MemStorage implements IStorage {
     };
     
     this.manualPayments.set(id, manualPayment);
+    
+    // Then persist to database
+    try {
+      console.log('Persisting Manual payment to database:', {
+        id: manualPayment.id,
+        userId: manualPayment.userId,
+        transactionId: manualPayment.transactionId,
+        amount: manualPayment.amount,
+        reference: manualPayment.reference
+      });
+
+      // Insert into the database
+      const inserted = await this.dbInstance.insert(manualPayments).values({
+        id: manualPayment.id,
+        userId: manualPayment.userId,
+        transactionId: manualPayment.transactionId,
+        amount: manualPayment.amount,
+        paymentMethod: manualPayment.paymentMethod,
+        notes: manualPayment.notes,
+        proofImageUrl: manualPayment.proofImageUrl,
+        reference: manualPayment.reference,
+        status: manualPayment.status,
+        adminId: manualPayment.adminId,
+        adminNotes: manualPayment.adminNotes,
+        createdAt: manualPayment.createdAt,
+        updatedAt: manualPayment.updatedAt
+      }).returning();
+      
+      if (inserted && inserted[0]) {
+        console.log(`Successfully created Manual payment in database: ID=${manualPayment.id}, Amount=${manualPayment.amount}, Reference=${manualPayment.reference}`);
+      }
+    } catch (error) {
+      console.error('Error creating Manual payment in database:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      // Continue with in-memory data even if DB persistence fails
+    }
+    
     return manualPayment;
   }
 
   async getManualPayment(id: number): Promise<ManualPayment | undefined> {
-    return this.manualPayments.get(id);
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(manualPayments)
+        .where(eq(manualPayments.id, id))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to ManualPayment type
+        const dbManual = result[0];
+        const manualPayment: ManualPayment = {
+          ...dbManual,
+          // Make sure numeric values are returned as strings
+          amount: dbManual.amount ? dbManual.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.manualPayments.set(manualPayment.id, manualPayment);
+        
+        return manualPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return this.manualPayments.get(id);
+    } catch (error) {
+      console.error('Error fetching Manual payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return this.manualPayments.get(id);
+    }
   }
 
   async getManualPaymentByReference(reference: string): Promise<ManualPayment | undefined> {
-    return Array.from(this.manualPayments.values()).find(
-      (payment) => payment.reference === reference
-    );
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(manualPayments)
+        .where(eq(manualPayments.reference, reference))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to ManualPayment type
+        const dbManual = result[0];
+        const manualPayment: ManualPayment = {
+          ...dbManual,
+          // Make sure numeric values are returned as strings
+          amount: dbManual.amount ? dbManual.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.manualPayments.set(manualPayment.id, manualPayment);
+        
+        return manualPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return Array.from(this.manualPayments.values()).find(
+        (payment) => payment.reference === reference
+      );
+    } catch (error) {
+      console.error('Error fetching Manual payment by reference from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return Array.from(this.manualPayments.values()).find(
+        (payment) => payment.reference === reference
+      );
+    }
   }
 
   async updateManualPaymentStatus(id: number, status: string): Promise<ManualPayment> {
+    // First update in memory
     const payment = await this.getManualPayment(id);
     if (!payment) throw new Error(`Manual payment with ID ${id} not found`);
     
@@ -1322,10 +1419,27 @@ export class MemStorage implements IStorage {
     };
     
     this.manualPayments.set(id, updatedPayment);
+    
+    // Then update in database
+    try {
+      await this.dbInstance.update(manualPayments)
+        .set({
+          status,
+          updatedAt: new Date()
+        })
+        .where(eq(manualPayments.id, id));
+      
+      console.log(`Updated Manual payment status in database: ID=${id}, Status=${status}`);
+    } catch (error) {
+      console.error('Error updating Manual payment status in database:', error);
+      // Continue with in-memory data even if DB update fails
+    }
+    
     return updatedPayment;
   }
 
   async uploadManualPaymentReceipt(id: number, proofImageUrl: string): Promise<ManualPayment> {
+    // First update in memory
     const payment = await this.getManualPayment(id);
     if (!payment) throw new Error(`Manual payment with ID ${id} not found`);
     
@@ -1336,17 +1450,73 @@ export class MemStorage implements IStorage {
     };
     
     this.manualPayments.set(id, updatedPayment);
+    
+    // Then update in database
+    try {
+      await this.dbInstance.update(manualPayments)
+        .set({
+          proofImageUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(manualPayments.id, id));
+      
+      console.log(`Updated Manual payment receipt in database: ID=${id}, proofImageUrl=${proofImageUrl}`);
+    } catch (error) {
+      console.error('Error updating Manual payment receipt in database:', error);
+      // Continue with in-memory data even if DB update fails
+    }
+    
     return updatedPayment;
   }
 
   async getActiveManualPaymentByUserId(userId: number): Promise<ManualPayment | undefined> {
-    return Array.from(this.manualPayments.values()).find(
-      (payment) => payment.userId === userId && 
-                  (payment.status === 'pending' || payment.status === 'processing')
-    );
+    try {
+      // Try to get from database first
+      const result = await this.dbInstance.select()
+        .from(manualPayments)
+        .where(
+          and(
+            eq(manualPayments.userId, userId),
+            or(
+              eq(manualPayments.status, 'pending'),
+              eq(manualPayments.status, 'processing')
+            )
+          )
+        )
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to ManualPayment type
+        const dbManual = result[0];
+        const manualPayment: ManualPayment = {
+          ...dbManual,
+          // Make sure numeric values are returned as strings
+          amount: dbManual.amount ? dbManual.amount.toString() : "0",
+        };
+        
+        // Update in-memory storage
+        this.manualPayments.set(manualPayment.id, manualPayment);
+        
+        return manualPayment;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return Array.from(this.manualPayments.values()).find(
+        (payment) => payment.userId === userId && 
+                    (payment.status === 'pending' || payment.status === 'processing')
+      );
+    } catch (error) {
+      console.error('Error fetching active Manual payment from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return Array.from(this.manualPayments.values()).find(
+        (payment) => payment.userId === userId && 
+                    (payment.status === 'pending' || payment.status === 'processing')
+      );
+    }
   }
 
   async updateManualPayment(id: number, updates: Partial<ManualPayment>): Promise<ManualPayment> {
+    // First update in memory
     const payment = await this.getManualPayment(id);
     if (!payment) throw new Error(`Manual payment with ID ${id} not found`);
     
@@ -1357,6 +1527,31 @@ export class MemStorage implements IStorage {
     };
     
     this.manualPayments.set(id, updatedPayment);
+    
+    // Then update in database
+    try {
+      // Create a database-compatible update object (camelCase to snake_case conversion)
+      const dbUpdates: Record<string, any> = {
+        updated_at: new Date(),
+      };
+      
+      // Add all provided update fields with appropriate conversion
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+      if (updates.proofImageUrl !== undefined) dbUpdates.proof_image_url = updates.proofImageUrl;
+      if (updates.adminId !== undefined) dbUpdates.admin_id = updates.adminId;
+      if (updates.adminNotes !== undefined) dbUpdates.admin_notes = updates.adminNotes;
+      
+      await this.dbInstance.update(manualPayments)
+        .set(dbUpdates)
+        .where(eq(manualPayments.id, id));
+      
+      console.log(`Updated Manual payment in database: ID=${id}`);
+    } catch (error) {
+      console.error('Error updating Manual payment in database:', error);
+      // Continue with in-memory data even if DB update fails
+    }
+    
     return updatedPayment;
   }
   
