@@ -158,15 +158,17 @@ export default function MobileWallet() {
         {/* Quick Actions */}
         <div className="px-4 pt-2">
           <div className="grid grid-cols-3 gap-3">
-            <motion.div 
-              whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"
-            >
-              <div className="bg-white/20 rounded-full w-10 h-10 flex items-center justify-center mb-2">
-                <ArrowDownToLine className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-sm text-white font-medium">Deposit</span>
-            </motion.div>
+            <Link href="/mobile/deposit">
+              <motion.div 
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"
+              >
+                <div className="bg-white/20 rounded-full w-10 h-10 flex items-center justify-center mb-2">
+                  <ArrowDownToLine className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-sm text-white font-medium">Deposit</span>
+              </motion.div>
+            </Link>
             
             <motion.div 
               whileTap={{ scale: 0.95 }}

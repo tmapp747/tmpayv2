@@ -16,6 +16,7 @@ import ColorComparison from "@/pages/ColorComparison";
 import MobileDashboard from "@/pages/MobileDashboard";
 import MobileWallet from "@/pages/MobileWallet";
 import MobileProfile from "@/pages/MobileProfile";
+import MobileDepositPage from "@/pages/mobile-deposit";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -100,6 +101,8 @@ function Router() {
       <ProtectedRoute path="/mobile-wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile-profile" component={MobileProfile} />
+      <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
+      <ProtectedRoute path="/mobile-deposit" component={MobileDepositPage} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
