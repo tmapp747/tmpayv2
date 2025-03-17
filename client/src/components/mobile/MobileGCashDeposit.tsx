@@ -514,26 +514,21 @@ export default function MobileGCashDeposit() {
               <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 mb-4 relative">
                 {/* The iframe is positioned as relative */}
                 <div className="relative">
-                  {/* Non-scrollable iframe */}
+                  {/* Scrollable iframe */}
                   <iframe 
                     src={payUrl} 
                     className="w-full rounded-lg border border-blue-500/20"
                     style={{ 
-                      height: "280px", 
-                      overflow: "hidden" // Make iframe non-scrollable
+                      height: "350px", 
+                      overflow: "auto" // Make iframe scrollable
                     }}
                     title="GCash Payment"
                   />
                   
-                  {/* Simple overlay to block the button area without QR code */}
-                  <div className="absolute bottom-0 right-0 bg-gradient-to-t from-[#001138] to-[#001138]/95 rounded-bl-lg rounded-tr-none p-2 border border-blue-500/40 shadow-lg" 
-                    style={{ width: "180px", height: "130px" }}>
-                    <div className="h-full w-full flex flex-col items-center justify-center">
-                      <div className="text-xs font-medium text-blue-200 flex flex-col items-center">
-                        <span>Use QR code below</span>
-                        <Smartphone className="mt-2 mb-2 h-4 w-4 text-blue-300" />
-                        <ChevronDown className="h-4 w-4 text-blue-300 animate-bounce" />
-                      </div>
+                  {/* Instead of overlay, add a hint at the bottom */}
+                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#001138]/80 to-transparent py-2 text-center">
+                    <div className="text-xs font-medium text-blue-200">
+                      <span>Scroll to see all details</span>
                     </div>
                   </div>
                 </div>
