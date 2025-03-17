@@ -34,9 +34,11 @@ export default function MobileTransactionHistory() {
   // Cancel payment mutation
   const cancelPaymentMutation = useMutation({
     mutationFn: async (referenceId: string) => {
-      const url = `/api/payments/cancel/${referenceId}`;
-      const response = await apiRequest(url, 'POST');
-      return response;
+      const response = await apiRequest(
+        'POST',
+        `/api/payments/cancel/${referenceId}`
+      );
+      return response.json();
     },
     onSuccess: () => {
       // Invalidate transactions query to refresh the list
