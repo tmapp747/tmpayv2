@@ -1,7 +1,19 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, TrendingUp, TrendingDown, DollarSign, Clock, Users, Award, CreditCard } from "lucide-react";
+import { 
+  ChevronDown, 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Clock, 
+  Users, 
+  User as UserIcon, 
+  Award, 
+  CreditCard,
+  Globe,
+  Key
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { User } from "@/lib/types";
 
@@ -49,6 +61,8 @@ interface CasinoHierarchy {
     username: string;
     parentClientId: number;
   };
+  // Include the message field that contains path description
+  message?: string;
 }
 
 export default function MobileCasinoStats() {
@@ -83,17 +97,37 @@ export default function MobileCasinoStats() {
   });
 
   // Fetch hierarchy data
-  const { data: hierarchyData, isLoading: hierarchyLoading, error: hierarchyError } = useQuery<{ success: boolean, hierarchy: CasinoHierarchy }>({
+  const { data: hierarchyData, isLoading: hierarchyLoading, error: hierarchyError } = useQuery<{ 
+    success: boolean, 
+    hierarchy: Array<{
+      id: number;
+      clientId: number;
+      username: string;
+      parentClientId: number | null;
+    }>,
+    user: {
+      id: number;
+      clientId: number;
+      username: string;
+      parentClientId: number;
+    },
+    message: string
+  }>({
     queryKey: ['/api/casino/user-hierarchy'],
     queryFn: async () => {
       if (!userData?.user?.username) throw new Error("Username not available");
+      
+      // Determine if user is an agent based on casinoUserType
+      // Players use isAgent=false, agents use isAgent=true
+      const isAgent = userData.user.casinoUserType === 'agent';
+      console.log(`Fetching hierarchy for ${userData.user.username}, isAgent=${isAgent}`);
       
       const response = await fetch('/api/casino/user-hierarchy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: userData.user.username,
-          isAgent: userData.user.casinoUserType === 'agent'
+          isAgent: isAgent
         })
       });
       
@@ -101,7 +135,10 @@ export default function MobileCasinoStats() {
         throw new Error("Failed to fetch hierarchy data");
       }
       
-      return response.json();
+      const json = await response.json();
+      // Add detailed logging of response data
+      console.log("Hierarchy API Response:", JSON.stringify(json, null, 2));
+      return json;
     },
     enabled: !!userData?.user?.username,
     refetchInterval: 60000, // Refresh every minute
@@ -389,26 +426,30 @@ export default function MobileCasinoStats() {
   };
 
   const renderHierarchy = () => {
+    // Add more detailed debugging
+    console.log("Hierarchy State:", {
+      loading: hierarchyLoading,
+      error: hierarchyError,
+      data: hierarchyData
+    });
+    
     if (hierarchyLoading) {
       return <div className="flex justify-center py-6">
         <div className="animate-spin w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent"></div>
       </div>;
     }
     
-    if (hierarchyError || !hierarchyData?.success) {
+    if (hierarchyError) {
       return <div className="text-center py-4 text-red-400">
-        Unable to load hierarchy data
+        Error loading hierarchy data: {hierarchyError.message}
       </div>;
     }
     
-    const { hierarchy } = hierarchyData;
-    
-    // Organize hierarchy data
-    const topLevelNodes = hierarchy.hierarchy?.filter(node => !node.parentClientId) || [];
-    const otherNodes = hierarchy.hierarchy?.filter(node => node.parentClientId) || [];
-    
-    // Find the current user node
-    const currentUser = hierarchy.user;
+    if (!hierarchyData?.success || !hierarchyData?.hierarchy) {
+      return <div className="text-center py-4 text-red-400">
+        Unable to load hierarchy data. Missing or invalid response.
+      </div>;
+    }
     
     // Define the node type for better TypeScript support
     interface HierarchyNode {
@@ -418,6 +459,13 @@ export default function MobileCasinoStats() {
       parentClientId: number | null;
       children?: HierarchyNode[];
     }
+    
+    // Organize hierarchy data
+    const topLevelNodes = hierarchyData.hierarchy.filter(node => !node.parentClientId);
+    const otherNodes = hierarchyData.hierarchy.filter(node => node.parentClientId);
+    
+    // Find the current user node
+    const currentUser = hierarchyData.user;
     
     // Build a structured tree with proper typing
     const buildHierarchyTree = (parentId: number | null): HierarchyNode[] => {
@@ -437,23 +485,33 @@ export default function MobileCasinoStats() {
     // Render a node and its children
     const renderNode = (node: HierarchyNode, level: number = 0, isCurrentUser: boolean = false) => {
       const paddingLeft = level * 16;
-      // Color gradient from darker to lighter blue based on hierarchy level
+      
+      // Determine user roles based on position in hierarchy
+      const isCasinoOwner = level === 0; // First in array - Casino Owner
+      const isContinentalManager = level === 1; // Second in array - Continental Manager
+      const isTopManager = level === 2; // Third in array - Top Manager (vital for API tokens)
+      
+      // Color gradient from darker to lighter blue based on hierarchy role
       const bgColor = isCurrentUser 
         ? 'bg-blue-800/50' 
-        : level === 0 
+        : isCasinoOwner
           ? 'bg-[#002366]' 
-          : level === 1
+          : isContinentalManager
             ? 'bg-[#001f52]'
-            : 'bg-[#001849]';
+            : isTopManager
+              ? 'bg-purple-900/80'
+              : 'bg-[#001849]';
       
       // Render the appropriate icon based on role in hierarchy
       const renderIcon = () => {
-        if (level === 0) {
-          return <Award className="h-4 w-4 text-white" />;  // Top level (company)
-        } else if (level === 1) {
-          return <CreditCard className="h-4 w-4 text-white" />; // Direct reports (top managers)
+        if (isCasinoOwner) {
+          return <Award className="h-4 w-4 text-white" />;  // Casino Owner
+        } else if (isContinentalManager) {
+          return <Globe className="h-4 w-4 text-white" />; // Continental Manager
+        } else if (isTopManager) {
+          return <Key className="h-4 w-4 text-yellow-300" />; // Top Manager (API token source)
         } else if (isCurrentUser) {
-          return <Users className="h-4 w-4 text-white" />; // Current user
+          return <UserIcon className="h-4 w-4 text-white" />; // Current user
         } else {
           return <Users className="h-4 w-4 text-white" />; // Other users
         }
@@ -498,13 +556,24 @@ export default function MobileCasinoStats() {
     
     // Add a summary section at the top of the hierarchy tree
     const hierarchySummary = () => {
-      if (!hierarchy.hierarchy || hierarchy.hierarchy.length === 0) {
+      if (!hierarchyData.hierarchy || hierarchyData.hierarchy.length === 0) {
         return null;
       }
       
-      // Count total nodes and depth of hierarchy
-      const totalNodes = hierarchy.hierarchy.length;
-      const userDepthInHierarchy = hierarchy.message?.split('->').length || 0;
+      // Count total nodes
+      const totalNodes = hierarchyData.hierarchy.length;
+      
+      // Parse the message to get the level path
+      const userHierarchyPath = hierarchyData.message?.split('->') || [];
+      const userDepthInHierarchy = userHierarchyPath.length;
+      
+      // Find top manager (3rd in hierarchy) - vital for API calls
+      const topManager = hierarchyData.hierarchy.length > 2 ? 
+        hierarchyData.hierarchy[2].username : 'N/A';
+      
+      // Find direct manager of current user
+      const directManager = hierarchyData.hierarchy.find(n => 
+        n.clientId === currentUser?.parentClientId)?.username || 'N/A';
       
       return (
         <div className="mb-4 bg-[#001849] rounded-xl p-4 shadow-md">
@@ -521,13 +590,18 @@ export default function MobileCasinoStats() {
             <div>
               <p className="text-xs opacity-70">Direct Manager</p>
               <p className="font-medium text-sm truncate">
-                {hierarchy.hierarchy.find(n => n.clientId === currentUser?.parentClientId)?.username || 'N/A'}
+                {directManager}
               </p>
             </div>
-            <div>
-              <p className="text-xs opacity-70">Top Level</p>
-              <p className="font-medium text-sm truncate">
-                {topLevelNodes.length > 0 ? topLevelNodes[0].username : 'N/A'}
+            <div className="col-span-2 bg-purple-900/30 p-2 rounded-lg mt-1">
+              <p className="text-xs opacity-70 flex items-center">
+                <Key className="h-3 w-3 text-yellow-300 mr-1" /> Top Manager (API Token)
+              </p>
+              <p className="font-medium text-sm truncate text-yellow-200">
+                {topManager}
+              </p>
+              <p className="text-xs opacity-70 mt-1">
+                This manager provides the API tokens used for casino operations
               </p>
             </div>
           </div>
