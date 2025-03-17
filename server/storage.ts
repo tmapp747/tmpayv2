@@ -1481,39 +1481,61 @@ export class DbStorage extends MemStorage {
       console.log('SQL Insert Query:', insertQuery.toSQL().sql);
       console.log('SQL Insert Values:', JSON.stringify(insertQuery.toSQL().params, null, 2));
       
-      // Try a super simplified approach
-      console.log('CRITICAL FIX: Try minimal direct SQL approach');
+      // Try a super simplified approach using direct pool query
+      console.log('CRITICAL FIX: Try direct pool query');
       
-      // Simple insertion with just the critical fields
-      const simpleInsertSql = `
-        INSERT INTO users (
-          username, password, email, casino_id, is_authorized, 
-          balance, pending_balance, preferred_currency, balances
-        ) VALUES (
-          $1, $2, $3, $4, $5, 
-          $6, $7, $8, $9
-        ) RETURNING id
-      `;
-      
-      // Only pass the most critical fields
-      const simpleParams = [
-        createdUser.username,
-        createdUser.password,
-        createdUser.email || '',
-        casinoIdValue, // Direct client ID from API, without prefix
-        createdUser.isAuthorized || false,
-        "0.00",
-        "0.00",
-        "PHP",
-        JSON.stringify(createdUser.balances || { PHP: "0", PHPT: "0", USDT: "0" })
-      ];
-      
-      console.log('MINIMAL SQL:', simpleInsertSql);
-      console.log('MINIMAL PARAMS:', JSON.stringify(simpleParams.map((p, i) => i === 1 ? '[REDACTED]' : p), null, 2));
-      
-      // Execute the simplified SQL
-      const result = await this.dbInstance.execute(sql.raw(simpleInsertSql, simpleParams));
-      console.log('DB result:', result);
+      try {
+        // Import the pool directly from db.ts
+        const { pool } = await import('./db');
+        
+        if (!pool) {
+          console.error('Direct pool access failed - no pool available');
+          throw new Error('No database pool available');
+        }
+        
+        // Use a simplified direct approach with pg
+        console.log('SIMPLIFIED: Using pool.query with minimal fields');
+        
+        // Minimal SQL query with just the essential fields
+        const simpleSql = `
+          INSERT INTO users (username, password, email, casino_id, balance, pending_balance, is_authorized) 
+          VALUES ($1, $2, $3, $4, $5, $6, $7) 
+          RETURNING id
+        `;
+        
+        const simpleParams = [
+          createdUser.username,
+          createdUser.password,
+          createdUser.email || '',
+          casinoIdValue,
+          '0.00',
+          '0.00',
+          true
+        ];
+        
+        console.log('SIMPLE SQL:', simpleSql);
+        console.log('SIMPLE PARAMS:', simpleParams.map((p, i) => i === 1 ? '[REDACTED]' : p));
+        
+        // Execute query with direct pool access
+        const result = await pool.query(simpleSql, simpleParams);
+        console.log('INSERT RESULT:', JSON.stringify(result.rows || {}));
+        
+        if (result.rows && result.rows.length > 0) {
+          console.log('DB insert successful, new ID:', result.rows[0].id);
+          createdUser.id = result.rows[0].id;
+        }
+      } catch (poolError) {
+        console.error('Direct pool query failed:', poolError instanceof Error ? poolError.message : String(poolError));
+        
+        // Minimal insertion using Drizzle API only
+        console.log('FALLBACK: Trying minimal Drizzle insertion');
+        
+        // Use SQL template strings (safer than raw SQL)
+        await this.dbInstance.execute(sql`
+          INSERT INTO users (username, password, email, casino_id, preferred_currency)
+          VALUES (${createdUser.username}, ${createdUser.password}, ${createdUser.email || ''}, ${casinoIdValue}, ${'PHP'})
+        `);
+      }
 
       console.log(`User ${createdUser.username} (ID: ${createdUser.id}) persisted to database successfully`);
       return createdUser;

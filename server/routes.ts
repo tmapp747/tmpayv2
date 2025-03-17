@@ -870,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username,
           password: await hashPassword(password), // Always hash the password
           email, // Email is now required and non-null
-          casinoId: `747-${casinoClientId}`,
+          casinoId: String(casinoClientId), // Use client ID as-is without prefix
           balance: "0.00",
           pendingBalance: "0.00",
           isVip: false,
