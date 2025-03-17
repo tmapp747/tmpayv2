@@ -6,6 +6,7 @@ import { Link } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@/lib/types';
+import MobileTransactionsList from '@/components/mobile/MobileTransactionsList';
 
 export default function MobileDashboard() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -22,37 +23,6 @@ export default function MobileDashboard() {
     queryKey: ['/api/user/info'],
     retry: 1,
   });
-  
-  // Demo transactions that match reference design
-  const transactions = [
-    { 
-      id: 1, 
-      title: 'Restaurant Da Paolo', 
-      amount: -96.50, 
-      time: '02:45 PM', 
-      date: '28.01.2022',
-      type: 'payment',
-      icon: <SquareStack className="h-6 w-6 text-white" />
-    },
-    { 
-      id: 2, 
-      title: 'Cash Inflow', 
-      amount: 22.50, 
-      time: '02:45 PM', 
-      date: '28.01.2022',
-      type: 'deposit',
-      icon: <ArrowDownToLine className="h-6 w-6 text-white" />
-    },
-    { 
-      id: 3, 
-      title: 'Restaurant Da Paolo', 
-      amount: -96.50, 
-      time: '02:45 PM', 
-      date: '28.01.2022',
-      type: 'payment',
-      icon: <SquareStack className="h-6 w-6 text-white" />
-    }
-  ];
   
   // Handle pull-to-refresh interaction
   const onTouchStart = (e: React.TouchEvent) => {
@@ -281,46 +251,13 @@ export default function MobileDashboard() {
         <div className="px-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-medium">Last Transaction</h2>
-            <Link href="/history" className="text-sm text-blue-300 flex items-center with-ripple">
+            <Link href="/mobile/wallet" className="text-sm text-blue-300 flex items-center with-ripple">
               View All
             </Link>
           </div>
           
-          <AnimatePresence>
-            <div className="space-y-5">
-              {transactions.map((tx, index) => (
-                <motion.div 
-                  key={tx.id} 
-                  className="transaction-item"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="flex items-center gap-3">
-                    <motion.div 
-                      className="transaction-icon shadow-md"
-                      whileHover={{ scale: 1.05 }}
-                    >
-                      {tx.icon}
-                    </motion.div>
-                    <div>
-                      <h3 className="font-medium">{tx.title}</h3>
-                      <p className="text-xs text-gray-400">{tx.time} • {tx.date}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={tx.amount > 0 ? 'transaction-amount-positive font-semibold' : 'transaction-amount-negative font-semibold'}>
-                      {tx.amount > 0 ? '+₱' : '-₱'}{Math.abs(tx.amount).toLocaleString('en-PH', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </AnimatePresence>
+          {/* Replace with MobileTransactionsList component */}
+          <MobileTransactionsList />
         </div>
       </main>
       
