@@ -2,14 +2,62 @@
  * Test GCash QR code generation
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
+import { directPayApi } from './server/directPayApi.js';
+import { randomUUID } from 'crypto';
 
-async function testGCashQR() {
-  console.log('Testing GCash QR code generation...');
+async function testDirectPayDirectly() {
+  console.log('Testing DirectPay API directly...');
   
   try {
+    // Generate a webhook URL that would be used in real implementation
+    const webhookUrl = 'https://tmpay747.com/api/webhook/directpay/payment';
+    // Generate a redirect URL for the payment completion
+    const redirectUrl = 'https://tmpay747.com/payment/thank-you';
+    
+    // Call the DirectPay API directly
+    const result = await directPayApi.generateGCashQR(
+      100, // amount
+      webhookUrl,
+      redirectUrl
+    );
+    
+    console.log('DirectPay API direct call result:', JSON.stringify(result, null, 2));
+    
+    // Log key information
+    console.log('QR Code Data:', result.qrCodeData ? '(Available)' : 'Not available');
+    console.log('DirectPay Reference:', result.reference);
+    console.log('Payment URL:', result.payUrl);
+    console.log('Expires At:', result.expiresAt);
+    
+    return result;
+  } catch (error) {
+    console.error('Error calling DirectPay API directly:', error);
+    throw error;
+  }
+}
+
+async function testGCashQR() {
+  console.log('Testing GCash QR code generation endpoint...');
+  
+  try {
+    // Try direct API call first to isolate if the issue is with DirectPay or our endpoint
+    try {
+      console.log('Attempting direct API call first...');
+      await testDirectPayDirectly();
+    } catch (directApiError) {
+      console.error('Direct API call failed, continuing with endpoint test');
+    }
+    
+    // Now test the endpoint
+    console.log('Testing endpoint /api/payments/gcash/generate-qr');
+    
+    // Use the server port provided by the environment
+    const serverUrl = new URL('http://localhost:8080');
+    console.log(`Making request to: ${serverUrl.href}api/payments/gcash/generate-qr`);
+    
     // Make request to the GCash QR code generation endpoint
-    const response = await fetch('http://localhost:8080/api/payments/gcash/generate-qr', {
+    const response = await fetch(`${serverUrl.href}api/payments/gcash/generate-qr`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,4 +105,8 @@ async function testGCashQR() {
 }
 
 // Run the test
-testGCashQR().catch(console.error);
+try {
+  await testGCashQR();
+} catch (error) {
+  console.error('Test failed:', error);
+}
