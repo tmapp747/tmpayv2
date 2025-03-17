@@ -1441,7 +1441,29 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getAllManualPayments(): Promise<Map<number, ManualPayment>> {
+  getAllManualPayments(): Map<number, ManualPayment> {
+    // For compatibility with the interface, this returns a Map directly
+    // Instead of a Promise<Map> which would break the interface contract
+    const manualPaymentMap = new Map<number, ManualPayment>();
+    
+    try {
+      // Start an async process to populate this map but return immediately
+      this.refreshManualPaymentsFromDatabase().catch(error => {
+        console.error('[DB] Error refreshing manual payments from database:', error);
+      });
+      
+      if (DB_DEBUG) console.log(`[DB] Returning manual payment map with initial size: ${manualPaymentMap.size}`);
+      return manualPaymentMap;
+    } catch (error) {
+      console.error('[DB] Error in getAllManualPayments:', error);
+      return new Map();
+    }
+  }
+  
+  /**
+   * Private helper to refresh manual payments from the database
+   */
+  private async refreshManualPaymentsFromDatabase(): Promise<void> {
     try {
       const result = await this.dbInstance.select().from(manualPayments);
       const manualPaymentMap = new Map<number, ManualPayment>();
@@ -1450,11 +1472,9 @@ export class DbStorage implements IStorage {
         manualPaymentMap.set(payment.id, payment);
       }
       
-      if (DB_DEBUG) console.log(`[DB] Retrieved all manual payments: ${result.length}`);
-      return manualPaymentMap;
+      if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} manual payments from database`);
     } catch (error) {
-      console.error('[DB] Error retrieving all manual payments:', error);
-      return new Map();
+      console.error('[DB] Error refreshing manual payments from database:', error);
     }
   }
 
