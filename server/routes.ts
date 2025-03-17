@@ -19,6 +19,7 @@ import {
   allowedTopManagersSchema,
   supportedCurrencies,
   Currency,
+  User,
   updatePreferredCurrencySchema,
   getCurrencyBalanceSchema,
   exchangeCurrencySchema,
@@ -1686,6 +1687,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({
         success: false,
         message: "Error retrieving users"
+      });
+    }
+  });
+  
+  // Debug endpoint to test transaction creation and visibility
+  app.get("/api/debug/test-transaction", async (req: Request, res: Response) => {
+    try {
+      // Get username from query or use default
+      const username = req.query.username as string || "Chubbyme";
+      
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: `User ${username} not found`
+        });
+      }
+      
+      console.log(`[DEBUG] Creating test transaction for user ${username} (ID: ${user.id})`);
+      
+      // Create a transaction
+      const transaction = await storage.createTransaction({
+        userId: user.id,
+        type: "deposit",
+        method: "test",
+        amount: "100.00",
+        status: "pending",
+        paymentReference: `TEST-${Date.now()}`,
+        currency: "PHP",
+        metadata: { debug: true, timestamp: new Date().toISOString() }
+      });
+      
+      console.log(`[DEBUG] Created test transaction with ID: ${transaction.id}`);
+      
+      // Now check if the transaction is visible
+      console.log(`[DEBUG] Checking transaction visibility for user ${username} (ID: ${user.id})`);
+      const transactions = await storage.getTransactionsByUserId(user.id);
+      console.log(`[DEBUG] Found ${transactions.length} transactions for user ${username} (ID: ${user.id})`);
+      
+      // Get details about each transaction
+      const transactionDetails = transactions.map(tx => ({
+        id: tx.id,
+        type: tx.type,
+        method: tx.method,
+        amount: tx.amount,
+        status: tx.status,
+        createdAt: tx.createdAt
+      }));
+      
+      return res.json({
+        success: true,
+        message: `Created test transaction ID: ${transaction.id} for user ${username}`,
+        transaction,
+        allTransactions: transactions,
+        transactionDetails,
+        transactionCount: transactions.length
+      });
+    } catch (error) {
+      console.error("Test transaction error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error testing transaction: " + (error instanceof Error ? error.message : String(error))
       });
     }
   });
