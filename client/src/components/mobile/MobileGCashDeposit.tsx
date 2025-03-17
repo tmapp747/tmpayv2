@@ -509,26 +509,71 @@ export default function MobileGCashDeposit() {
           </div>
           
           {payUrl ? (
-            // If we have a payment URL, show the iframe with QR overlay
+            // If we have a payment URL, show the iframe with button overlay
             <div className="w-full mx-auto">
               <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 mb-4 relative">
+                {/* Quick action buttons positioned above iframe */}
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
+                    onClick={handleShareLink}
+                  >
+                    <div className="flex flex-col items-center text-xs">
+                      <Share2 className="h-4 w-4 mb-1" />
+                      <span>Share</span>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60",
+                      copySuccess && "bg-green-900/40 border-green-500/30"
+                    )}
+                    onClick={handleCopyLink}
+                  >
+                    <div className="flex flex-col items-center text-xs">
+                      <Copy className="h-4 w-4 mb-1" />
+                      <span>{copySuccess ? "Copied" : "Copy link"}</span>
+                    </div>
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
+                    onClick={() => window.open(payUrl, '_blank')}
+                  >
+                    <div className="flex flex-col items-center text-xs">
+                      <ExternalLink className="h-4 w-4 mb-1" />
+                      <span>Open</span>
+                    </div>
+                  </Button>
+                </div>
+                
                 {/* The iframe is positioned as relative */}
                 <div className="relative">
-                  {/* Scrollable iframe */}
+                  {/* Non-scrollable iframe */}
                   <iframe 
                     src={payUrl} 
                     className="w-full rounded-lg border border-blue-500/20"
                     style={{ 
-                      height: "350px", 
-                      overflow: "auto" // Make iframe scrollable
+                      height: "300px", 
+                      overflow: "hidden" // Make iframe non-scrollable
                     }}
                     title="GCash Payment"
                   />
                   
-                  {/* Instead of overlay, add a hint at the bottom */}
-                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#001138]/80 to-transparent py-2 text-center">
-                    <div className="text-xs font-medium text-blue-200">
-                      <span>Scroll to see all details</span>
+                  {/* Small overlay for the bottom part of the iframe */}
+                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#001138] to-transparent h-24">
+                    <div className="absolute bottom-0 w-full text-center py-2">
+                      <div className="text-xs font-medium text-blue-200 flex items-center justify-center">
+                        <ChevronDown className="h-4 w-4 text-blue-300 animate-bounce mr-1" />
+                        <span>View QR code below</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -547,48 +592,6 @@ export default function MobileGCashDeposit() {
                     Scan with another device to pay
                   </p>
                 </div>
-              </div>
-              
-              {/* Cross-device payment options */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
-                  onClick={handleShareLink}
-                >
-                  <div className="flex flex-col items-center text-xs">
-                    <Share2 className="h-4 w-4 mb-1" />
-                    <span>Share</span>
-                  </div>
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60",
-                    copySuccess && "bg-green-900/40 border-green-500/30"
-                  )}
-                  onClick={handleCopyLink}
-                >
-                  <div className="flex flex-col items-center text-xs">
-                    <Copy className="h-4 w-4 mb-1" />
-                    <span>{copySuccess ? "Copied" : "Copy link"}</span>
-                  </div>
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
-                  onClick={() => window.open(payUrl, '_blank')}
-                >
-                  <div className="flex flex-col items-center text-xs">
-                    <ExternalLink className="h-4 w-4 mb-1" />
-                    <span>Open</span>
-                  </div>
-                </Button>
               </div>
               
               <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
