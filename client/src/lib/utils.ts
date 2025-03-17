@@ -53,19 +53,27 @@ export function generateTransactionReference(): string {
 export function getStatusColor(status: string): string {
   switch (status.toLowerCase()) {
     case "completed":
-      return "bg-green-500/10 text-green-500 border border-green-500/20";
+    case "success":
+      return "border-l-green-500";
     case "pending":
-      return "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20";
+    case "processing":
+    case "waiting":
+      return "border-l-yellow-500";
     case "failed":
-      return "bg-red-500/10 text-red-500 border border-red-500/20";
-    case "expired":
-      return "bg-muted/10 text-muted-foreground border border-muted/20";
-    case "approved":
-      return "bg-blue-500/10 text-blue-500 border border-blue-500/20";
     case "rejected":
-      return "bg-red-600/10 text-red-600 border border-red-600/20";
+    case "error":
+      return "border-l-red-500";
+    case "expired":
+    case "timeout":
+      return "border-l-gray-500";
+    case "approved":
+    case "confirmed":
+      return "border-l-blue-500";
+    case "manual_review":
+    case "review":
+      return "border-l-purple-500";
     default:
-      return "bg-muted/10 text-muted-foreground border border-muted/20";
+      return "border-l-gray-400";
   }
 }
 

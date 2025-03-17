@@ -21,14 +21,41 @@ export default function MobileTransactionHistory() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "completed":
-        return <Check size={16} className="text-green-500" />;
+      case "success":
+        return (
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-green-500/20">
+            <Check size={10} className="text-green-500" />
+          </div>
+        );
       case "failed":
-        return <X size={16} className="text-red-500" />;
+      case "rejected":
+      case "error":
+        return (
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-red-500/20">
+            <X size={10} className="text-red-500" />
+          </div>
+        );
       case "pending":
       case "processing":
-        return <Clock size={16} className="text-yellow-500" />;
+      case "waiting":
+        return (
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-yellow-500/20">
+            <Clock size={10} className="text-yellow-500" />
+          </div>
+        );
+      case "expired":
+      case "timeout":
+        return (
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gray-500/20">
+            <Clock size={10} className="text-gray-500" />
+          </div>
+        );
       default:
-        return <Clock size={16} className="text-gray-500" />;
+        return (
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gray-500/20">
+            <Clock size={10} className="text-gray-500" />
+          </div>
+        );
     }
   };
 
@@ -126,10 +153,7 @@ export default function MobileTransactionHistory() {
             className="ml-1 w-6 h-6 flex items-center justify-center rounded-full bg-white/5 text-blue-300"
             onClick={() => {
               // Trigger a manual refresh
-              const queryClient = window.queryClient;
-              if (queryClient) {
-                queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-              }
+              queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
             }}
             aria-label="Refresh transactions"
           >
@@ -195,6 +219,22 @@ export default function MobileTransactionHistory() {
                                 </Badge>
                               </div>
                             )}
+                            {transaction.status === 'failed' && (
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/20 text-red-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                  <X size={10} className="mr-1" />
+                                  Failed
+                                </Badge>
+                              </div>
+                            )}
+                            {transaction.status === 'expired' && (
+                              <div className="flex items-center">
+                                <Badge variant="outline" className="text-[10px] bg-gray-500/10 border-gray-500/20 text-gray-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                  <Clock size={10} className="mr-1" />
+                                  Expired
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -213,12 +253,11 @@ export default function MobileTransactionHistory() {
                                 ? 'text-green-400'
                                 : transaction.status === 'failed'
                                 ? 'text-red-400'
+                                : transaction.status === 'expired'
+                                ? 'text-gray-400'
                                 : 'text-yellow-400'
                             }`}>
                               {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                              {transaction.completedAt && transaction.status === 'completed' && 
-                                ` at ${new Date(transaction.completedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`
-                              }
                             </span>
                           </div>
                         </div>
