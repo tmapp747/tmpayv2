@@ -186,7 +186,7 @@ export default function MobileAuthPage() {
       }
     },
     onSuccess: (data) => {
-      console.log('Login successful, redirecting to mobile wallet');
+      console.log('Login successful, redirecting to user page');
       
       // Add haptic feedback on successful login
       const haptic = window.navigator as any;
@@ -194,7 +194,13 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      navigate('/mobile/wallet');
+      // Redirect based on user type
+      if (data.user.casinoUserType === 'agent' || data.user.casinoUserType === 'admin') {
+        navigate('/mobile/dashboard');
+      } else {
+        // Default for regular players
+        navigate('/mobile/wallet');
+      }
     },
     onError: (error: Error) => {
       console.error('Login error:', error);
@@ -248,7 +254,7 @@ export default function MobileAuthPage() {
       }
     },
     onSuccess: (data) => {
-      console.log('Registration successful, redirecting to mobile wallet');
+      console.log('Registration successful, redirecting to user page');
       
       // Add haptic feedback on successful registration
       const haptic = window.navigator as any;
@@ -256,7 +262,13 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      navigate('/mobile/wallet');
+      // Redirect based on user type
+      if (data.user.casinoUserType === 'agent' || data.user.casinoUserType === 'admin') {
+        navigate('/mobile/dashboard');
+      } else {
+        // Default for regular players
+        navigate('/mobile/wallet');
+      }
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);
