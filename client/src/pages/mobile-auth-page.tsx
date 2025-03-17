@@ -23,7 +23,8 @@ const loginSchema = z.object({
 const registerSchema = z.object({
   username: z.string().min(3, { message: "Username must be at least 3 characters" }),
   password: z.string().min(6, { message: "Password must be at least 6 characters" }),
-  confirmPassword: z.string()
+  confirmPassword: z.string(),
+  email: z.string().email({ message: "Please enter a valid email" })
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"]
@@ -65,7 +66,8 @@ export default function MobileAuthPage() {
     defaultValues: {
       username: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      email: ''
     }
   });
 
@@ -81,22 +83,8 @@ export default function MobileAuthPage() {
       if (verificationResponse) {
         console.log('Verification response details:', verificationResponse);
         
-        // Set these values to the form for consistent structure with standard auth flow
-        if (verificationResponse.topManager) {
-          registerForm.setValue('topManager', verificationResponse.topManager);
-        }
-        
-        if (verificationResponse.immediateManager) {
-          registerForm.setValue('immediateManager', verificationResponse.immediateManager);
-        }
-        
-        if (verificationResponse.userType) {
-          registerForm.setValue('casinoUserType', verificationResponse.userType);
-        }
-        
-        if (verificationResponse.clientId) {
-          registerForm.setValue('clientId', verificationResponse.clientId);
-        }
+        // We'll pass these values directly in the mutation, don't need to set them as form values
+        // since they're not input fields in the form schema
       }
     }
   }, [verifiedUsername, verificationResponse, loginForm, registerForm]);
@@ -522,6 +510,20 @@ export default function MobileAuthPage() {
                     {registerForm.formState.errors.confirmPassword && (
                       <div className="text-red-400 text-sm mt-1 ml-1">
                         {registerForm.formState.errors.confirmPassword.message}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="relative">
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      {...registerForm.register('email')}
+                      className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-xl px-4 py-4 text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    {registerForm.formState.errors.email && (
+                      <div className="text-red-400 text-sm mt-1 ml-1">
+                        {registerForm.formState.errors.email.message}
                       </div>
                     )}
                   </div>
