@@ -1940,6 +1940,365 @@ export class DbStorage extends MemStorage {
     
     return result;
   }
+
+  // Transaction methods
+  async createTransaction(txData: InsertTransaction): Promise<Transaction> {
+    // First create in memory
+    const transaction = await super.createTransaction(txData);
+    
+    // Then persist to database
+    try {
+      // Convert statusHistory to a proper JSON object if it exists
+      const statusHistoryForDb = transaction.statusHistory 
+        ? transaction.statusHistory 
+        : null;
+      
+      // Convert metadata to a proper JSON object if it exists
+      const metadataForDb = transaction.metadata 
+        ? transaction.metadata 
+        : null;
+
+      // Insert into the database
+      const inserted = await this.dbInstance.insert(transactions).values({
+        id: transaction.id,
+        userId: transaction.userId,
+        type: transaction.type,
+        method: transaction.method,
+        amount: transaction.amount,
+        fee: transaction.fee,
+        netAmount: transaction.netAmount,
+        status: transaction.status,
+        statusHistory: statusHistoryForDb,
+        statusUpdatedAt: transaction.statusUpdatedAt,
+        completedAt: transaction.completedAt,
+        paymentReference: transaction.paymentReference,
+        transactionId: transaction.transactionId,
+        casinoReference: transaction.casinoReference,
+        nonce: transaction.nonce,
+        casinoClientId: transaction.casinoClientId,
+        casinoUsername: transaction.casinoUsername,
+        destinationAddress: transaction.destinationAddress,
+        destinationNetwork: transaction.destinationNetwork,
+        uniqueId: transaction.uniqueId,
+        currency: transaction.currency,
+        balanceBefore: transaction.balanceBefore,
+        balanceAfter: transaction.balanceAfter,
+        metadata: metadataForDb,
+        createdAt: transaction.createdAt,
+        updatedAt: transaction.updatedAt
+      }).returning();
+      
+      if (inserted && inserted[0]) {
+        console.log(`Created transaction in database: ID=${transaction.id}, Type=${transaction.type}, Amount=${transaction.amount}`);
+      }
+    } catch (error) {
+      console.error('Error creating transaction in database:', error);
+      // Continue with in-memory data even if DB fails
+    }
+    
+    return transaction;
+  }
+
+  async getTransactionsByUserId(
+    userId: number, 
+    options?: { 
+      limit?: number, 
+      offset?: number, 
+      type?: string, 
+      method?: string, 
+      status?: string,
+      startDate?: Date,
+      endDate?: Date
+    }
+  ): Promise<Transaction[]> {
+    try {
+      console.log(`Fetching transactions from database for userId: ${userId}`);
+      
+      // Start building the query
+      let query = this.dbInstance.select()
+        .from(transactions)
+        .where(eq(transactions.userId, userId));
+      
+      // Apply filters if provided
+      if (options?.type) {
+        query = query.where(eq(transactions.type, options.type));
+      }
+      
+      if (options?.method) {
+        query = query.where(eq(transactions.method, options.method));
+      }
+      
+      if (options?.status) {
+        query = query.where(eq(transactions.status, options.status));
+      }
+      
+      if (options?.startDate) {
+        query = query.where(gte(transactions.createdAt, options.startDate));
+      }
+      
+      if (options?.endDate) {
+        query = query.where(lte(transactions.createdAt, options.endDate));
+      }
+      
+      // Apply ordering
+      query = query.orderBy(desc(transactions.createdAt));
+      
+      // Apply pagination
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+      
+      if (options?.offset) {
+        query = query.offset(options.offset);
+      }
+      
+      // Execute the query
+      const result = await query;
+      
+      // Map over the results to convert DB format to Transaction type
+      const dbTransactions = result.map(dbTx => {
+        return {
+          ...dbTx,
+          // Make sure numeric values are returned as strings
+          amount: dbTx.amount ? dbTx.amount.toString() : "0",
+          fee: dbTx.fee ? dbTx.fee.toString() : "0",
+          netAmount: dbTx.netAmount ? dbTx.netAmount.toString() : null,
+          balanceBefore: dbTx.balanceBefore ? dbTx.balanceBefore.toString() : null,
+          balanceAfter: dbTx.balanceAfter ? dbTx.balanceAfter.toString() : null,
+        } as Transaction;
+      });
+      
+      console.log(`Found ${dbTransactions.length} transactions in database for userId: ${userId}`);
+      
+      // Update in-memory storage with the database results to ensure consistency
+      dbTransactions.forEach(tx => {
+        // We're updating the in-memory storage with DB data
+        if (!this.transactions.has(tx.id)) {
+          this.transactions.set(tx.id, tx);
+        }
+      });
+      
+      return dbTransactions;
+    } catch (error) {
+      console.error('Error fetching transactions from database:', error);
+      // Fall back to in-memory data if DB query fails
+      return super.getTransactionsByUserId(userId, options);
+    }
+  }
+
+  async updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction> {
+    // First update in memory
+    const transaction = await super.updateTransactionStatus(id, status, reference, metadata);
+    
+    // Then update in database
+    try {
+      // Prepare the update data
+      const updateData: any = {
+        status,
+        statusUpdatedAt: transaction.statusUpdatedAt,
+        updatedAt: transaction.updatedAt
+      };
+      
+      if (reference) {
+        updateData.paymentReference = reference;
+      }
+      
+      if (transaction.statusHistory) {
+        updateData.statusHistory = transaction.statusHistory;
+      }
+      
+      if (metadata) {
+        updateData.metadata = metadata;
+      }
+      
+      // Update in database
+      await this.dbInstance.update(transactions)
+        .set(updateData)
+        .where(eq(transactions.id, id))
+        .returning();
+      
+      console.log(`Updated transaction status in database: ID=${id}, Status=${status}`);
+    } catch (error) {
+      console.error('Error updating transaction status in database:', error);
+      // Continue with in-memory data even if DB fails
+    }
+    
+    return transaction;
+  }
+
+  async completeTransaction(id: number, metadata?: Record<string, any>): Promise<Transaction> {
+    // First complete in memory
+    const transaction = await super.completeTransaction(id, metadata);
+    
+    // Then update in database
+    try {
+      // Prepare the update data
+      const updateData: any = {
+        status: 'completed',
+        statusUpdatedAt: transaction.statusUpdatedAt,
+        completedAt: transaction.completedAt,
+        updatedAt: transaction.updatedAt
+      };
+      
+      if (transaction.statusHistory) {
+        updateData.statusHistory = transaction.statusHistory;
+      }
+      
+      if (metadata) {
+        updateData.metadata = metadata;
+      }
+      
+      // Update in database
+      await this.dbInstance.update(transactions)
+        .set(updateData)
+        .where(eq(transactions.id, id))
+        .returning();
+      
+      console.log(`Completed transaction in database: ID=${id}`);
+    } catch (error) {
+      console.error('Error completing transaction in database:', error);
+      // Continue with in-memory data even if DB fails
+    }
+    
+    return transaction;
+  }
+
+  async recordTransactionFinancials(id: number, balanceBefore: number, balanceAfter: number, fee?: number): Promise<Transaction> {
+    // First update in memory
+    const transaction = await super.recordTransactionFinancials(id, balanceBefore, balanceAfter, fee);
+    
+    // Then update in database
+    try {
+      // Prepare the update data
+      const updateData: any = {
+        balanceBefore,
+        balanceAfter,
+        updatedAt: transaction.updatedAt
+      };
+      
+      if (fee !== undefined) {
+        updateData.fee = fee;
+      }
+      
+      // Update in database
+      await this.dbInstance.update(transactions)
+        .set(updateData)
+        .where(eq(transactions.id, id))
+        .returning();
+      
+      console.log(`Updated transaction financials in database: ID=${id}`);
+    } catch (error) {
+      console.error('Error updating transaction financials in database:', error);
+      // Continue with in-memory data even if DB fails
+    }
+    
+    return transaction;
+  }
+
+  async getTransaction(id: number): Promise<Transaction | undefined> {
+    try {
+      const result = await this.dbInstance.select()
+        .from(transactions)
+        .where(eq(transactions.id, id))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to Transaction type
+        const dbTx = result[0];
+        const transaction = {
+          ...dbTx,
+          // Make sure numeric values are returned as strings
+          amount: dbTx.amount ? dbTx.amount.toString() : "0",
+          fee: dbTx.fee ? dbTx.fee.toString() : "0",
+          netAmount: dbTx.netAmount ? dbTx.netAmount.toString() : null,
+          balanceBefore: dbTx.balanceBefore ? dbTx.balanceBefore.toString() : null,
+          balanceAfter: dbTx.balanceAfter ? dbTx.balanceAfter.toString() : null,
+        } as Transaction;
+        
+        // Update in-memory storage
+        this.transactions.set(transaction.id, transaction);
+        
+        return transaction;
+      }
+      
+      // Fall back to in-memory lookup
+      return super.getTransaction(id);
+    } catch (error) {
+      console.error('Error fetching transaction from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return super.getTransaction(id);
+    }
+  }
+
+  async getTransactionByReference(reference: string): Promise<Transaction | undefined> {
+    try {
+      const result = await this.dbInstance.select()
+        .from(transactions)
+        .where(eq(transactions.paymentReference, reference))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to Transaction type
+        const dbTx = result[0];
+        const transaction = {
+          ...dbTx,
+          // Make sure numeric values are returned as strings
+          amount: dbTx.amount ? dbTx.amount.toString() : "0",
+          fee: dbTx.fee ? dbTx.fee.toString() : "0",
+          netAmount: dbTx.netAmount ? dbTx.netAmount.toString() : null,
+          balanceBefore: dbTx.balanceBefore ? dbTx.balanceBefore.toString() : null,
+          balanceAfter: dbTx.balanceAfter ? dbTx.balanceAfter.toString() : null,
+        } as Transaction;
+        
+        // Update in-memory storage
+        this.transactions.set(transaction.id, transaction);
+        
+        return transaction;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return undefined;
+    } catch (error) {
+      console.error('Error fetching transaction by reference from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return undefined;
+    }
+  }
+  
+  async getTransactionByNonce(nonce: string): Promise<Transaction | undefined> {
+    try {
+      const result = await this.dbInstance.select()
+        .from(transactions)
+        .where(eq(transactions.nonce, nonce))
+        .limit(1);
+      
+      if (result && result.length > 0) {
+        // Convert DB format to Transaction type
+        const dbTx = result[0];
+        const transaction = {
+          ...dbTx,
+          // Make sure numeric values are returned as strings
+          amount: dbTx.amount ? dbTx.amount.toString() : "0",
+          fee: dbTx.fee ? dbTx.fee.toString() : "0",
+          netAmount: dbTx.netAmount ? dbTx.netAmount.toString() : null,
+          balanceBefore: dbTx.balanceBefore ? dbTx.balanceBefore.toString() : null,
+          balanceAfter: dbTx.balanceAfter ? dbTx.balanceAfter.toString() : null,
+        } as Transaction;
+        
+        // Update in-memory storage
+        this.transactions.set(transaction.id, transaction);
+        
+        return transaction;
+      }
+      
+      // Fall back to in-memory lookup if not found in DB
+      return super.getTransactionByNonce(nonce);
+    } catch (error) {
+      console.error('Error fetching transaction by nonce from database:', error);
+      // Fall back to in-memory lookup if DB query fails
+      return super.getTransactionByNonce(nonce);
+    }
+  }
 }
 
 // Import database connection
