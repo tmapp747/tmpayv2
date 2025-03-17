@@ -146,7 +146,7 @@ export default function MobileDashboard() {
       </header>
       
       {/* Main Content */}
-      <main className="space-y-6">
+      <main className="space-y-6 pt-4">
         {/* Balance Card Section with Horizontal Swipe */}
         <div className="relative">
           <motion.div 

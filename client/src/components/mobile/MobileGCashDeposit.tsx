@@ -320,7 +320,7 @@ export default function MobileGCashDeposit() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="px-4 pb-6 pt-4 space-y-6"
+            className="px-4 pb-6 pt-5 space-y-6"
           >
             {/* Instructions */}
             <div className="bg-white/5 rounded-xl p-4 backdrop-blur-md">
@@ -526,7 +526,7 @@ function SuccessScreen({
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center justify-center px-4 py-12 h-[70vh]"
+      className="flex flex-col items-center justify-center px-4 py-16 h-[75vh]"
     >
       <motion.div 
         initial={{ scale: 0, opacity: 0 }}
