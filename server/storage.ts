@@ -87,6 +87,7 @@ export interface IStorage {
   getQrPaymentByReference(reference: string): Promise<QrPayment | undefined>;
   updateQrPaymentStatus(id: number, status: string): Promise<QrPayment>;
   getActiveQrPaymentByUserId(userId: number): Promise<QrPayment | undefined>;
+  getAllQrPayments(): Map<number, QrPayment>;
   
   // Paygram Payment operations
   createTelegramPayment(payment: InsertTelegramPayment): Promise<TelegramPayment>;
@@ -95,6 +96,7 @@ export interface IStorage {
   getTelegramPaymentByReference(reference: string): Promise<TelegramPayment | undefined>;
   updateTelegramPaymentStatus(id: number, status: string): Promise<TelegramPayment>;
   getActiveTelegramPaymentByUserId(userId: number): Promise<TelegramPayment | undefined>;
+  getAllTelegramPayments(): Map<number, TelegramPayment>;
   
   // Manual Payment operations
   createManualPayment(payment: InsertManualPayment): Promise<ManualPayment>;
@@ -1054,6 +1056,11 @@ export class MemStorage implements IStorage {
       (qr) => qr.userId === userId && (qr.status === 'pending') && new Date() < qr.expiresAt
     );
   }
+  
+  // Get all QR payments (for admin dashboard)
+  getAllQrPayments(): Map<number, QrPayment> {
+    return this.qrPayments;
+  }
 
   // Paygram/Telegram Payment operations
   async createTelegramPayment(paymentData: InsertTelegramPayment): Promise<TelegramPayment> {
@@ -1115,6 +1122,11 @@ export class MemStorage implements IStorage {
                   (payment.status === 'pending') && 
                   new Date() < payment.expiresAt
     );
+  }
+  
+  // Get all Telegram payments (for admin dashboard)
+  getAllTelegramPayments(): Map<number, TelegramPayment> {
+    return this.telegramPayments;
   }
 
   // Manual Payment operations
