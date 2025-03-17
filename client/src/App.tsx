@@ -40,10 +40,10 @@ function Router() {
       if (location === "/dashboard") navigate("/mobile");
       if (location === "/wallet") navigate("/mobile-wallet");
       if (location === "/profile") navigate("/mobile-profile");
-      if (location === "/auth") navigate("/mobile-auth");
+      if (location === "/auth") navigate("/mobile/auth");
       
       // This fixes the issue with mobile-auth not redirecting to /mobile
-      if (location === "/mobile-auth" && sessionStorage.getItem("redirectToMobile")) {
+      if ((location === "/mobile-auth" || location === "/mobile/auth") && sessionStorage.getItem("redirectToMobile")) {
         sessionStorage.removeItem("redirectToMobile");
         navigate("/mobile");
       }
@@ -52,6 +52,7 @@ function Router() {
       if (location === "/mobile") navigate("/dashboard");
       if (location === "/mobile-wallet") navigate("/wallet");
       if (location === "/mobile-profile") navigate("/profile");
+      if (location === "/mobile/auth") navigate("/auth");
     }
   }, [isMobile, location, navigate]);
 
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
       <Route path="/mobile-auth" component={MobileAuthPage} />
+      <Route path="/mobile/auth" component={MobileAuthPage} />
       <ProtectedRoute path="/dashboard" component={() => (
         <Layout>
           <Home />
