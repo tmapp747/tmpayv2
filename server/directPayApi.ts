@@ -1,11 +1,45 @@
 
 import axios from 'axios';
 import https from 'https';
+import { setTimeout } from 'timers/promises';
 
 // Create a new HTTPS agent that allows self-signed certificates
 const httpsAgent = new https.Agent({
   rejectUnauthorized: false // Set to true in production
 });
+
+// Rate limiting utility
+class RateLimiter {
+  private timestamps: number[] = [];
+  private maxRequests: number;
+  private interval: number; // in milliseconds
+
+  constructor(maxRequests: number = 5, interval: number = 1000) {
+    this.maxRequests = maxRequests;
+    this.interval = interval;
+  }
+
+  async throttle(): Promise<void> {
+    const now = Date.now();
+    
+    // Remove timestamps outside the current interval window
+    this.timestamps = this.timestamps.filter(timestamp => now - timestamp < this.interval);
+    
+    if (this.timestamps.length >= this.maxRequests) {
+      // Calculate delay needed to satisfy rate limit
+      const oldestTimestamp = this.timestamps[0];
+      const delay = this.interval - (now - oldestTimestamp);
+      
+      if (delay > 0) {
+        console.log(`Rate limit reached, waiting ${delay}ms before next request`);
+        await setTimeout(delay);
+      }
+    }
+    
+    // Add current timestamp to the list
+    this.timestamps.push(Date.now());
+  }
+}
 
 class DirectPayApi {
   private baseUrl: string;
@@ -16,6 +50,7 @@ class DirectPayApi {
   private phpSessionId: string | null = null;
   private username: string;
   private password: string;
+  private rateLimiter: RateLimiter;
 
   constructor() {
     // Ensure the base URL is properly formatted without trailing slash
@@ -26,6 +61,9 @@ class DirectPayApi {
     
     this.username = process.env.DIRECTPAY_USERNAME || 'colorway';
     this.password = process.env.DIRECTPAY_PASSWORD || 'cassinoroyale@ngInaM0!2@';
+    
+    // Initialize rate limiter - 5 requests per second maximum
+    this.rateLimiter = new RateLimiter(5, 1000);
   }
 
   /**
@@ -34,6 +72,9 @@ class DirectPayApi {
   private async getCsrfToken(): Promise<string> {
     try {
       console.log('Getting CSRF token from DirectPay...');
+      
+      // Apply rate limiting before making the request
+      await this.rateLimiter.throttle();
       
       // Use the exact endpoint from the curl example
       const csrfEndpoint = `${this.baseUrl}/csrf_token`;
@@ -108,6 +149,9 @@ class DirectPayApi {
           const loginEndpoint = `${this.baseUrl}/create/login`;
           console.log('Login endpoint:', loginEndpoint);
           
+          // Apply rate limiting before making the request
+          await this.rateLimiter.throttle();
+          
           const response = await axios.post(loginEndpoint, {
             username: this.username,
             password: this.password
@@ -164,7 +208,9 @@ class DirectPayApi {
           // Exponential backoff: 1s, 2s, 4s, etc.
           const waitTime = Math.pow(2, retryCount) * 1000;
           console.log(`Authentication attempt ${retryCount} failed, retrying in ${waitTime}ms...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
+          await new Promise<void>(resolve => {
+            setTimeout(() => resolve(), waitTime);
+          });
           
           // Clear the session ID to get a fresh session
           this.phpSessionId = null;
@@ -212,6 +258,9 @@ class DirectPayApi {
       console.log(`- Redirect URL: ${redirectUrl}`);
       console.log(`- Authorization: Bearer ${token.substring(0, 5)}...${token.substring(token.length - 5)}`);
       console.log(`- PHP Session ID: ${this.phpSessionId ? this.phpSessionId.substring(0, 5) + '...' : 'null'}`);
+      
+      // Apply rate limiting before making the request
+      await this.rateLimiter.throttle();
       
       const response = await axios.post(gcashEndpoint, {
         amount: formattedAmount,
@@ -325,6 +374,9 @@ class DirectPayApi {
 
       const statusEndpoint = `${this.baseUrl}/payment/status/${reference}`;
       console.log('Payment status endpoint:', statusEndpoint);
+      
+      // Apply rate limiting before making the request
+      await this.rateLimiter.throttle();
       
       const response = await axios.get(statusEndpoint, {
         httpsAgent,
