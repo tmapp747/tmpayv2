@@ -1,6 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, QrCode, Check, CreditCard, AlertCircle } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Loader2, 
+  QrCode, 
+  Check, 
+  CreditCard, 
+  AlertCircle, 
+  Share2, 
+  Copy, 
+  ExternalLink, 
+  Smartphone 
+} from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
