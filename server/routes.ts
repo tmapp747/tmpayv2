@@ -1577,8 +1577,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create a transaction record first
-      const transactionReference = randomUUID();
+      // Create a transaction record with username-based reference for better tracking
+      const transactionReference = generateTransactionReference(user.username);
       console.log(`[TRANSACTION] Creating new GCash deposit transaction for user ${user.username} (ID: ${user.id}), amount: ${amount}, reference: ${transactionReference}`);
       
       const transaction = await storage.createTransaction({
