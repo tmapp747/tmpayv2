@@ -9,6 +9,7 @@ import History from "@/pages/History";
 import Profile from "@/pages/Profile";
 import EmeraldProfile from "@/pages/EmeraldProfile";
 import AuthPage from "@/pages/auth-page";
+import MobileAuthPage from "@/pages/mobile-auth-page";
 import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
 import ColorComparison from "@/pages/ColorComparison";
@@ -27,6 +28,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/mobile-auth" component={MobileAuthPage} />
       <ProtectedRoute path="/dashboard" component={() => (
         <Layout>
           <Home />
@@ -63,7 +65,7 @@ function Router() {
       )} />
       
       {/* Mobile-optimized routes */}
-      <Route path="/mobile" component={MobileDashboard} />
+      <ProtectedRoute path="/mobile" component={MobileDashboard} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />

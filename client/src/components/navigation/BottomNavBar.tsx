@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Home, Wallet, BarChart3, UserCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BottomNavBar() {
   const [location] = useLocation();
+  const [touchedItem, setTouchedItem] = useState<string | null>(null);
   
   const navItems = [
     {
@@ -77,26 +79,104 @@ export default function BottomNavBar() {
   
   return (
     <div className="h-safe-bottom">
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#002D87] rounded-t-[20px] shadow-lg p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0))]">
-        <div className="flex justify-around w-full">
-          {navItems.map((item) => {
+      <motion.nav 
+        className="fixed bottom-0 left-0 right-0 z-40 bg-[#002D87] rounded-t-[20px] shadow-2xl p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0))]"
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 300, 
+          damping: 30,
+          delay: 0.2
+        }}
+      >
+        <div className="flex justify-around w-full relative">
+          {/* Animated active background indicator */}
+          <AnimatePresence>
+            {navItems.map((item, index) => {
+              const isActive = location === item.path;
+              if (!isActive) return null;
+              
+              return (
+                <motion.div
+                  key={`bg-${item.name}`}
+                  className="absolute bottom-0 w-1/4 h-full"
+                  initial={{ x: `${index * 100}%`, opacity: 0 }}
+                  animate={{ 
+                    x: `${index * 100}%`, 
+                    opacity: 1,
+                    scale: [1, 1.05, 1]
+                  }}
+                  exit={{ opacity: 0 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 500, 
+                    damping: 30 
+                  }}
+                >
+                  <div className="mx-auto w-12 h-1 bg-blue-400 rounded-full mt-1 absolute bottom-0 left-0 right-0" />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+          
+          {/* Nav Items */}
+          {navItems.map((item, index) => {
             const isActive = location === item.path;
+            const isTouched = touchedItem === item.name;
             
             return (
               <Link
                 key={item.name}
                 href={item.path}
-                className="flex flex-col items-center justify-center with-ripple"
+                className="flex flex-col items-center justify-center relative"
               >
-                {item.icon(isActive)}
-                <span className={`text-xs mt-1 ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                <motion.div
+                  onTouchStart={() => setTouchedItem(item.name)}
+                  onTouchEnd={() => setTouchedItem(null)}
+                  whileTap={{ scale: 0.92 }}
+                  animate={{ 
+                    y: isActive ? -3 : 0,
+                    scale: isActive ? 1.05 : 1
+                  }}
+                  transition={{ type: "spring", stiffness: 500 }}
+                  className="relative"
+                >
+                  {/* Add subtle glow effect for active item */}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-md -z-10" />
+                  )}
+                  
+                  {item.icon(isActive)}
+                  
+                  {/* Subtle ripple effect on touch */}
+                  <AnimatePresence>
+                    {isTouched && (
+                      <motion.div
+                        className="absolute inset-0 bg-white/20 rounded-full -z-10"
+                        initial={{ scale: 0, opacity: 0.5 }}
+                        animate={{ scale: 1.5, opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+                
+                <motion.span 
+                  className={`text-xs mt-1 ${isActive ? 'text-white font-medium' : 'text-gray-400'}`}
+                  animate={{ 
+                    y: isActive ? -2 : 0,
+                    opacity: isActive ? 1 : 0.8
+                  }}
+                >
                   {item.name}
-                </span>
+                </motion.span>
               </Link>
             );
           })}
         </div>
-      </nav>
+      </motion.nav>
       <div className="h-16"></div> {/* Spacer to account for the fixed navbar */}
     </div>
   );
