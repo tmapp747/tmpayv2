@@ -194,8 +194,9 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      // Simply redirect to main mobile dashboard
-      navigate('/mobile');
+      // Set redirect flag in session storage then redirect
+      sessionStorage.setItem("redirectToMobile", "true");
+      window.location.href = '/mobile';
     },
     onError: (error: Error) => {
       console.error('Login error:', error);
@@ -257,8 +258,9 @@ export default function MobileAuthPage() {
         haptic.vibrate(100);
       }
       
-      // Simply redirect to main mobile dashboard
-      navigate('/mobile');
+      // Set redirect flag in session storage then redirect
+      sessionStorage.setItem("redirectToMobile", "true");
+      window.location.href = '/mobile';
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);

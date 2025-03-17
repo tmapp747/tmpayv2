@@ -40,6 +40,12 @@ function Router() {
       if (location === "/wallet") navigate("/mobile-wallet");
       if (location === "/profile") navigate("/mobile-profile");
       if (location === "/auth") navigate("/mobile-auth");
+      
+      // This fixes the issue with mobile-auth not redirecting to /mobile
+      if (location === "/mobile-auth" && sessionStorage.getItem("redirectToMobile")) {
+        sessionStorage.removeItem("redirectToMobile");
+        navigate("/mobile");
+      }
     } else {
       // Redirect mobile routes to desktop if on desktop
       if (location === "/mobile") navigate("/dashboard");
