@@ -195,12 +195,12 @@ export default function MobileCasinoStats() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Withdrawals</span>
-                    <span className="font-medium text-red-400">{safeCurrency(statistics.totalWithdrawal)}</span>
+                    <span className="font-medium text-red-400">{formatCurrency(statistics.totalWithdrawal)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-1 border-t border-gray-700">
                     <span className="text-sm font-medium">Net Cash Flow</span>
                     <span className={`font-medium ${(statistics?.totalDeposit || 0) - (statistics?.totalWithdrawal || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {safeCurrency((statistics?.totalDeposit || 0) - (statistics?.totalWithdrawal || 0))}
+                      {formatCurrency((statistics?.totalDeposit || 0) - (statistics?.totalWithdrawal || 0))}
                     </span>
                   </div>
                 </div>
@@ -231,15 +231,15 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Bet Amount</span>
-                    <span className="font-medium">{safeCurrency(statistics.totalBet)}</span>
+                    <span className="font-medium">{formatCurrency(statistics.totalBet)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Total Win Amount</span>
-                    <span className="font-medium text-green-400">{safeCurrency(statistics.totalWin)}</span>
+                    <span className="font-medium text-green-400">{formatCurrency(statistics.totalWin)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Wagered Amount</span>
-                    <span className="font-medium">{safeCurrency(statistics.wageredAmount)}</span>
+                    <span className="font-medium">{formatCurrency(statistics.wageredAmount)}</span>
                   </div>
                 </div>
               </motion.div>
@@ -269,15 +269,15 @@ export default function MobileCasinoStats() {
                 <div className="pt-3 space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Daily</span>
-                    <span className="font-medium">{safeCurrency(turnOver?.daily)}</span>
+                    <span className="font-medium">{formatCurrency(turnOver?.daily)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Weekly</span>
-                    <span className="font-medium">{safeCurrency(turnOver?.weekly)}</span>
+                    <span className="font-medium">{formatCurrency(turnOver?.weekly)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Monthly</span>
-                    <span className="font-medium">{safeCurrency(turnOver?.monthly)}</span>
+                    <span className="font-medium">{formatCurrency(turnOver?.monthly)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm opacity-80">Yearly</span>
