@@ -43,19 +43,23 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   };
   
   // Format casino ID as a card number
-  // Format casino client ID as card number
-  const formatCasinoId = (id: string | number | undefined) => {
+  // Format client ID as card number
+  const formatClientId = (id: string | number | undefined) => {
     if (!id) return '5282 3456 7890 1289';
     
     // Convert to string if it's a number
     const idStr = id.toString();
     
     // Pad with zeros to ensure it's at least 16 digits
+    // Use the actual client ID from database
     const paddedId = idStr.padStart(16, '0');
     
     // Format as credit card number
     return paddedId.match(/.{1,4}/g)?.join(' ') || idStr;
   };
+  
+  // Debug log to see available user data
+  console.log("User data:", data?.user);
   
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -144,10 +148,23 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
     );
   }
   
-  const { balance, pendingBalance, casinoBalance, casinoId, casinoClientId, username, topManager, immediateManager } = data.user;
+  const { 
+    balance, 
+    pendingBalance, 
+    casinoBalance, 
+    casinoId, 
+    casinoClientId, 
+    id, 
+    username, 
+    topManager, 
+    immediateManager 
+  } = data.user;
+  
   const totalBalance = parseFloat(balance as string) + parseFloat(pendingBalance as string);
-  // Use casinoClientId instead of casinoId for the card number
-  const formattedCardNumber = formatCasinoId(casinoClientId);
+  
+  // Use casinoId from the user record
+  const formattedCardNumber = formatClientId(casinoId);
+  
   // Use manager info instead of expiry date
   const managerInfo = getManagerInfo(data.user);
   
