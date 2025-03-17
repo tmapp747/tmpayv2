@@ -70,19 +70,20 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   
   if (isLoading) {
     return (
-      <div className={`rounded-[24px] p-5 h-56 mx-4 animate-pulse bg-gradient-to-br from-blue-500 to-cyan-400 w-auto shadow-xl ${className}`}>
+      <div className={`rounded-[24px] p-5 h-64 mx-4 animate-pulse bg-gradient-to-br from-blue-500 to-cyan-400 w-auto shadow-xl ${className}`}>
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
             <div className="h-6 w-32 bg-white/20 rounded-md"></div>
-            <div className="h-6 w-10 bg-white/20 rounded-md"></div>
+            <div className="h-10 w-16 bg-white/20 rounded-md"></div> {/* 747 logo space */}
           </div>
           <div className="space-y-2">
             <div className="h-10 w-40 bg-white/20 rounded-md"></div>
             <div className="h-5 w-24 bg-white/20 rounded-md"></div>
           </div>
-          <div className="flex items-center justify-between">
-            <div className="h-5 w-32 bg-white/20 rounded-md"></div>
-            <div className="h-5 w-14 bg-white/20 rounded-md"></div>
+          {/* Manager badge placeholders */}
+          <div className="space-y-1 mt-2">
+            <div className="h-5 w-32 bg-green-500/50 rounded-md"></div>
+            <div className="h-5 w-32 bg-purple-800/50 rounded-md"></div>
           </div>
         </div>
       </div>
@@ -92,7 +93,7 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
   if (error || !data?.user) {
     return (
       <motion.div 
-        className={`rounded-[24px] mx-4 p-5 h-56 bg-gradient-to-br from-blue-600 to-cyan-500 w-auto text-white shadow-xl overflow-hidden ${className}`}
+        className={`rounded-[24px] mx-4 p-5 h-64 bg-gradient-to-br from-blue-600 to-cyan-500 w-auto text-white shadow-xl overflow-hidden ${className}`}
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, type: "spring" }}
@@ -101,20 +102,18 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
         <div className="flex flex-col h-full justify-between">
           <div className="flex items-center justify-between">
             <div className="text-sm font-medium text-white/90">Current Balance</div>
-            <div className="mastercard-logo">
+            <div className="casino-747-logo">
               <img 
-                src="/assets/logos/mastercard.svg" 
-                alt="Mastercard"
-                className="h-9 w-auto"
+                src="/assets/logos/747logo.png" 
+                alt="747 Casino"
+                className="h-10 w-auto"
                 onError={(e) => {
-                  // Fallback to CSS circles if image fails to load
+                  // Fallback if image fails to load
                   (e.target as HTMLImageElement).style.display = 'none';
                   (e.target as HTMLImageElement).parentElement!.innerHTML = `
-                    <div class="flex">
-                      <div class="w-7 h-7 bg-yellow-500 rounded-full"></div>
-                      <div class="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
+                    <div class="text-xs font-bold text-white">
+                      <span class="text-blue-900">7</span><span class="text-green-500">4</span><span class="text-blue-900">7</span>
                     </div>
-                    <div class="text-[8px] text-center text-white mt-1">mastercard</div>
                   `;
                 }}
               />
@@ -183,20 +182,18 @@ export default function NewBalanceCard({ className = '', showCardNumber = true }
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="text-sm font-medium text-white/90">Current Balance</div>
-          <div className="mastercard-logo">
+          <div className="casino-747-logo">
             <img 
-              src="/assets/logos/mastercard.svg" 
-              alt="Mastercard"
-              className="h-9 w-auto"
+              src="/assets/logos/747logo.png" 
+              alt="747 Casino"
+              className="h-10 w-auto"
               onError={(e) => {
-                // Fallback to CSS circles if image fails to load
+                // Fallback if image fails to load
                 (e.target as HTMLImageElement).style.display = 'none';
                 (e.target as HTMLImageElement).parentElement!.innerHTML = `
-                  <div class="flex">
-                    <div class="w-7 h-7 bg-yellow-500 rounded-full"></div>
-                    <div class="w-7 h-7 bg-red-500 rounded-full -ml-3"></div>
+                  <div class="text-xs font-bold text-white">
+                    <span class="text-blue-900">7</span><span class="text-green-500">4</span><span class="text-blue-900">7</span>
                   </div>
-                  <div class="text-[8px] text-center text-white mt-1">mastercard</div>
                 `;
               }}
             />
