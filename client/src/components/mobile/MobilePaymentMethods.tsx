@@ -118,10 +118,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
 
   const addPaymentMethodMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/user/payment-methods', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return apiRequest('/api/user/payment-methods', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/payment-methods'] });
@@ -273,8 +270,13 @@ export default function MobilePaymentMethods() {
   const { data: userPaymentMethods, isLoading: isLoadingUserMethods } = useQuery({
     queryKey: ['/api/user/payment-methods'],
     queryFn: async () => {
-      const response = await apiRequest('/api/user/payment-methods', { method: 'GET' });
-      return response.methods || [];
+      try {
+        const response = await apiRequest('/api/user/payment-methods', 'GET');
+        return response?.methods || [];
+      } catch (error) {
+        console.error("Error fetching user payment methods:", error);
+        return [];
+      }
     }
   });
   
@@ -282,17 +284,25 @@ export default function MobilePaymentMethods() {
   const { data: availablePaymentMethods, isLoading: isLoadingAvailableMethods } = useQuery({
     queryKey: ['/api/payment-methods'],
     queryFn: async () => {
-      const response = await apiRequest('/api/payment-methods', { method: 'GET' });
-      return response.methods || [];
+      try {
+        const response = await apiRequest('/api/payment-methods', 'GET');
+        return response?.methods || [];
+      } catch (error) {
+        console.error("Error fetching available payment methods:", error);
+        return [];
+      }
     }
   });
   
   // Set a payment method as default
   const setDefaultMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/user/payment-methods/${id}/default`, {
-        method: 'POST'
-      });
+      try {
+        return await apiRequest(`/api/user/payment-methods/${id}/default`, 'POST');
+      } catch (error) {
+        console.error("Error setting default payment method:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/payment-methods'] });
@@ -313,9 +323,12 @@ export default function MobilePaymentMethods() {
   // Delete a payment method
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/user/payment-methods/${id}`, {
-        method: 'DELETE'
-      });
+      try {
+        return await apiRequest(`/api/user/payment-methods/${id}`, 'DELETE');
+      } catch (error) {
+        console.error("Error deleting payment method:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/user/payment-methods'] });

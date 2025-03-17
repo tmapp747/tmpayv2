@@ -82,14 +82,24 @@ export default function MobileCasinoStats() {
       if (!userData?.user?.username) throw new Error("Username not available");
       
       console.log("Fetching stats for user:", userData.user.username);
-      const response = await fetch(`/api/casino/user-stats/${userData.user.username}`);
-      
-      if (!response.ok) {
-        console.error("Failed to fetch stats:", response.status, response.statusText);
-        throw new Error("Failed to fetch casino statistics");
+      try {
+        const response = await fetch(`/api/casino/user-stats/${userData.user.username}`);
+        
+        if (!response.ok) {
+          console.error("Failed to fetch stats:", response.status, response.statusText);
+          throw new Error(`Failed to fetch casino statistics: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        if (!data) {
+          throw new Error("Empty response from casino statistics API");
+        }
+        
+        return data;
+      } catch (error) {
+        console.error("Casino stats error:", error);
+        throw error;
       }
-      
-      return response.json();
     },
     enabled: !!userData?.user?.username,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -117,31 +127,45 @@ export default function MobileCasinoStats() {
     queryFn: async () => {
       if (!userData?.user?.username) throw new Error("Username not available");
       
-      // Determine if user is an agent based on casinoUserType
-      // Players use isAgent=false, agents use isAgent=true
-      const isAgent = userData.user.casinoUserType === 'agent';
-      console.log(`Fetching hierarchy for ${userData.user.username}, isAgent=${isAgent}`);
-      
-      const response = await fetch('/api/casino/user-hierarchy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: userData.user.username,
-          isAgent: isAgent
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch hierarchy data");
+      try {
+        // Determine if user is an agent based on casinoUserType
+        // Players use isAgent=false, agents use isAgent=true
+        const isAgent = userData.user.casinoUserType === 'agent';
+        console.log(`Fetching hierarchy for ${userData.user.username}, isAgent=${isAgent}`);
+        
+        const response = await fetch('/api/casino/user-hierarchy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: userData.user.username,
+            isAgent: isAgent
+          })
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to fetch hierarchy:", response.status, response.statusText);
+          throw new Error(`Failed to fetch hierarchy data: ${response.statusText}`);
+        }
+        
+        const json = await response.json();
+        
+        // Validate the response format
+        if (!json || typeof json !== 'object') {
+          throw new Error("Invalid hierarchy data format");
+        }
+        
+        // Add detailed logging of response data
+        console.log("Hierarchy API Response:", JSON.stringify(json, null, 2));
+        return json;
+      } catch (error) {
+        console.error("Hierarchy fetch error:", error);
+        throw error;
       }
-      
-      const json = await response.json();
-      // Add detailed logging of response data
-      console.log("Hierarchy API Response:", JSON.stringify(json, null, 2));
-      return json;
     },
     enabled: !!userData?.user?.username,
     refetchInterval: 60000, // Refresh every minute
+    retry: 2,
+    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30000),
   });
 
   const toggleSection = (section: string) => {
