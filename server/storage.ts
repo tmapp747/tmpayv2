@@ -1389,6 +1389,20 @@ export class DbStorage extends MemStorage {
       // Log the casino ID for debugging
       console.log(`DEBUG: User casinoId before DB persistence: "${createdUser.casinoId}"`);
       
+      // CRITICAL FIX: Ensure casinoId is never null for database insertion
+      // Generate a fallback ID if needed using client ID
+      let casinoIdValue = createdUser.casinoId;
+      if (!casinoIdValue && createdUser.casinoClientId) {
+        casinoIdValue = `747-${createdUser.casinoClientId}`;
+        console.log(`Generated casinoId ${casinoIdValue} from casinoClientId ${createdUser.casinoClientId}`);
+      }
+      
+      // Still no value? This would be extremely unusual but let's handle it
+      if (!casinoIdValue) {
+        casinoIdValue = `747-${Date.now()}`; // Last resort fallback
+        console.log(`WARNING: Using timestamp fallback for casinoId: ${casinoIdValue}`);
+      }
+      
       const dbUser = {
         id: createdUser.id,
         username: createdUser.username,
@@ -1399,7 +1413,7 @@ export class DbStorage extends MemStorage {
         balances: createdUser.balances || { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
         preferred_currency: createdUser.preferredCurrency || 'PHP',
         is_vip: createdUser.isVip || false,
-        casino_id: createdUser.casinoId || `747-${createdUser.casinoClientId}`, // Fallback to constructing from casinoClientId
+        casino_id: casinoIdValue, // Use our guaranteed non-null value
         casino_username: createdUser.casinoUsername,
         casino_client_id: createdUser.casinoClientId,
         top_manager: createdUser.topManager,
