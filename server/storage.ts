@@ -155,6 +155,8 @@ export class MemStorage implements IStorage {
   private telegramPaymentIdCounter: number;
   private manualPaymentIdCounter: number;
   private userPreferenceIdCounter: number;
+  private paymentMethodIdCounter: number;
+  private userPaymentMethodIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -163,6 +165,8 @@ export class MemStorage implements IStorage {
     this.telegramPayments = new Map();
     this.manualPayments = new Map();
     this.userPreferences = new Map();
+    this.paymentMethods = new Map();
+    this.userPaymentMethods = new Map();
     
     this.userIdCounter = 1;
     this.transactionIdCounter = 1;
@@ -170,6 +174,8 @@ export class MemStorage implements IStorage {
     this.telegramPaymentIdCounter = 1;
     this.manualPaymentIdCounter = 1;
     this.userPreferenceIdCounter = 1;
+    this.paymentMethodIdCounter = 1;
+    this.userPaymentMethodIdCounter = 1;
     
     console.log('MemStorage initialized without test users');
   }
