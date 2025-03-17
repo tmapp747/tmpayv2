@@ -1414,7 +1414,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get the authenticated user from the request
       const user = (req as any).user;
       
+      console.log(`Fetching transactions from database for userId: ${user.id}`);
       const transactions = await storage.getTransactionsByUserId(user.id);
+      console.log(`Found ${transactions.length} transactions in database for userId: ${user.id}`);
       
       return res.json({ 
         success: true,
