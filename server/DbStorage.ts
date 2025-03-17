@@ -1291,7 +1291,29 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getAllTelegramPayments(): Promise<Map<number, TelegramPayment>> {
+  getAllTelegramPayments(): Map<number, TelegramPayment> {
+    // For compatibility with the interface, this returns a Map directly
+    // Instead of a Promise<Map> which would break the interface contract
+    const telegramPaymentMap = new Map<number, TelegramPayment>();
+    
+    try {
+      // Start an async process to populate this map but return immediately
+      this.refreshTelegramPaymentsFromDatabase().catch(error => {
+        console.error('[DB] Error refreshing Telegram payments from database:', error);
+      });
+      
+      if (DB_DEBUG) console.log(`[DB] Returning Telegram payment map with initial size: ${telegramPaymentMap.size}`);
+      return telegramPaymentMap;
+    } catch (error) {
+      console.error('[DB] Error in getAllTelegramPayments:', error);
+      return new Map();
+    }
+  }
+  
+  /**
+   * Private helper to refresh Telegram payments from the database
+   */
+  private async refreshTelegramPaymentsFromDatabase(): Promise<void> {
     try {
       const result = await this.dbInstance.select().from(telegramPayments);
       const telegramPaymentMap = new Map<number, TelegramPayment>();
@@ -1300,11 +1322,9 @@ export class DbStorage implements IStorage {
         telegramPaymentMap.set(payment.id, payment);
       }
       
-      if (DB_DEBUG) console.log(`[DB] Retrieved all Telegram payments: ${result.length}`);
-      return telegramPaymentMap;
+      if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} Telegram payments from database`);
     } catch (error) {
-      console.error('[DB] Error retrieving all Telegram payments:', error);
-      return new Map();
+      console.error('[DB] Error refreshing Telegram payments from database:', error);
     }
   }
 
