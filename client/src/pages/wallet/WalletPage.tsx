@@ -10,6 +10,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/lib/types";
 import { Briefcase, Wallet, ArrowDown, ArrowUp, RefreshCw, ChevronDown, AlertCircle, ShieldAlert } from "lucide-react";
+import NewBalanceCard from "@/components/NewBalanceCard";
 
 function WalletPage() {
   const [activeTab, setActiveTab] = useState("balance");
@@ -67,98 +68,14 @@ function WalletPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column - Balance and Actions */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Balance Card with 3D styling */}
+          {/* Use the NewBalanceCard component */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
+            className="w-full"
           >
-            <Card className="border-2 border-emerald-700/30 rounded-xl overflow-hidden relative"
-                  style={{
-                    background: 'linear-gradient(145deg, rgba(5, 45, 35, 0.9), rgba(4, 50, 40, 0.8))',
-                    boxShadow: '0 10px 25px rgba(16, 185, 129, 0.15), 0 10px 10px rgba(0, 0, 0, 0.1), 0 0 30px rgba(16, 185, 129, 0.1)', 
-                    transform: 'translateZ(0)'
-                  }}>
-              {/* Subtle gradient overlay with emerald glow */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-emerald-600/5 to-black/10 opacity-80 pointer-events-none"></div>
-              {/* Enhanced background glow effects */}
-              <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl"></div>
-              <div className="absolute top-10 right-10 w-32 h-32 bg-yellow-400/5 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
-              <div className="absolute bottom-10 right-20 w-24 h-24 bg-yellow-300/5 rounded-full blur-2xl"></div>
-              
-              <CardHeader className="pb-2 relative">
-                <CardTitle className="text-lg flex items-center text-emerald-200" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>
-                  <Wallet className="h-5 w-5 mr-2 text-yellow-400" style={{filter: 'drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5))'}} />
-                  Your Balance
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="relative">
-                <div className="flex flex-col">
-                  <div className="mb-4">
-                    <div className="text-4xl font-bold flex items-end text-yellow-300" style={{
-                      textShadow: '0 0 10px rgba(252, 211, 77, 0.4), 0 2px 4px rgba(0, 0, 0, 0.5)',
-                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))'
-                    }}>
-                      {formatCurrency(userData?.user?.balance || 0)}
-                    </div>
-                    <p className="text-sm text-emerald-200/80">Available Balance</p>
-                  </div>
-                  
-                  {userData && userData.user && typeof userData.user.pendingBalance !== 'undefined' && Number(userData.user.pendingBalance) > 0 && (
-                    <div className="p-3 rounded-lg mb-3 relative overflow-hidden"
-                         style={{
-                           background: 'linear-gradient(135deg, rgba(5, 45, 35, 0.5), rgba(5, 45, 35, 0.3))',
-                           border: '1px solid rgba(16, 185, 129, 0.2)',
-                           boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 4px 8px rgba(0, 0, 0, 0.2)'
-                         }}>
-                      {/* Ambient glow effect */}
-                      <div className="absolute -top-6 -right-6 w-12 h-12 bg-emerald-500/20 rounded-full blur-xl"></div>
-                      <div className="flex items-center relative z-10">
-                        <RefreshCw className="h-4 w-4 mr-2 text-yellow-300 animate-spin" style={{animationDuration: '3s', filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))'}} />
-                        <div>
-                          <div className="text-sm font-medium text-emerald-100" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>
-                            Pending: {formatCurrency(userData?.user?.pendingBalance || 0)}
-                          </div>
-                          <p className="text-xs text-emerald-300/80">Transactions in progress</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-2 gap-3 mt-2">
-                    <div className="p-3 rounded-lg flex items-center justify-between"
-                         style={{
-                           background: 'linear-gradient(135deg, rgba(5, 45, 35, 0.8), rgba(0, 0, 0, 0.7))',
-                           border: '2px solid rgba(16, 185, 129, 0.2)',
-                           boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 15px rgba(16, 185, 129, 0.1)',
-                           transform: 'translateZ(0)'
-                         }}>
-                      <div>
-                        <p className="text-xs text-emerald-300/70 mb-1">Deposits</p>
-                        <p className="text-sm font-medium text-yellow-300" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>+₱0.00</p>
-                      </div>
-                      <ArrowDown className="h-4 w-4 text-yellow-300" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4))'}} />
-                    </div>
-                    
-                    <div className="p-3 rounded-lg flex items-center justify-between"
-                         style={{
-                           background: 'linear-gradient(135deg, rgba(5, 45, 35, 0.8), rgba(0, 0, 0, 0.7))',
-                           border: '2px solid rgba(16, 185, 129, 0.15)',
-                           boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 0 15px rgba(239, 68, 68, 0.1)',
-                           transform: 'translateZ(0)'
-                         }}>
-                      <div>
-                        <p className="text-xs text-emerald-300/70 mb-1">Withdrawals</p>
-                        <p className="text-sm font-medium text-red-300" style={{textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)'}}>-₱0.00</p>
-                      </div>
-                      <ArrowUp className="h-4 w-4 text-red-300" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4))'}} />
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <NewBalanceCard className="w-full mx-0" />
           </motion.div>
           
           {/* Deposit Form */}
