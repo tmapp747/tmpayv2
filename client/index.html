@@ -8,6 +8,9 @@
   <meta name="format-detection" content="telephone=no" />
   <meta name="theme-color" content="#0f172a" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-touch-fullscreen" content="yes" />
+  <meta name="msapplication-tap-highlight" content="no" />
+  <meta name="HandheldFriendly" content="true" />
   
   <!-- Primary Meta Tags -->
   <title>TeamMARC - Premium Casino Financial Platform</title>
@@ -84,6 +87,70 @@
     window.addEventListener('orientationchange', () => {
       setTimeout(preventHorizontalScroll, 300); // After orientation change completes
     });
+    
+    // Add tap feedback - 300ms is too slow on mobile
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add active state to buttons when tapped
+      document.body.addEventListener('touchstart', function(e) {
+        if (e.target.tagName === 'BUTTON' || 
+            e.target.closest('button') || 
+            e.target.closest('[role="button"]') ||
+            e.target.closest('a') ||
+            e.target.closest('.mobile-clickable')) {
+          
+          const element = e.target.tagName === 'BUTTON' || e.target.closest('button') || 
+                          e.target.closest('[role="button"]') || e.target.closest('a') || 
+                          e.target.closest('.mobile-clickable');
+                          
+          if (element) {
+            element.classList.add('active-tap');
+            
+            // Create ripple effect for material design feel
+            if (element.classList.contains('with-ripple')) {
+              const rect = element.getBoundingClientRect();
+              const x = e.touches[0].clientX - rect.left;
+              const y = e.touches[0].clientY - rect.top;
+              
+              const ripple = document.createElement('span');
+              ripple.classList.add('ripple-effect');
+              ripple.style.left = x + 'px';
+              ripple.style.top = y + 'px';
+              
+              element.appendChild(ripple);
+              
+              setTimeout(() => {
+                ripple.remove();
+              }, 600);
+            }
+          }
+        }
+      }, false);
+      
+      document.body.addEventListener('touchend', function(e) {
+        const activeElements = document.querySelectorAll('.active-tap');
+        activeElements.forEach(el => el.classList.remove('active-tap'));
+      }, false);
+    });
+    
+    // Detect platform for special styling
+    function detectPlatform() {
+      const ua = navigator.userAgent.toLowerCase();
+      const htmlElement = document.documentElement;
+      
+      if (/iphone|ipad|ipod/.test(ua)) {
+        htmlElement.classList.add('ios-device');
+      } else if (/android/.test(ua)) {
+        htmlElement.classList.add('android-device');
+      }
+      
+      // Detect standalone mode (installed PWA)
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone) {
+        htmlElement.classList.add('pwa-standalone');
+      }
+    }
+    
+    detectPlatform();
   </script>
 </body>
 </html>
