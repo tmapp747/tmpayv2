@@ -102,12 +102,11 @@ export class Casino747Api {
    */
   async getUserBalance(clientId: number, username: string) {
     try {
-      // Get auth token using the top manager's token for reliability
-      const topManager = "Marcthepogi"; // Default top manager with valid token
-      const authToken = await this.getTopManagerToken(topManager);
+      // Use Marcthepogi's token directly from env for reliability
+      const authToken = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf';
       
       console.log(`🔍 Making balance request for ${username} with clientId ${clientId}`);
-      console.log(`🔑 Using ${topManager}'s token: ${authToken.substring(0, 5)}...${authToken.substring(authToken.length - 5)}`);
+      console.log(`🔑 Using fixed auth token`);
       
       // Create the request payload with required fields
       const requestData = {
