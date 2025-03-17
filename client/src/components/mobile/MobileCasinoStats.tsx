@@ -483,13 +483,36 @@ export default function MobileCasinoStats() {
     }));
     
     // Render a node and its children
+    // Get user role based on hierarchy level
+    const getUserRole = (level: number): string => {
+      const roles = [
+        "Casino Owner",
+        "Continental Manager",
+        "Country Manager",
+        "Regional Manager",
+        "City Manager",
+        "Area Manager",
+        "Agent",
+        "Player"
+      ];
+      
+      return level < roles.length ? roles[level] : "Player";
+    };
+    
     const renderNode = (node: HierarchyNode, level: number = 0, isCurrentUser: boolean = false) => {
       const paddingLeft = level * 16;
       
       // Determine user roles based on position in hierarchy
-      const isCasinoOwner = level === 0; // First in array - Casino Owner
-      const isContinentalManager = level === 1; // Second in array - Continental Manager
-      const isTopManager = level === 2; // Third in array - Top Manager (vital for API tokens)
+      const isCasinoOwner = level === 0; // Casino Owner
+      const isContinentalManager = level === 1; // Continental Manager
+      const isCountryManager = level === 2; // Country Manager (Top Manager, vital for API tokens)
+      const isRegionalManager = level === 3; // Regional Manager
+      const isCityManager = level === 4; // City Manager (like Marcthepogi in the example)
+      const isAreaManager = level === 5; // Area Manager
+      const isAgent = level === 6; // Agent
+      
+      // Get the role name
+      const roleName = getUserRole(level);
       
       // Color gradient from darker to lighter blue based on hierarchy role
       const bgColor = isCurrentUser 
@@ -498,9 +521,13 @@ export default function MobileCasinoStats() {
           ? 'bg-[#002366]' 
           : isContinentalManager
             ? 'bg-[#001f52]'
-            : isTopManager
+            : isCountryManager
               ? 'bg-purple-900/80'
-              : 'bg-[#001849]';
+              : isCityManager
+                ? 'bg-teal-900/80'
+                : isAreaManager
+                  ? 'bg-blue-800/70'
+                  : 'bg-[#001849]';
       
       // Render the appropriate icon based on role in hierarchy
       const renderIcon = () => {
@@ -508,8 +535,8 @@ export default function MobileCasinoStats() {
           return <Award className="h-4 w-4 text-white" />;  // Casino Owner
         } else if (isContinentalManager) {
           return <Globe className="h-4 w-4 text-white" />; // Continental Manager
-        } else if (isTopManager) {
-          return <Key className="h-4 w-4 text-yellow-300" />; // Top Manager (API token source)
+        } else if (isCountryManager) {
+          return <Key className="h-4 w-4 text-yellow-300" />; // Country Manager (API token source)
         } else if (isCurrentUser) {
           return <UserIcon className="h-4 w-4 text-white" />; // Current user
         } else {
@@ -529,7 +556,10 @@ export default function MobileCasinoStats() {
               </div>
               <div>
                 <p className="font-medium">{node.username}</p>
-                <p className="text-xs opacity-70">ID: {node.clientId}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs opacity-70">ID: {node.clientId}</p>
+                  <span className="text-xs bg-blue-900/60 px-1.5 py-0.5 rounded-sm whitespace-nowrap">{roleName}</span>
+                </div>
               </div>
             </div>
             {isCurrentUser && (
@@ -567,13 +597,24 @@ export default function MobileCasinoStats() {
       const userHierarchyPath = hierarchyData.message?.split('->') || [];
       const userDepthInHierarchy = userHierarchyPath.length;
       
+      // Find user's position in the hierarchy
+      const userIndex = hierarchyData.hierarchy.findIndex(n => 
+        n.clientId === currentUser?.clientId);
+      
+      // Get user's role based on position
+      const userRole = userIndex >= 0 ? getUserRole(userIndex) : 'Player';
+      
       // Find top manager (3rd in hierarchy) - vital for API calls
       const topManager = hierarchyData.hierarchy.length > 2 ? 
         hierarchyData.hierarchy[2].username : 'N/A';
       
       // Find direct manager of current user
       const directManager = hierarchyData.hierarchy.find(n => 
-        n.clientId === currentUser?.parentClientId)?.username || 'N/A';
+        n.clientId === currentUser?.parentClientId);
+        
+      const directManagerName = directManager?.username || 'N/A';
+      const directManagerRole = directManager ? 
+        getUserRole(hierarchyData.hierarchy.indexOf(directManager)) : 'N/A';
       
       return (
         <div className="mb-4 bg-[#001849] rounded-xl p-4 shadow-md">
@@ -584,14 +625,20 @@ export default function MobileCasinoStats() {
               <p className="font-medium">{totalNodes}</p>
             </div>
             <div>
-              <p className="text-xs opacity-70">Your Level</p>
-              <p className="font-medium">{userDepthInHierarchy > 0 ? userDepthInHierarchy : 'N/A'}</p>
+              <p className="text-xs opacity-70">Your Role</p>
+              <div className="flex flex-col">
+                <p className="font-medium">{userRole}</p>
+                <p className="text-xs opacity-70">Level {userDepthInHierarchy > 0 ? userDepthInHierarchy : 'N/A'}</p>
+              </div>
             </div>
             <div>
               <p className="text-xs opacity-70">Direct Manager</p>
-              <p className="font-medium text-sm truncate">
-                {directManager}
-              </p>
+              <div className="flex flex-col">
+                <p className="font-medium text-sm truncate">
+                  {directManager ? directManagerName : 'N/A'}
+                </p>
+                <p className="text-xs opacity-70">{directManagerRole}</p>
+              </div>
             </div>
             <div className="col-span-2 bg-purple-900/30 p-2 rounded-lg mt-1">
               <p className="text-xs opacity-70 flex items-center">
