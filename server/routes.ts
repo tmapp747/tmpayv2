@@ -4282,6 +4282,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // New endpoint to mark a payment as completed by the user
+  app.post("/api/payments/mark-as-completed", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { paymentReference } = req.body;
+      const userId = (req as any).user.id;
+      
+      console.log(`[PAYMENT] Manual completion requested for payment reference: ${paymentReference} by user ${userId}`);
+      
+      if (!paymentReference) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment reference is required"
+        });
+      }
+      
+      // Find the transaction by payment reference
+      console.log(`[PAYMENT] Looking for transaction with payment reference: ${paymentReference}`);
+      
+      const transactions = await storage.getTransactionsByUserId(userId, {
+        status: 'pending'
+      });
+      
+      // Find transaction with matching payment reference
+      const transaction = transactions.find(t => t.paymentReference === paymentReference);
+      
+      if (!transaction) {
+        console.log(`[PAYMENT] No pending transaction found with reference: ${paymentReference}`);
+        return res.status(404).json({
+          success: false,
+          message: "No pending transaction found with this reference"
+        });
+      }
+      
+      console.log(`[PAYMENT] Found transaction with ID ${transaction.id} for reference ${paymentReference}`);
+      
+      // Update transaction status to completed
+      await storage.updateTransactionStatus(transaction.id, 'completed');
+      await storage.addStatusHistoryEntry(
+        transaction.id,
+        'completed',
+        'Payment marked as completed by user'
+      );
+      
+      // Update user balance
+      const user = await storage.getUser(userId);
+      const amount = parseFloat(transaction.amount.toString());
+      
+      // Add to the user's balance
+      await storage.updateUserBalance(userId, amount);
+      
+      // Subtract from pending balance
+      await storage.updateUserPendingBalance(userId, -amount);
+      
+      // Record financials in transaction
+      await storage.recordTransactionFinancials(
+        transaction.id,
+        parseFloat(user.balance),
+        parseFloat(user.balance) + amount
+      );
+      
+      // Try to update associated QR payment if it exists
+      const qrPayment = await storage.getQrPaymentByReference(paymentReference);
+      if (qrPayment && qrPayment.status === 'pending') {
+        await storage.updateQrPaymentStatus(qrPayment.id, 'completed');
+        console.log(`[PAYMENT] Updated QR payment with ID ${qrPayment.id}`);
+      }
+      
+      return res.json({
+        success: true,
+        message: "Payment marked as completed successfully",
+        transaction: { ...transaction, status: 'completed' }
+      });
+    } catch (error) {
+      console.error("Error marking payment as completed:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to mark payment as completed"
+      });
+    }
+  });
+
   // Endpoint to send transaction status notifications (for pending payments)
   app.post("/api/payments/send-reminders", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
     try {
