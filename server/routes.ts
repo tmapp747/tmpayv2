@@ -849,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Route adapter to forward /api/auth/logout to Passport's expected endpoint
-  app.post("/api/auth/logout", (req: Request, res: Response, next: Function) => {
+  app.post("/api/auth/logout", (req: Request, res: Response, next: NextFunction) => {
     console.log("Route adapter: Forwarding /api/auth/logout to /api/logout (Passport)");
     req.url = "/api/logout"; // Change the URL to the one Passport expects
     next(); // Forward to next matching route
@@ -1103,7 +1103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Enhanced Authorization middleware - prioritizes session auth, falls back to token
-  async function authMiddleware(req: Request, res: Response, next: Function) {
+  async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
       console.log("[AUTH MIDDLEWARE] Checking authentication for path:", req.path);
       
@@ -1223,7 +1223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Role-based authorization middleware
   function roleAuthMiddleware(allowedRoles: string[]) {
-    return async (req: Request, res: Response, next: Function) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
       try {
         // First apply the base auth middleware to get the user
         authMiddleware(req, res, (err: any) => {
