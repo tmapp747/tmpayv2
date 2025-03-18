@@ -7,13 +7,14 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 // Mobile Pages
-import MobileAuthPage from './pages/mobile-auth-page';
-import MobileDashboardPage from './pages/MobileDashboard';
-import MobileWalletPage from './pages/MobileWallet';
-import MobileProfilePage from './pages/MobileProfile';
-import MobileDepositPage from './pages/MobileDepositPage';
-import MobileHistoryPage from './pages/MobileHistoryPage';
+import MobileAuthPage from './pages/mobile/MobileAuthPage';
+import MobileDashboardPage from './pages/mobile/MobileDashboardPage';
+import MobileWalletPage from './pages/mobile/MobileWalletPage';
+import MobileProfilePage from './pages/mobile/MobileProfilePage';
+import MobileDepositPage from './pages/mobile/MobileDepositPage';
+import MobileHistoryPage from './pages/mobile/MobileHistoryPage';
 import MobileThankYouPage from './pages/mobile/MobileThankYouPage';
+import NotFoundPage from './pages/mobile/NotFoundPage';
 
 export default function App() {
   const [location] = useLocation();
@@ -88,6 +89,11 @@ export default function App() {
                 <MobileThankYouPage />
               </ProtectedRoute>
             )}
+          </Route>
+          
+          {/* 404 Not Found Route - Must be last */}
+          <Route path="/:rest*">
+            <NotFoundPage />
           </Route>
           
           <Toaster/>
