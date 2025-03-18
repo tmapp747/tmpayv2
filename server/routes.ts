@@ -3986,7 +3986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // New endpoint to mark a payment as completed by the user
+  // Modified endpoint to block GCash manual completion
   app.post("/api/payments/mark-as-completed", authMiddleware, async (req: Request, res: Response) => {
     try {
       const { paymentReference } = req.body;
@@ -4021,6 +4021,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PAYMENT] Found transaction with ID ${transaction.id} for reference ${paymentReference}`);
       
+      // Check payment method - block GCash manual completion
+      const paymentMethod = transaction.method?.toLowerCase() || '';
+      
+      if (paymentMethod.includes('gcash') || paymentMethod.includes('qr')) {
+        // For GCash/QR payments, check if there's a QR payment record (further confirmation it's a GCash)
+        const qrPayment = await storage.getQrPaymentByReference(paymentReference);
+        
+        if (qrPayment) {
+          console.log(`[PAYMENT] Rejecting manual completion for GCash payment with ID ${transaction.id}`);
+          
+          // Log the attempt for security monitoring
+          await storage.addStatusHistoryEntry(
+            transaction.id, 
+            'manual_completion_rejected',
+            'GCash payments can only be completed automatically via payment provider webhook'
+          );
+          
+          return res.status(403).json({
+            success: false,
+            message: "GCash payments are processed automatically and cannot be manually marked as completed",
+            info: "Your payment will be automatically confirmed when processed by GCash. No manual action is required.",
+            transaction: transaction
+          });
+        }
+      }
+      
+      // For non-GCash payments, redirect to the new manual payment endpoint
+      return res.redirect(307, '/api/payments/manual/mark-completed');
+    } catch (error) {
+      console.error("Error in mark-as-completed endpoint:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to process payment completion request"
+      });
+    }
+  });
+
+  // New endpoint specifically for manual payment completion
+  app.post("/api/payments/manual/mark-completed", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { paymentReference } = req.body;
+      const userId = (req as any).user.id;
+      
+      console.log(`[MANUAL PAYMENT] Manual completion requested for payment reference: ${paymentReference} by user ${userId}`);
+      
+      if (!paymentReference) {
+        return res.status(400).json({
+          success: false,
+          message: "Payment reference is required"
+        });
+      }
+      
+      const transactions = await storage.getTransactionsByUserId(userId, {
+        status: 'pending'
+      });
+      
+      // Find transaction with matching payment reference
+      const transaction = transactions.find(t => t.paymentReference === paymentReference);
+      
+      if (!transaction) {
+        console.log(`[MANUAL PAYMENT] No pending transaction found with reference: ${paymentReference}`);
+        return res.status(404).json({
+          success: false,
+          message: "No pending transaction found with this reference"
+        });
+      }
+      
+      console.log(`[MANUAL PAYMENT] Found transaction with ID ${transaction.id} for reference ${paymentReference}`);
+      
       // Get user details
       const user = await storage.getUser(userId);
       const amount = parseFloat(transaction.amount.toString());
@@ -4042,13 +4111,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'payment_completed',
         'Payment marked as verified by user'
       );
-      
-      // Try to update associated QR payment if it exists
-      const qrPayment = await storage.getQrPaymentByReference(paymentReference);
-      if (qrPayment && qrPayment.status === 'pending') {
-        await storage.updateQrPaymentStatus(qrPayment.id, 'completed');
-        console.log(`[PAYMENT] Updated QR payment with ID ${qrPayment.id}`);
-      }
       
       // Call casino API to complete the topup if user has casino ID
       if (user.casinoId) {
@@ -4159,45 +4221,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Before completing the payment, check for potential fraud
-      // This section checks for signs that the user might be trying to falsely mark a payment as completed
-      const paymentMethod = transaction.method?.toLowerCase() || '';
-      
-      if (paymentMethod.includes('gcash')) {
-        // For GCash payments, we want to check the QR payment record
-        const qrPayment = await storage.getQrPaymentByReference(paymentReference);
-        
-        // Check for the 10-60-30 rule: 10 GCash attempts can't be marked completed within 1 hour
-        // Simplified version for now - check if user has recently marked other payments as completed
-        const recentCompletions = transactions.filter(t => 
-          t.status === 'completed' && 
-          t.metadata?.manuallyCompleted === true &&
-          t.updatedAt && 
-          new Date(t.updatedAt).getTime() > Date.now() - (60 * 60 * 1000) // Last hour
-        );
-        
-        if (recentCompletions.length >= 3) {
-          return res.status(403).json({
-            success: false,
-            message: "Too many manual completions in the last hour. Please contact support."
-          });
-        }
-        
-        // Add a note about this being a manual completion in the status history
-        await storage.addStatusHistoryEntry(
-          transaction.id, 
-          'manual_completion_initiated',
-          'User manually marked payment as completed'
-        );
-      }
-      
       return res.json({
         success: true,
         message: "Payment marked as completed successfully",
         transaction: { ...transaction, status: 'completed' }
       });
     } catch (error) {
-      console.error("Error marking payment as completed:", error);
+      console.error("Error marking manual payment as completed:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to mark payment as completed"
