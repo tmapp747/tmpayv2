@@ -11,6 +11,12 @@ import {
   loginSchema,
   authSchema
 } from "@shared/schema";
+import { 
+  mapDirectPayStatusToGcashStatus, 
+  mapCasinoTransferStatusToCasinoStatus, 
+  determineTransactionStatus,
+  generateTransactionTimeline
+} from "@shared/api-mapping";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import { comparePasswords, hashPassword } from "../../auth";
@@ -733,16 +739,11 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     
     console.log(`Found QR payment with ID ${qrPayment.id} for user ${qrPayment.userId}`);
     
-    // Map DirectPay status to our status
-    let paymentStatus = "pending";
-    if (payload.status === "completed" || payload.status === "success") {
-      paymentStatus = "completed";
-    } else if (payload.status === "failed" || payload.status === "canceled" || payload.status === "cancelled") {
-      paymentStatus = "failed";
-    }
+    // Map DirectPay status to our standardized gcashStatus
+    const gcashStatus = mapDirectPayStatusToGcashStatus(payload.status);
     
     // Update QR payment status
-    await storage.updateQrPaymentStatus(qrPayment.id, paymentStatus);
+    await storage.updateQrPaymentStatus(qrPayment.id, gcashStatus);
     
     // Get associated transaction
     const transaction = await storage.getTransaction(qrPayment.transactionId);
@@ -754,28 +755,42 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     
     console.log(`Found transaction ${transaction.id} with status ${transaction.status}`);
     
-    // Only proceed if transaction is not already completed or failed
-    if (transaction.status !== "pending" && transaction.status !== "processing") {
-      console.log(`Transaction ${transaction.id} already has status ${transaction.status}, not updating`);
+    // Only proceed if transaction is not already fully completed or failed
+    if (transaction.status === "completed" || transaction.status === "failed") {
+      console.log(`Transaction ${transaction.id} already has final status ${transaction.status}, not updating`);
       return res.json({
         success: true,
-        message: `Transaction already has status: ${transaction.status}`,
+        message: `Transaction already has final status: ${transaction.status}`,
         alreadyProcessed: true
       });
     }
     
-    // Update transaction status based on payment status
-    if (paymentStatus === "completed") {
-      // Update transaction status to payment_completed (not fully completed yet)
-      await storage.updateTransactionStatus(transaction.id, "payment_completed", undefined, {
-        ...transaction.metadata,
-        paymentCompletedAt: new Date().toISOString(),
-        directPayResponse: payload,
-        casinoTransferStatus: "pending" // Mark for casino transfer
-      });
-      
-      // Add status history entry
-      await storage.addStatusHistoryEntry(transaction.id, "payment_completed", "Payment completed successfully via DirectPay");
+    // Get the current metadata or initialize if not present
+    const metadata = transaction.metadata || {};
+    
+    // Update transaction metadata with new gcashStatus
+    await storage.updateTransactionMetadata(transaction.id, {
+      ...metadata,
+      gcashStatus,
+      directPayResponse: payload,
+      gcashStatusUpdatedAt: new Date().toISOString()
+    });
+    
+    // Determine the next transaction status based on dual-status tracking
+    const casinoStatus = metadata.casinoStatus || "pending";
+    const newTransactionStatus = determineTransactionStatus(gcashStatus, casinoStatus);
+    
+    // Update transaction status if it has changed
+    if (newTransactionStatus !== transaction.status) {
+      console.log(`Updating transaction ${transaction.id} status from ${transaction.status} to ${newTransactionStatus}`);
+      await storage.updateTransactionStatus(transaction.id, newTransactionStatus);
+      await storage.addStatusHistoryEntry(transaction.id, newTransactionStatus, 
+        `Status updated based on GCash payment status: ${gcashStatus}`);
+    }
+    
+    // If payment completed, update user balance and attempt casino transfer
+    if (gcashStatus === "completed") {
+      console.log(`GCash payment completed for transaction ${transaction.id}`);
       
       // Get the user
       const user = await storage.getUser(transaction.userId);
@@ -794,10 +809,35 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
         
         console.log(`Updated user balance: ${currentBalance} -> ${newBalance}`);
         
+        // Generate transaction timeline for UI display
+        const timeline = generateTransactionTimeline({
+          ...transaction,
+          metadata: {
+            ...metadata,
+            gcashStatus,
+            casinoStatus
+          }
+        });
+        
+        // Save timeline to transaction metadata
+        await storage.updateTransactionMetadata(transaction.id, {
+          ...metadata,
+          gcashStatus,
+          timeline
+        });
+        
         // Try to complete the casino transfer
         try {
           if (user.casinoClientId) {
             console.log(`Attempting casino transfer for user ${user.username} with casinoClientId ${user.casinoClientId}`);
+            
+            // Update casinoStatus to processing
+            await storage.updateTransactionMetadata(transaction.id, {
+              ...metadata,
+              gcashStatus,
+              casinoStatus: "processing",
+              casinoTransferAttemptedAt: new Date().toISOString()
+            });
             
             const topupResult = await casino747CompleteTopup(
               user.casinoClientId.toString(),
@@ -806,29 +846,75 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
             );
             
             // Update transaction with casino transfer result
+            const updatedCasinoStatus = mapCasinoTransferStatusToCasinoStatus(topupResult.status || "completed");
+            
             await storage.updateTransactionMetadata(transaction.id, {
-              ...transaction.metadata,
-              casinoTransferStatus: "completed",
+              ...metadata,
+              gcashStatus,
+              casinoStatus: updatedCasinoStatus,
               casinoTransferResult: topupResult,
               casinoTransferCompletedAt: new Date().toISOString()
             });
             
-            // Update the transaction status to fully completed
-            await storage.completeTransaction(transaction.id);
+            // Determine final transaction status
+            const finalStatus = determineTransactionStatus(gcashStatus, updatedCasinoStatus);
+            
+            // Update the transaction status
+            await storage.updateTransactionStatus(transaction.id, finalStatus);
             
             // Add status history entry
-            await storage.addStatusHistoryEntry(transaction.id, "completed", "Casino transfer completed successfully");
+            await storage.addStatusHistoryEntry(transaction.id, finalStatus, 
+              `Casino transfer ${updatedCasinoStatus}: ${topupResult.message || "Complete"}`);
             
-            // Update user's casino balance
-            await storage.updateUserCasinoBalance(user.id, amount);
+            // Update user's casino balance if transfer was successful
+            if (updatedCasinoStatus === "completed") {
+              await storage.updateUserCasinoBalance(user.id, amount);
+            }
             
-            console.log(`Casino transfer completed for transaction ${transaction.id}`);
+            // Generate updated timeline
+            const updatedTimeline = generateTransactionTimeline({
+              ...transaction,
+              metadata: {
+                ...metadata,
+                gcashStatus,
+                casinoStatus: updatedCasinoStatus
+              }
+            });
+            
+            // Save updated timeline
+            await storage.updateTransactionMetadata(transaction.id, {
+              ...metadata,
+              gcashStatus,
+              casinoStatus: updatedCasinoStatus,
+              timeline: updatedTimeline
+            });
+            
+            console.log(`Casino transfer ${updatedCasinoStatus} for transaction ${transaction.id}`);
           } else {
             // No casino client ID, mark as pending transfer
             await storage.updateTransactionMetadata(transaction.id, {
-              ...transaction.metadata,
-              casinoTransferStatus: "no_casino_id",
+              ...metadata,
+              gcashStatus,
+              casinoStatus: "no_casino_id",
               casinoTransferNotes: "User has no casino client ID"
+            });
+            
+            // Generate updated timeline
+            const updatedTimeline = generateTransactionTimeline({
+              ...transaction,
+              metadata: {
+                ...metadata,
+                gcashStatus,
+                casinoStatus: "no_casino_id"
+              }
+            });
+            
+            // Save updated timeline
+            await storage.updateTransactionMetadata(transaction.id, {
+              ...metadata,
+              gcashStatus,
+              casinoStatus: "no_casino_id",
+              timeline: updatedTimeline
             });
             
             console.log(`No casino client ID for user ${user.username}, marking transfer as pending`);
@@ -836,40 +922,83 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
         } catch (error) {
           // Casino transfer failed, but payment was successful
           const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Update transaction with casino transfer failure
           await storage.updateTransactionMetadata(transaction.id, {
-            ...transaction.metadata,
-            casinoTransferStatus: "failed",
+            ...metadata,
+            gcashStatus,
+            casinoStatus: "failed",
             casinoTransferError: errorMessage,
             casinoTransferAttemptedAt: new Date().toISOString()
           });
           
+          // Determine final transaction status (partial success)
+          const finalStatus = determineTransactionStatus(gcashStatus, "failed");
+          
+          // Update transaction status
+          await storage.updateTransactionStatus(transaction.id, finalStatus);
+          
           // Add status history entry
-          await storage.addStatusHistoryEntry(transaction.id, "casino_transfer_failed", `Casino transfer failed: ${errorMessage}`);
+          await storage.addStatusHistoryEntry(transaction.id, finalStatus, 
+            `Payment completed but casino transfer failed: ${errorMessage}`);
+          
+          // Generate updated timeline
+          const updatedTimeline = generateTransactionTimeline({
+            ...transaction,
+            metadata: {
+              ...metadata,
+              gcashStatus,
+              casinoStatus: "failed"
+            }
+          });
+          
+          // Save updated timeline
+          await storage.updateTransactionMetadata(transaction.id, {
+            ...metadata,
+            gcashStatus,
+            casinoStatus: "failed",
+            timeline: updatedTimeline
+          });
           
           console.error(`Casino transfer failed for transaction ${transaction.id}: ${errorMessage}`);
         }
       } else {
         console.error(`User not found for transaction ${transaction.id}`);
       }
-    } else if (paymentStatus === "failed") {
-      // Update transaction status to failed
-      await storage.updateTransactionStatus(transaction.id, "failed", undefined, {
-        ...transaction.metadata,
+    } else if (gcashStatus === "failed") {
+      // Update transaction metadata with failure details
+      await storage.updateTransactionMetadata(transaction.id, {
+        ...metadata,
+        gcashStatus,
         paymentFailedAt: new Date().toISOString(),
         directPayResponse: payload
       });
       
-      // Add status history entry
-      await storage.addStatusHistoryEntry(transaction.id, "failed", "Payment failed via DirectPay");
+      // Generate timeline for UI display
+      const timeline = generateTransactionTimeline({
+        ...transaction,
+        metadata: {
+          ...metadata,
+          gcashStatus,
+          casinoStatus: metadata.casinoStatus || "pending"
+        }
+      });
       
-      console.log(`Updated transaction ${transaction.id} status to failed`);
+      // Save timeline to transaction metadata
+      await storage.updateTransactionMetadata(transaction.id, {
+        ...metadata,
+        gcashStatus,
+        timeline
+      });
+      
+      console.log(`Updated transaction ${transaction.id} gcashStatus to failed`);
     }
     
     // Always return success to DirectPay
     return res.json({
       success: true,
       message: "Webhook processed successfully",
-      status: paymentStatus
+      status: gcashStatus
     });
   } catch (error) {
     console.error('Error processing DirectPay webhook:', error);
