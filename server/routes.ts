@@ -4016,6 +4016,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Check Manual payments
+      const manualPayment = await storage.getManualPaymentByReference(referenceId);
+      if (manualPayment) {
+        // Verify the payment belongs to the authenticated user
+        if (manualPayment.userId !== userId) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to cancel this payment" 
+          });
+        }
+        
+        // Check if payment can be cancelled (only pending payments can be cancelled)
+        if (manualPayment.status !== 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: `Cannot cancel payment with status: ${manualPayment.status}`
+          });
+        }
+        
+        // Update Manual payment status to cancelled
+        await storage.updateManualPaymentStatus(manualPayment.id, 'cancelled');
+        
+        // Update corresponding transaction status
+        const transaction = await storage.getTransaction(manualPayment.transactionId);
+        if (transaction) {
+          await storage.updateTransactionStatus(transaction.id, 'cancelled');
+          await storage.addStatusHistoryEntry(
+            transaction.id, 
+            'cancelled', 
+            'Cancelled by user'
+          );
+          
+          // Reduce pending balance in user account
+          const user = await storage.getUser(userId);
+          if (user) {
+            const amount = parseFloat(manualPayment.amount.toString());
+            // Subtract from the user's pending balance
+            await storage.updateUserPendingBalance(userId, -amount);
+          }
+        }
+        
+        return res.json({
+          success: true,
+          message: "Payment cancelled successfully",
+          manualPayment: { ...manualPayment, status: 'cancelled' }
+        });
+      }
+      
       // If we get here, the payment wasn't found
       return res.status(404).json({
         success: false,
@@ -4092,6 +4140,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             expiredTransactions.push({ id: transaction.id, type: 'telegram_payment' });
+          }
+        }
+      }
+      
+      // Find old pending manual payments (older than 48 hours)
+      const manualPaymentsMap = storage.getAllManualPayments();
+      const manualPayments = Array.from(manualPaymentsMap.values());
+      const manualPaymentExpiryHours = 48; // Manual payments expire after 48 hours
+      const manualPaymentExpiryTime = new Date(now.getTime() - (manualPaymentExpiryHours * 60 * 60 * 1000));
+      
+      for (const manualPayment of manualPayments) {
+        if (manualPayment.status === 'pending') {
+          // Check if the manual payment is older than the expiry time
+          const createdAt = new Date(manualPayment.createdAt);
+          if (createdAt < manualPaymentExpiryTime) {
+            await storage.updateManualPaymentStatus(manualPayment.id, 'expired');
+            
+            // Update the associated transaction
+            const transaction = await storage.getTransaction(manualPayment.transactionId);
+            if (transaction && transaction.status === 'pending') {
+              await storage.updateTransactionStatus(transaction.id, 'expired');
+              await storage.addStatusHistoryEntry(
+                transaction.id, 
+                'expired', 
+                `Manual payment expired automatically after ${manualPaymentExpiryHours} hours`
+              );
+              
+              // Reduce pending balance in user account
+              const user = await storage.getUser(manualPayment.userId);
+              if (user) {
+                const amount = parseFloat(manualPayment.amount.toString());
+                // Subtract from the user's pending balance
+                await storage.updateUserPendingBalance(manualPayment.userId, -amount);
+              }
+              
+              expiredTransactions.push({ id: transaction.id, type: 'manual_payment' });
+            }
           }
         }
       }
@@ -4181,6 +4266,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Record for our response
                 remindersSent.push({ id: telegramPayment.id, userId: user.id, type: 'telegram_payment' });
+              }
+            }
+          }
+        }
+      }
+      
+      // Do the same for Manual payments (use createdAt to determine if they need reminders)
+      const manualPaymentsMap = storage.getAllManualPayments();
+      const manualPayments = Array.from(manualPaymentsMap.values());
+      
+      // Manual payments have 48 hours expiry time, send reminder when 24 hours remain
+      const manualPaymentReminderThreshold = 24 * 60 * 60 * 1000; // 24 hours in ms
+      
+      for (const manualPayment of manualPayments) {
+        if (manualPayment.status === 'pending') {
+          const createdAt = new Date(manualPayment.createdAt);
+          const timeElapsed = now.getTime() - createdAt.getTime();
+          
+          // If payment is 24 hours old, send a reminder (assuming 48 hour expiry window)
+          const reminderTime = 24 * 60 * 60 * 1000; // 24 hours in ms
+          const timeElapsedHours = Math.floor(timeElapsed / (60 * 60 * 1000));
+          
+          // If the payment is between 23-25 hours old, send a reminder
+          if (timeElapsed >= reminderTime - (60 * 60 * 1000) && timeElapsed <= reminderTime + (60 * 60 * 1000)) {
+            const transaction = await storage.getTransaction(manualPayment.transactionId);
+            const user = await storage.getUser(manualPayment.userId);
+            
+            if (transaction && user) {
+              // Check if we have already sent a reminder for this payment
+              const reminderSentKey = `reminder_sent_${manualPayment.id}`;
+              const reminderSent = await storage.getUserPreference(user.id, reminderSentKey);
+              
+              // If no reminder has been sent yet
+              if (!reminderSent) {
+                // In a real implementation, you'd send an email or push notification here
+                console.log(`REMINDER: Manual payment for ${manualPayment.amount} is ${timeElapsedHours} hours old. User: ${user.username}, Reference: ${transaction.paymentReference}`);
+                
+                // Mark that we've sent a reminder
+                await storage.updateUserPreference(user.id, reminderSentKey, 'true');
+                
+                // Record for our response
+                remindersSent.push({ id: manualPayment.id, userId: user.id, type: 'manual_payment' });
               }
             }
           }
