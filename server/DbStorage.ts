@@ -7,7 +7,11 @@ import {
   userPreferences,
   paymentMethods,
   userPaymentMethods,
+  rolePermissions,
   supportedCurrencies,
+  supportedUserRoles,
+  supportedUserStatuses,
+  resourceActionMap,
   type User, 
   type InsertUser,
   type Transaction,
@@ -25,7 +29,9 @@ import {
   type UserPaymentMethod,
   type InsertUserPaymentMethod,
   type Currency,
-  type CurrencyBalances
+  type CurrencyBalances,
+  type UserRole,
+  type UserStatus
 } from "@shared/schema";
 import { IStorage } from "./storage";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -416,6 +422,177 @@ export class DbStorage implements IStorage {
       return result[0].isAuthorized === true;
     } catch (error) {
       console.error(`[DB] Error checking authorization for username ${username}:`, error);
+      return false;
+    }
+  }
+
+  // Role operations
+  async updateUserRole(id: number, role: UserRole): Promise<User> {
+    try {
+      // Validate that the role is supported
+      if (!supportedUserRoles.includes(role)) {
+        throw new Error(`Role ${role} is not supported`);
+      }
+
+      const result = await this.dbInstance.update(users)
+        .set({ 
+          role,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (DB_DEBUG) console.log(`[DB] Updated role for user ID: ${id} to ${role}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error updating role for user ID ${id}:`, error);
+      throw new Error(`Failed to update user role: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async updateUserStatus(id: number, status: UserStatus, reason?: string): Promise<User> {
+    try {
+      // Validate that the status is supported
+      if (!supportedUserStatuses.includes(status)) {
+        throw new Error(`Status ${status} is not supported`);
+      }
+
+      const result = await this.dbInstance.update(users)
+        .set({ 
+          status,
+          statusReason: reason || null,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (DB_DEBUG) console.log(`[DB] Updated status for user ID: ${id} to ${status}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error updating status for user ID ${id}:`, error);
+      throw new Error(`Failed to update user status: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getUsersByRole(role: UserRole): Promise<User[]> {
+    try {
+      const result = await this.dbInstance.select().from(users).where(eq(users.role, role));
+      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} users with role: ${role}`);
+      return result;
+    } catch (error) {
+      console.error(`[DB] Error retrieving users with role ${role}:`, error);
+      return [];
+    }
+  }
+
+  async getUsersByStatus(status: UserStatus): Promise<User[]> {
+    try {
+      const result = await this.dbInstance.select().from(users).where(eq(users.status, status));
+      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} users with status: ${status}`);
+      return result;
+    } catch (error) {
+      console.error(`[DB] Error retrieving users with status ${status}:`, error);
+      return [];
+    }
+  }
+
+  async updateUserLastLogin(id: number, ip?: string): Promise<User> {
+    try {
+      const result = await this.dbInstance.update(users)
+        .set({ 
+          lastLoginAt: new Date(),
+          lastLoginIp: ip || null,
+          updatedAt: new Date() 
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      if (DB_DEBUG) console.log(`[DB] Updated last login for user ID: ${id}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error updating last login for user ID ${id}:`, error);
+      throw new Error(`Failed to update last login: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Role permissions operations
+  async getRolePermissions(role: string): Promise<string[]> {
+    try {
+      const result = await this.dbInstance
+        .select()
+        .from(rolePermissions)
+        .where(eq(rolePermissions.role, role));
+      
+      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} permissions for role: ${role}`);
+      
+      // Map the results to just return the permission strings
+      return result.map(row => row.permission);
+    } catch (error) {
+      console.error(`[DB] Error retrieving permissions for role ${role}:`, error);
+      
+      // Return default permissions if database query fails
+      const defaultPermissions = {
+        'admin': [
+          'users:read', 'users:create', 'users:update', 'users:delete',
+          'transactions:read', 'transactions:create', 'transactions:update', 
+          'reports:read', 'settings:read', 'settings:update',
+          'casino:connect', 'casino:transfer'
+        ],
+        'agent': [
+          'users:read', 'transactions:read', 'reports:read', 
+          'casino:connect'
+        ],
+        'player': [
+          'transactions:read', 'casino:transfer'
+        ]
+      };
+      
+      return defaultPermissions[role as keyof typeof defaultPermissions] || [];
+    }
+  }
+  
+  async updateRolePermissions(role: string, permissions: string[]): Promise<void> {
+    try {
+      // Use a transaction to ensure consistency
+      await this.dbInstance.transaction(async (tx) => {
+        // Delete existing permissions for this role
+        await tx.delete(rolePermissions)
+          .where(eq(rolePermissions.role, role));
+        
+        // Insert the new permissions
+        if (permissions.length > 0) {
+          const permissionsToInsert = permissions.map(permission => ({
+            role,
+            permission,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }));
+          
+          await tx.insert(rolePermissions)
+            .values(permissionsToInsert);
+        }
+      });
+      
+      if (DB_DEBUG) console.log(`[DB] Updated permissions for role ${role}: ${permissions.join(', ')}`);
+    } catch (error) {
+      console.error(`[DB] Error updating permissions for role ${role}:`, error);
+      throw new Error(`Failed to update role permissions: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  async checkPermission(userId: number, permission: string): Promise<boolean> {
+    try {
+      // Get the user
+      const user = await this.getUser(userId);
+      if (!user) return false;
+      
+      // Get the user's role permissions
+      const userPermissions = await this.getRolePermissions(user.role);
+      
+      // Check if the user has the required permission
+      return userPermissions.includes(permission);
+    } catch (error) {
+      console.error(`[DB] Error checking permission for user ID ${userId}, permission ${permission}:`, error);
       return false;
     }
   }
