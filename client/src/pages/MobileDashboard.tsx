@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@/lib/types';
 import MobileTransactionsList from '@/components/mobile/MobileTransactionsList';
 import MobileCasinoStats from '@/components/mobile/MobileCasinoStats';
+import teamMarcLogo from "../assets/Logo teammarc.png";
 
 export default function MobileDashboard() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -82,38 +83,54 @@ export default function MobileDashboard() {
 
   // Custom header with user profile
   const headerContent = (
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+    <div className="flex flex-col">
+      {/* 747 Logo with enhanced glow effect */}
+      <div className="flex justify-center mt-2 mb-4">
+        <div className="relative">
+          <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl transform scale-110"></div>
+          <div className="absolute inset-0 rounded-full bg-white/20 blur-md"></div>
           <img 
-            src="/assets/logos/user-avatar.png" 
-            alt="Profile" 
-            onError={(e) => {
-              // Default to initials if avatar fails to load
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center', 'bg-blue-600');
-              (e.target as HTMLImageElement).parentElement!.innerHTML = 
-                `<span class="text-white text-lg font-bold">${data?.user?.username?.substring(0, 2).toUpperCase() || 'U'}</span>`;
-            }}
-            className="w-full h-full object-cover"
+            src="/assets/logos/747-logo.png" 
+            alt="747 Logo" 
+            className="h-14 object-contain relative z-10 drop-shadow-lg"
           />
         </div>
-        <div className="flex items-center" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
-          <span className="font-medium">
-            {data?.user?.username || 'User'}
-          </span>
-          <ChevronDown size={16} className="ml-1" />
-        </div>
       </div>
-      <div>
-        <button className="p-2 with-ripple">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-            <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-          </svg>
-        </button>
+      
+      {/* User profile and menu */}
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+            <img 
+              src="/assets/logos/user-avatar.png" 
+              alt="Profile" 
+              onError={(e) => {
+                // Default to initials if avatar fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).parentElement!.classList.add('flex', 'items-center', 'justify-center', 'bg-blue-600');
+                (e.target as HTMLImageElement).parentElement!.innerHTML = 
+                  `<span class="text-white text-lg font-bold">${data?.user?.username?.substring(0, 2).toUpperCase() || 'U'}</span>`;
+              }}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex items-center" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
+            <span className="font-medium">
+              {data?.user?.username || 'User'}
+            </span>
+            <ChevronDown size={16} className="ml-1" />
+          </div>
+        </div>
+        <div>
+          <button className="p-2 with-ripple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
