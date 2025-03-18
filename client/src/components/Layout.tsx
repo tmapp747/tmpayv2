@@ -59,7 +59,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className={cn(
-      "mobile-container flex min-h-screen pb-16 lg:pb-0 font-inter mobile-safe-area",
+      "mobile-container flex min-h-screen pb-16 lg:pb-6 font-inter mobile-safe-area",
       "text-foreground bg-background transition-colors duration-300",
       "max-w-[100vw] overflow-x-hidden", // Prevent horizontal overflow
       theme === "dark" ? "dark" : "light"
@@ -68,7 +68,8 @@ const Layout = ({ children }: LayoutProps) => {
       height: 'var(--app-height, 100vh)',
       width: '100%', 
       maxWidth: '100vw',
-      overflowX: 'hidden' 
+      overflowX: 'hidden',
+      paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 64px)', // Added safe bottom padding for mobile
     }}
     data-theme={theme}>
       {/* Desktop Sidebar */}
@@ -166,7 +167,8 @@ const Layout = ({ children }: LayoutProps) => {
                perspective: '1000px',
                perspectiveOrigin: 'center'
              }}>
-          <div className="mx-auto p-4 max-w-full overflow-x-hidden relative">
+          {/* Added proper padding: pt-4 for header spacing, and increased bottom padding for mobile navigation */}
+          <div className="mx-auto p-4 pt-4 pb-20 lg:pb-8 max-w-full overflow-x-hidden relative">
             {/* Subtle depth effect for content */}
             <div className="absolute inset-0 pointer-events-none rounded-lg opacity-50"
                  style={{
