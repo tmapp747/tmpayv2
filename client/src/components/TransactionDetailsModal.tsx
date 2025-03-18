@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, CheckCircle, Clock, Copy, ExternalLink, File, FileText, RefreshCcw, X } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Copy, ExternalLink, File, FileText, QrCode, RefreshCcw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -90,10 +90,11 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   const markAsCompleted = async () => {
     try {
       const response = await apiRequest('/api/payments/mark-as-completed', 'POST', {
-        referenceId: transaction?.reference
+        paymentReference: transaction?.reference
       });
       
-      if (response.success) {
+      const result = response as any;
+      if (result.success) {
         toast({
           title: "Success!",
           description: "Payment marked as completed",
@@ -121,7 +122,8 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
     try {
       const response = await apiRequest(`/api/payments/cancel/${transaction?.reference}`, 'POST');
       
-      if (response.success) {
+      const result = response as any;
+      if (result.success) {
         toast({
           title: "Success!",
           description: "Payment was canceled",
@@ -199,7 +201,7 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
             <span className="flex items-center">
               {transaction.type === TRANSACTION_TYPES.DEPOSIT 
                 ? "Deposit" 
-                : transaction.type === TRANSACTION_TYPES.WITHDRAWAL 
+                : transaction.type === TRANSACTION_TYPES.WITHDRAW 
                   ? "Withdrawal" 
                   : "Transaction"} Details
               <StatusBadge status={transaction.status} className="ml-3" />
