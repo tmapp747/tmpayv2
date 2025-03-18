@@ -83,6 +83,8 @@ export const users = pgTable("users", {
   
   // Authorization and hierarchy management
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
+  bypassCasinoAuth: boolean("bypass_casino_auth").default(false), // If true, user bypasses casino auth checks (for admin)
+  hasAllTokenAccess: boolean("has_all_token_access").default(false), // If true, user can access all top manager tokens
   hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
   allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
   
