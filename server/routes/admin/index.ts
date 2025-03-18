@@ -1,790 +1,368 @@
-import { Router, Request, Response } from "express";
-import { roleAuthMiddleware } from "../middleware";
-import { storage } from "../../storage";
-import { z } from "zod";
-import { randomUUID } from "crypto";
-import { resourceActionMap, supportedUserRoles, supportedUserStatuses } from "@shared/schema";
+/**
+ * Admin Routes for 747 Casino E-Wallet Platform
+ * 
+ * These routes are protected by admin-level authentication and provide
+ * administrative functionality for managing users, transactions, and system settings.
+ */
 
-// Create admin router for administrative features
+import { Router, Request, Response } from "express";
+import { db } from "../../db";
+import { storage } from "../../storage";
+import { roleAuthMiddleware } from "../middleware";
+import { cleanupOrphanedRecords } from "../../cleanupOrphans";
+import { processPendingCasinoTransfers } from "../../../process-pending-transfers";
+import { resourceActionMap } from "@shared/schema";
+
 const router = Router();
 
-// Test endpoint
-router.get("/test", roleAuthMiddleware(['admin']), (req, res) => {
-  res.json({ success: true, message: "Admin API working" });
-});
-
-// Get available resources and actions for role permissions
-router.get("/role-management/resources", roleAuthMiddleware(['admin']), (req, res) => {
+// Get all users with role-based access control
+router.get("/users", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    return res.json({ 
-      success: true, 
-      resources: resourceActionMap,
-      roles: supportedUserRoles,
-      statuses: supportedUserStatuses
+    const users = Array.from(storage.getAllUsers().values());
+    
+    // Admin users can see all users, but agents can only see their own downlines
+    const filteredUsers = req.user?.role === 'admin'
+      ? users
+      : users.filter(user => user.immediateManager === req.user?.username);
+    
+    return res.json({
+      success: true,
+      users: filteredUsers.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        statusReason: user.statusReason,
+        lastLogin: user.lastLoginAt,
+        casinoUsername: user.casinoUsername,
+        casinoClientId: user.casinoClientId,
+        casinoBalance: user.casinoBalance,
+        topManager: user.topManager,
+        immediateManager: user.immediateManager,
+        isVip: user.isVip,
+        vipLevel: user.vipLevel,
+        vipSince: user.vipSince,
+        referredBy: user.referredBy
+      }))
     });
   } catch (error) {
-    console.error('Error fetching role resources:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch role resources" });
+    console.error('Error getting users:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Get permissions for a specific role
-router.get("/role-management/permissions/:role", roleAuthMiddleware(['admin']), async (req, res) => {
+// Get role permissions
+router.get("/roles/permissions", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    const { role } = req.params;
+    const roles = ['admin', 'agent', 'player'];
+    const result: Record<string, string[]> = {};
     
-    if (!supportedUserRoles.includes(role)) {
-      return res.status(400).json({ success: false, message: "Invalid role" });
+    for (const role of roles) {
+      result[role] = await storage.getRolePermissions(role);
     }
     
-    const permissions = await storage.getRolePermissions(role);
-    return res.json({ success: true, permissions });
+    // Include available resources and actions from the schema
+    const resources = Object.keys(resourceActionMap);
+    const resourceActions: Record<string, string[]> = {};
+    
+    for (const resource of resources) {
+      resourceActions[resource] = resourceActionMap[resource as keyof typeof resourceActionMap];
+    }
+    
+    return res.json({
+      success: true,
+      rolePermissions: result,
+      availableResources: resources,
+      resourceActions
+    });
   } catch (error) {
-    console.error('Error fetching role permissions:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch role permissions" });
+    console.error('Error getting role permissions:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Update permissions for a specific role
-router.post("/role-management/permissions/:role", roleAuthMiddleware(['admin']), async (req, res) => {
+// Update role permissions
+router.post("/roles/permissions/:role", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
     const { role } = req.params;
     const { permissions } = req.body;
     
-    if (!supportedUserRoles.includes(role)) {
-      return res.status(400).json({ success: false, message: "Invalid role" });
-    }
-    
     if (!Array.isArray(permissions)) {
-      return res.status(400).json({ success: false, message: "Permissions must be an array" });
+      return res.status(400).json({ success: false, message: 'Permissions must be an array' });
     }
     
-    // Validate each permission format (resource:action)
-    for (const permission of permissions) {
-      const [resource, action] = permission.split(':');
-      
-      if (!resource || !action) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Invalid permission format: ${permission}. Must be resource:action`
-        });
-      }
-      
-      if (!resourceActionMap[resource]) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Invalid resource: ${resource}`
-        });
-      }
-      
-      if (!resourceActionMap[resource].includes(action)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: `Invalid action: ${action} for resource: ${resource}`
-        });
-      }
+    if (!['admin', 'agent', 'player'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
     }
     
-    // Update the permissions
     await storage.updateRolePermissions(role, permissions);
     
-    return res.json({ 
-      success: true, 
-      message: `Updated permissions for role: ${role}`,
+    return res.json({
+      success: true,
+      message: `Updated permissions for ${role} role`,
+      role,
       permissions
     });
   } catch (error) {
     console.error('Error updating role permissions:', error);
-    return res.status(500).json({ success: false, message: "Failed to update role permissions" });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Get all users (admin only)
-router.get("/users", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+// Update user role
+router.post("/users/:userId/role", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    // Get all users from the storage
-    const allUsers = storage.getAllUsers();
-    const users = Array.from(allUsers.values()).map(user => ({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      balance: user.balance,
-      pendingBalance: user.pendingBalance || "0.00",
-      isAuthorized: user.isAuthorized,
-      casinoUsername: user.casinoUsername,
-      casinoClientId: user.casinoClientId,
-      casinoBalance: user.casinoBalance || "0.00",
-      userType: user.userType || user.casinoUserType || 'user',
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    }));
+    const userId = parseInt(req.params.userId);
+    const { role } = req.body;
     
-    return res.json({ success: true, users });
+    if (!['admin', 'agent', 'player'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    const updatedUser = await storage.updateUserRole(userId, role as any);
+    
+    return res.json({
+      success: true,
+      message: `Updated role for user ${user.username}`,
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        userType: updatedUser.casinoUserType
+      }
+    });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch users" });
+    console.error('Error updating user role:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Update manual payment status (admin only)
+// Update user status
+router.post("/users/:userId/status", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const { status, reason } = req.body;
+    
+    if (!['active', 'suspended', 'inactive', 'pending_review'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    
+    const updatedUser = await storage.updateUserStatus(userId, status as any, reason);
+    
+    return res.json({
+      success: true,
+      message: `Updated status for user ${user.username}`,
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        status: updatedUser.status,
+        statusReason: updatedUser.statusReason
+      }
+    });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Manage manual payment status
 router.post("/manual-payment/:id/status", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    const id = parseInt(req.params.id);
-    const { status, adminNotes } = req.body;
+    const paymentId = parseInt(req.params.id);
+    const { status, notes } = req.body;
     
-    if (!id || isNaN(id)) {
-      return res.status(400).json({ success: false, message: "Invalid payment ID" });
+    if (!['pending', 'processing', 'payment_completed', 'failed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
     }
     
-    if (!status || !['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ success: false, message: "Invalid status. Must be one of: pending, approved, rejected" });
-    }
-    
-    // Get the manual payment
-    const manualPayment = await storage.getManualPayment(id);
+    const manualPayment = await storage.getManualPayment(paymentId);
     if (!manualPayment) {
-      return res.status(404).json({ success: false, message: "Manual payment not found" });
+      return res.status(404).json({ success: false, message: 'Manual payment not found' });
     }
     
-    // Get the associated transaction
-    const transaction = await storage.getTransaction(manualPayment.transactionId);
-    if (!transaction) {
-      return res.status(404).json({ success: false, message: "Associated transaction not found" });
-    }
-    
-    // Update the manual payment status
-    const updatedPayment = await storage.updateManualPayment(id, {
+    // Update manual payment status
+    const updatedPayment = await storage.updateManualPayment(paymentId, {
       status,
-      adminNotes: adminNotes || null
+      adminId: req.user?.id || null,
+      adminNotes: notes || null
     });
     
-    // Update the transaction status
-    let transactionStatus = status;
-    if (status === 'approved') {
-      transactionStatus = 'payment_completed';
-    } else if (status === 'rejected') {
-      transactionStatus = 'failed';
-    }
-    
-    const updatedTransaction = await storage.updateTransactionStatus(transaction.id, transactionStatus, undefined, {
-      ...transaction.metadata,
-      adminProcessedAt: new Date().toISOString(),
-      adminNotes: adminNotes || null
-    });
-    
-    // Add status history entry
-    await storage.addStatusHistoryEntry(transaction.id, transactionStatus, 
-      `Manual payment ${status} by admin${adminNotes ? `: ${adminNotes}` : ''}`);
-    
-    // If approved, update user balance
-    if (status === 'approved') {
-      // Get the user
-      const user = await storage.getUser(transaction.userId);
-      if (!user) {
-        return res.status(404).json({ success: false, message: "User not found" });
+    // If payment is completed, update transaction status
+    if (status === 'payment_completed') {
+      const transaction = await storage.getTransaction(manualPayment.transactionId);
+      if (transaction) {
+        await storage.updateTransactionStatus(
+          transaction.id,
+          'payment_completed',
+          transaction.reference,
+          { manuallyCompleted: true, completedBy: req.user?.username }
+        );
       }
-      
-      // Calculate new balance
-      const amount = parseFloat(transaction.amount);
-      const currentBalance = parseFloat(user.balance);
-      const newBalance = currentBalance + amount;
-      
-      // Update user balance
-      await storage.updateUserBalance(user.id, amount);
-      
-      // Record transaction financials
-      await storage.recordTransactionFinancials(transaction.id, currentBalance, newBalance);
-      
-      // Complete the transaction
-      await storage.completeTransaction(transaction.id, {
-        ...transaction.metadata,
-        completedBy: "admin",
-        completedAt: new Date().toISOString()
-      });
     }
     
     return res.json({
       success: true,
-      message: `Manual payment ${status} successfully`,
-      manualPayment: updatedPayment,
-      transaction: updatedTransaction
+      message: `Updated manual payment status to ${status}`,
+      payment: updatedPayment
     });
   } catch (error) {
     console.error('Error updating manual payment status:', error);
-    return res.status(500).json({ success: false, message: "Failed to update manual payment status" });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Get all manual payments (admin only)
+// Get all manual payments
 router.get("/manual-payments", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    // Get all manual payments
-    const manualPaymentsMap = storage.getAllManualPayments();
-    const manualPayments = Array.from(manualPaymentsMap.values());
+    const manualPayments = Array.from(storage.getAllManualPayments().values());
     
-    // Sort by created date (newest first)
-    manualPayments.sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    // Enrich with user information
+    const enrichedPayments = await Promise.all(manualPayments.map(async (payment) => {
+      const user = await storage.getUser(payment.userId);
+      const transaction = await storage.getTransaction(payment.transactionId);
+      
+      return {
+        ...payment,
+        username: user?.username || 'Unknown',
+        amount: payment.amount,
+        createdAt: payment.createdAt,
+        method: payment.paymentMethod,
+        status: payment.status,
+        notes: payment.notes,
+        adminNotes: payment.adminNotes,
+        proofImageUrl: payment.proofImageUrl,
+        reference: payment.reference,
+        transactionStatus: transaction?.status || 'unknown'
+      };
+    }));
+    
+    return res.json({
+      success: true,
+      payments: enrichedPayments
     });
-    
-    return res.json({ success: true, manualPayments });
   } catch (error) {
-    console.error('Error fetching manual payments:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch manual payments" });
+    console.error('Error getting manual payments:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Get all transactions (admin only)
+// Get all transactions with admin filtering capability
 router.get("/transactions", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    const { limit = '50', offset = '0', userId, type, method, status, startDate, endDate } = req.query;
+    const { userId, type, method, status, startDate, endDate, limit, offset } = req.query;
     
-    // Parse date strings to Date objects if provided
-    let start: Date | undefined;
-    let end: Date | undefined;
+    const options: any = {};
+    
+    if (type) options.type = type as string;
+    if (method) options.method = method as string;
+    if (status) options.status = status as string;
+    if (limit) options.limit = parseInt(limit as string);
+    if (offset) options.offset = parseInt(offset as string);
     
     if (startDate) {
-      start = new Date(startDate as string);
+      options.startDate = new Date(startDate as string);
     }
     
     if (endDate) {
-      end = new Date(endDate as string);
+      options.endDate = new Date(endDate as string);
     }
     
-    // Get transactions with filters
-    let transactions;
-    if (start && end) {
-      transactions = await storage.getTransactionsByDateRange(start, end, {
-        userId: userId ? parseInt(userId as string) : undefined,
-        type: type as string,
-        method: method as string,
-        status: status as string
-      });
-    } else if (userId) {
-      transactions = await storage.getTransactionsByUserId(parseInt(userId as string), {
-        limit: parseInt(limit as string),
-        offset: parseInt(offset as string),
-        type: type as string,
-        method: method as string,
-        status: status as string,
-        startDate: start,
-        endDate: end
-      });
-    } else {
-      // Default: get most recent transactions
-      transactions = await storage.getTransactionsByDateRange(
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        new Date(),
-        {
-          type: type as string,
-          method: method as string,
-          status: status as string
-        }
-      );
-      
-      // Apply limit and offset manually
-      transactions = transactions.slice(
-        parseInt(offset as string),
-        parseInt(offset as string) + parseInt(limit as string)
-      );
-    }
+    const userIdNum = userId ? parseInt(userId as string) : 0;
+    const transactions = await storage.getTransactionsByUserId(userIdNum, options);
     
-    // Get transaction summary
-    const summary = await storage.getTransactionsSummary({
-      userId: userId ? parseInt(userId as string) : undefined,
-      type: type as string,
-      method: method as string,
-      status: status as string,
-      startDate: start,
-      endDate: end
-    });
+    // Get summary statistics
+    const summary = await storage.getTransactionsSummary(options);
     
     return res.json({
       success: true,
       transactions,
-      summary,
-      filters: {
-        userId,
-        type,
-        method,
-        status,
-        startDate: start?.toISOString(),
-        endDate: end?.toISOString(),
-        limit,
-        offset
-      }
+      summary
     });
   } catch (error) {
-    console.error('Error fetching admin transactions:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch transactions" });
+    console.error('Error getting transactions:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Clean up expired payments
-router.post("/payments/cleanup-expired", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+// Admin dashboard summary data
+router.get("/dashboard", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    const now = new Date();
-    let expiredCount = 0;
+    const users = Array.from(storage.getAllUsers().values());
+    const transactions = Array.from(storage.getAllUsers().values());
     
-    // Get all QR payments
-    const qrPaymentsMap = storage.getAllQrPayments();
-    for (const [id, payment] of qrPaymentsMap.entries()) {
-      // Skip if payment is not pending
-      if (payment.status !== 'pending') continue;
-      
-      // Check if payment is expired
-      if (payment.expiresAt && new Date(payment.expiresAt) < now) {
-        // Update payment status
-        await storage.updateQrPaymentStatus(payment.id, 'expired');
-        
-        // Update associated transaction
-        const transaction = await storage.getTransaction(payment.transactionId);
-        if (transaction) {
-          await storage.updateTransactionStatus(transaction.id, 'expired', undefined, {
-            ...transaction.metadata,
-            expiredAt: now.toISOString()
-          });
-          
-          // Add status history entry
-          await storage.addStatusHistoryEntry(transaction.id, 'expired', 'Payment expired');
-        }
-        
-        expiredCount++;
-      }
-    }
+    // QR payments
+    const activeQrPayments = Array.from(storage.getAllQrPayments().values())
+      .filter(qp => qp.status === 'pending' || qp.status === 'processing');
     
-    // Get all Telegram payments
-    const telegramPaymentsMap = storage.getAllTelegramPayments();
-    for (const [id, payment] of telegramPaymentsMap.entries()) {
-      // Skip if payment is not pending
-      if (payment.status !== 'pending') continue;
-      
-      // Check if payment is expired
-      if (payment.expiresAt && new Date(payment.expiresAt) < now) {
-        // Update payment status
-        await storage.updateTelegramPaymentStatus(payment.id, 'expired');
-        
-        // Update associated transaction
-        const transaction = await storage.getTransaction(payment.transactionId);
-        if (transaction) {
-          await storage.updateTransactionStatus(transaction.id, 'expired', undefined, {
-            ...transaction.metadata,
-            expiredAt: now.toISOString()
-          });
-          
-          // Add status history entry
-          await storage.addStatusHistoryEntry(transaction.id, 'expired', 'Payment expired');
-        }
-        
-        expiredCount++;
-      }
-    }
+    // Telegram payments
+    const activeTelegramPayments = Array.from(storage.getAllTelegramPayments().values())
+      .filter(tp => tp.status === 'pending' || tp.status === 'processing');
     
-    // Get all Manual payments
-    const manualPaymentsMap = storage.getAllManualPayments();
-    for (const [id, payment] of manualPaymentsMap.entries()) {
-      // Skip if payment is not pending
-      if (payment.status !== 'pending') continue;
-      
-      // Check if payment is expired
-      if (payment.expiresAt && new Date(payment.expiresAt) < now) {
-        // Update payment status
-        await storage.updateManualPaymentStatus(payment.id, 'expired');
-        
-        // Update associated transaction
-        const transaction = await storage.getTransaction(payment.transactionId);
-        if (transaction) {
-          await storage.updateTransactionStatus(transaction.id, 'expired', undefined, {
-            ...transaction.metadata,
-            expiredAt: now.toISOString()
-          });
-          
-          // Add status history entry
-          await storage.addStatusHistoryEntry(transaction.id, 'expired', 'Payment expired');
-        }
-        
-        expiredCount++;
-      }
-    }
+    // Manual payments requiring approval
+    const pendingManualPayments = Array.from(storage.getAllManualPayments().values())
+      .filter(mp => mp.status === 'pending');
     
     return res.json({
       success: true,
-      message: `Cleaned up ${expiredCount} expired payments`,
-      expiredCount
+      summary: {
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.status === 'active').length,
+        playerCount: users.filter(u => u.role === 'player').length,
+        agentCount: users.filter(u => u.role === 'agent').length,
+        adminCount: users.filter(u => u.role === 'admin').length,
+        totalTransactions: transactions.length,
+        activeQrPayments: activeQrPayments.length,
+        activeTelegramPayments: activeTelegramPayments.length,
+        pendingManualPayments: pendingManualPayments.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting dashboard data:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+// Maintenance endpoints
+router.post("/payments/cleanup-expired", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+  try {
+    await cleanupOrphanedRecords();
+    return res.json({
+      success: true,
+      message: 'Cleaned up expired/orphaned payments'
     });
   } catch (error) {
     console.error('Error cleaning up expired payments:', error);
-    return res.status(500).json({ success: false, message: "Failed to clean up expired payments" });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 
-// Process pending casino transfers
 router.post("/payments/process-pending-transfers", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
   try {
-    // Find all transactions with payment_completed status
-    const completedPayments = await storage.getTransactionsByUserId(0, {
-      status: "payment_completed"
-    });
-    
-    let processed = 0;
-    let succeeded = 0;
-    let failed = 0;
-    const results = [];
-    
-    // Process each transaction with payment_completed status
-    for (const transaction of completedPayments) {
-      // Skip if not a deposit or if already has a casinoTransferStatus that's not 'pending'
-      if (transaction.type !== 'deposit') continue;
-      
-      const metadata = transaction.metadata as Record<string, any> || {};
-      const casinoTransferStatus = metadata.casinoTransferStatus || 'pending';
-      
-      if (casinoTransferStatus !== 'pending') continue;
-      
-      processed++;
-      
-      try {
-        // Get user details from database
-        const user = await storage.getUser(transaction.userId);
-        if (!user || !user.casinoClientId) {
-          failed++;
-          results.push({
-            transactionId: transaction.id,
-            success: false,
-            message: "User not found or missing casino ID"
-          });
-          continue;
-        }
-        
-        // Try to complete the casino transfer
-        const transferResult = await casino747CompleteTopup(
-          user.casinoClientId.toString(),
-          parseFloat(transaction.amount),
-          transaction.paymentReference || transaction.uniqueId || `tx-${transaction.id}`
-        );
-        
-        // Update transaction with casino transfer result
-        await storage.updateTransactionMetadata(transaction.id, {
-          ...metadata,
-          casinoTransferStatus: 'completed',
-          casinoTransferResult: transferResult,
-          casinoTransferCompletedAt: new Date().toISOString()
-        });
-        
-        // Complete the transaction
-        await storage.completeTransaction(transaction.id);
-        
-        // Update user's casino balance
-        await storage.updateUserCasinoBalance(user.id, parseFloat(transaction.amount));
-        
-        succeeded++;
-        results.push({
-          transactionId: transaction.id,
-          success: true,
-          transferResult
-        });
-      } catch (error) {
-        // Update transaction metadata with error
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        await storage.updateTransactionMetadata(transaction.id, {
-          ...metadata,
-          casinoTransferStatus: 'failed',
-          casinoTransferError: errorMessage,
-          casinoTransferAttemptedAt: new Date().toISOString()
-        });
-        
-        failed++;
-        results.push({
-          transactionId: transaction.id,
-          success: false,
-          error: errorMessage
-        });
-      }
-    }
-    
+    const result = await processPendingCasinoTransfers();
     return res.json({
       success: true,
-      processed,
-      succeeded,
-      failed,
-      results
+      message: 'Processed pending casino transfers',
+      result
     });
   } catch (error) {
     console.error('Error processing pending transfers:', error);
-    return res.status(500).json({ success: false, message: "Failed to process pending transfers" });
+    return res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
-
-// Get agent downlines
-router.get("/agent/downlines", roleAuthMiddleware(['admin', 'agent']), async (req: Request, res: Response) => {
-  try {
-    const user = req.user;
-    if (!user) {
-      return res.status(401).json({ success: false, message: "User not authenticated" });
-    }
-    
-    // Only agents and admins can access this endpoint
-    const userType = user.userType || user.casinoUserType || 'user';
-    if (userType !== 'admin' && userType !== 'agent') {
-      return res.status(403).json({ success: false, message: "Access forbidden" });
-    }
-    
-    let downlineUsers = [];
-    
-    if (userType === 'admin') {
-      // Admins can see all users
-      const allUsers = storage.getAllUsers();
-      downlineUsers = Array.from(allUsers.values()).filter(u => u.id !== user.id);
-    } else {
-      // Agents can only see users for which they are the top manager
-      const allUsers = storage.getAllUsers();
-      downlineUsers = Array.from(allUsers.values()).filter(u => 
-        u.id !== user.id && u.topManager === user.username
-      );
-    }
-    
-    // Format the response
-    const formattedDownlines = downlineUsers.map(u => ({
-      id: u.id,
-      username: u.username,
-      casinoUsername: u.casinoUsername,
-      casinoClientId: u.casinoClientId,
-      casinoBalance: u.casinoBalance || "0.00",
-      balance: u.balance,
-      pendingBalance: u.pendingBalance || "0.00",
-      topManager: u.topManager,
-      immediateManager: u.immediateManager,
-      createdAt: u.createdAt
-    }));
-    
-    return res.json({
-      success: true,
-      downlines: formattedDownlines
-    });
-  } catch (error) {
-    console.error('Error fetching downlines:', error);
-    return res.status(500).json({ success: false, message: "Failed to fetch downline users" });
-  }
-});
-
-// Helper function
-async function casino747CompleteTopup(casinoId: string, amount: number, reference: string) {
-  try {
-    console.log(`🎰 Casino747: Completing topup for casino ID ${casinoId} with amount ${amount} and reference ${reference}`);
-    
-    // Find the user by casino ID
-    const user = await storage.getUserByCasinoClientId(parseInt(casinoId));
-    console.log(`👤 Looking up user with casino client ID: ${casinoId}`, user ? 
-      { found: true, username: user.username, casinoUsername: user.casinoUsername } : 
-      { found: false });
-    
-    if (!user) {
-      console.error(`❌ User with casino ID ${casinoId} not found`);
-      throw new Error(`User with casino ID ${casinoId} not found`);
-    }
-    
-    // If casinoUsername is not set but we have the username, use that 
-    // This fixes the issue where users have casinoClientId but missing casinoUsername
-    const effectiveCasinoUsername = user.casinoUsername || user.username;
-    if (!effectiveCasinoUsername) {
-      console.error(`❌ User with casino ID ${casinoId} has no username information`);
-      throw new Error(`User with casino ID ${casinoId} has no username information`);
-    }
-    
-    // If casinoUsername was missing, log this action
-    if (!user.casinoUsername && user.username) {
-      console.log(`⚠️ Using username "${user.username}" as fallback for missing casinoUsername`);
-      
-      // Mark this as a fallback case in transaction metadata
-      try {
-        // Find the associated transaction by reference
-        const transaction = await storage.getTransactionByUniqueId(reference) || 
-                          await storage.getTransactionByCasinoReference(reference);
-        
-        if (transaction) {
-          // Update transaction metadata to indicate fallback was used
-          await storage.updateTransactionMetadata(transaction.id, {
-            ...(transaction.metadata as Record<string, any> || {}),
-            usedUsernameFallback: true,
-            fallbackDetails: {
-              originalCasinoUsername: user.casinoUsername,
-              usedUsername: user.username,
-              timestamp: new Date().toISOString()
-            }
-          });
-          console.log(`✅ Updated transaction ${transaction.id} with fallback metadata`);
-        }
-      } catch (err) {
-        const metadataError = err as Error;
-        console.warn(`⚠️ Could not update transaction metadata: ${metadataError.message}`);
-      }
-      
-      // Try to automatically fix the user record for future transfers
-      try {
-        await storage.updateUserCasinoDetails(user.id, { 
-          casinoUsername: user.username
-        });
-        console.log(`✅ Updated user record with casinoUsername = ${user.username}`);
-      } catch (err) {
-        const updateError = err as Error;
-        console.warn(`⚠️ Could not update user record with casinoUsername: ${updateError.message}`);
-      }
-    }
-    
-    // Generate a unique nonce (using timestamp + random number)
-    const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    
-    // Create a detailed comment with nonce and DirectPay reference
-    const comment = `An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${nonce}. TMPay Web App Transaction.`;
-    
-    // Get the top manager for this user (use stored value or default to first allowed top manager)
-    const topManager = user.topManager || 'Marcthepogi';
-    console.log(`👑 Using top manager for transfer: ${topManager}`);
-    
-    console.log(`📝 Preparing casino transfer with params:`, {
-      amount,
-      clientId: parseInt(casinoId),
-      username: effectiveCasinoUsername,
-      currency: "PHP",
-      fromUser: topManager, // Use top manager instead of system
-      commentLength: comment.length,
-      nonce
-    });
-    
-    // Import required API
-    const { casino747Api } = require('../../casino747Api');
-    
-    // Complete the topup using the Casino747 API's transfer funds function
-    // Transfer from top manager to user instead of from system
-    const transferResult = await casino747Api.transferFunds(
-      amount,
-      parseInt(casinoId),
-      effectiveCasinoUsername,
-      "PHP", // Use PHP currency for GCash deposits
-      topManager, // Use top manager account to transfer funds
-      comment
-    );
-    
-    console.log(`✅ Casino747: Transfer completed successfully from ${topManager} to ${effectiveCasinoUsername}:`, {
-      user: effectiveCasinoUsername,
-      clientId: casinoId,
-      amount,
-      nonce,
-      fromManager: topManager,
-      transferResult: JSON.stringify(transferResult)
-    });
-    
-    return {
-      success: true,
-      newBalance: transferResult.newBalance || amount,
-      transactionId: transferResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`,
-      nonce: nonce,
-      fromManager: topManager
-    };
-  } catch (error) {
-    console.error('❌ Error completing topup with Casino747 API:', error);
-    console.error('Error details:', {
-      casinoId,
-      amount,
-      reference,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : 'No stack trace'
-    });
-    
-    // Try fallback with different top managers if the first one failed
-    try {
-      // Import required API
-      const { casino747Api } = require('../../casino747Api');
-      
-      console.log('🔄 Attempting fallback with alternative top managers');
-      const user = await storage.getUserByCasinoClientId(parseInt(casinoId));
-      
-      if (user) {
-        // Use the username as fallback for casinoUsername if it's not set
-        const effectiveCasinoUsername = user.casinoUsername || user.username;
-        
-        if (!effectiveCasinoUsername) {
-          console.error('❌ User has no username or casinoUsername for fallback');
-          throw new Error('User has no username or casinoUsername for fallback');
-        }
-        
-        // If using username as fallback in the error handler, track this in metadata
-        if (!user.casinoUsername && user.username) {
-          console.log(`⚠️ [FALLBACK] Using username "${user.username}" as fallback for missing casinoUsername`);
-          
-          // Mark this as a fallback case in transaction metadata
-          try {
-            // Find the associated transaction by reference
-            const transaction = await storage.getTransactionByUniqueId(reference) || 
-                              await storage.getTransactionByCasinoReference(reference);
-            
-            if (transaction) {
-              // Update transaction metadata to indicate fallback was used
-              await storage.updateTransactionMetadata(transaction.id, {
-                ...(transaction.metadata as Record<string, any> || {}),
-                usedUsernameFallback: true,
-                fallbackDetails: {
-                  originalCasinoUsername: user.casinoUsername,
-                  usedUsername: user.username,
-                  timestamp: new Date().toISOString(),
-                  fromErrorHandler: true
-                }
-              });
-              console.log(`✅ Updated transaction ${transaction.id} with fallback metadata (from error handler)`);
-            }
-          } catch (err) {
-            const metadataError = err as Error;
-            console.warn(`⚠️ Could not update transaction metadata in error handler: ${metadataError.message}`);
-          }
-        }
-        
-        // List of allowed top managers to try
-        const fallbackManagers = ['Marcthepogi', 'bossmarc747', 'teammarc'].filter(
-          manager => manager !== user.topManager
-        );
-        
-        for (const fallbackManager of fallbackManagers) {
-          console.log(`🔄 Attempting fallback transfer with manager: ${fallbackManager}`);
-          
-          try {
-            const fallbackNonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-            const fallbackComment = `FALLBACK: An amount of ${amount} PHP has been deposited via DirectPay (ID: ${reference}). Nonce: ${fallbackNonce}.`;
-            
-            const fallbackResult = await casino747Api.transferFunds(
-              amount,
-              parseInt(casinoId),
-              effectiveCasinoUsername,
-              "PHP",
-              fallbackManager,
-              fallbackComment
-            );
-            
-            console.log(`✅ Fallback transfer successful with manager ${fallbackManager}:`, fallbackResult);
-            
-            return {
-              success: true,
-              newBalance: fallbackResult.newBalance || amount,
-              transactionId: fallbackResult.transactionId || `TXN${Math.floor(Math.random() * 10000000)}`,
-              nonce: fallbackNonce,
-              fromManager: fallbackManager,
-              fallback: true
-            };
-          } catch (err) {
-            const fallbackError = err as Error;
-            console.error(`❌ Fallback with ${fallbackManager} failed:`, fallbackError.message);
-            // Continue to next fallback manager
-          }
-        }
-      }
-    } catch (err) {
-      const fallbackError = err as Error;
-      console.error('❌ All fallback attempts failed:', fallbackError.message);
-    }
-    
-    // Production error - don't use simulation fallbacks
-    console.error(`[CASINO TRANSFER ERROR] All attempts to transfer funds to ${casinoId} failed`);
-    throw new Error(`Failed to complete casino transfer after multiple attempts. Please try again later.`);
-  }
-}
 
 export default router;

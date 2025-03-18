@@ -1,267 +1,247 @@
 /**
- * API Field Mapping Schema
- * This file maps external API fields to our database fields for consistent integration
+ * Mapping configurations for external API fields to our database fields
+ * 
+ * This centralizes all API field mappings to ensure consistency across the application
  */
 
-// DirectPay API field mapping
+// DirectPay API Field Mappings
 export const directPayApiFields = {
-  // Response fields from DirectPay generateGCashQR
-  responseFields: {
-    // DirectPay API fields -> Our DB fields
-    reference: 'directPayReference', // DirectPay transaction reference
-    payUrl: 'payUrl',                // Payment URL for redirecting users
-    qrCodeData: 'qrCodeData',        // QR code data for display
-    transactionId: 'transactionId',  // DirectPay transaction ID
-    status: 'status',                // Payment status
-    amount: 'amount',                // Payment amount
-    expiresAt: 'expiresAt',          // Payment expiration timestamp
-  },
-  
-  // Request fields for DirectPay generateGCashQR
+  // Fields for outgoing requests to DirectPay
   requestFields: {
-    // Our fields -> DirectPay API fields
-    amount: 'amount',                // Payment amount
-    webhookUrl: 'webhook_url',       // Webhook URL for payment notifications
-    redirectUrl: 'redirect_url',     // Redirect URL after payment
-    reference: 'ref_id',             // Our reference ID
+    amount: "amount",
+    reference: "reference",
+    webhookUrl: "webhook_url",
+    redirectUrl: "redirect_url",
+    currency: "currency",
+    customerName: "customer_name",
+    customerEmail: "customer_email",
+    customerPhone: "customer_phone",
+    description: "description"
   },
   
-  // DirectPay webhook payload fields
+  // Fields from DirectPay responses
+  responseFields: {
+    transaction_id: "directPayReference",
+    pay_url: "payUrl",
+    qr_code: "qrCodeData",
+    amount: "amount",
+    reference: "reference",
+    status: "status",
+    expires_at: "expiresAt",
+    currency: "currency"
+  },
+  
+  // Fields from DirectPay webhooks
   webhookFields: {
-    // DirectPay webhook -> Our DB fields
-    reference: 'directPayReference', // DirectPay reference from webhook
-    status: 'status',                // Payment status
-    amount: 'amount',                // Payment amount
-    transactionId: 'directPayTransactionId', // Their transaction ID
-    processingFee: 'processingFee',  // Processing fee amount
-    netAmount: 'netAmount',          // Net amount after fees
-    metadata: 'metadata',            // Additional payment metadata
+    transaction_id: "directPayReference",
+    reference: "reference",
+    status: "status",
+    amount: "amount",
+    currency: "currency",
+    payment_method: "paymentMethod",
+    payment_details: "paymentDetails"
   },
   
-  // Payment statuses from DirectPay
+  // Status mapping from DirectPay to our system
   paymentStatusMapping: {
-    // DirectPay status -> Our status
-    'pending': 'pending',
-    'processing': 'processing',
-    'success': 'payment_completed',
-    'failed': 'failed',
-    'expired': 'expired',
-    'cancelled': 'cancelled',
+    "pending": "pending",
+    "processing": "processing",
+    "success": "payment_completed",
+    "failed": "failed",
+    "expired": "expired",
+    "cancelled": "cancelled"
   }
 };
 
-// 747 Casino API field mapping
+// 747 Casino API Field Mappings
 export const casino747ApiFields = {
-  // User fields mapping
+  // User details fields mapping
   userFields: {
-    // Casino API fields -> Our DB fields
-    clientId: 'casinoClientId',      // Casino client ID
-    username: 'casinoUsername',      // Casino username
-    balance: 'casinoBalance',        // Casino balance
-    topManager: 'topManager',        // Top manager username
-    immediateManager: 'immediateManager', // Immediate manager username
-    userType: 'casinoUserType',      // User type in casino system
-    token: 'casinoAuthToken',        // Casino authorization token
-    token_expiry: 'casinoAuthTokenExpiry', // Casino token expiry
-    status: 'casinoStatus',          // Account status in casino
+    clientId: "casinoClientId",
+    username: "casinoUsername",
+    balance: "casinoBalance",
+    topManager: "topManager",
+    immediateManager: "immediateManager",
+    userType: "casinoUserType",
+    hierarchyLevel: "hierarchyLevel"
   },
   
-  // Deposit request fields
+  // Deposit request fields mapping
   depositFields: {
-    // Our fields -> Casino API fields
-    casinoClientId: 'clientId',      // Casino client ID
-    amount: 'amount',                // Deposit amount
-    currency: 'currency',            // Currency code
-    paymentReference: 'reference',   // Payment reference
+    amount: "amount",
+    clientId: "clientId",
+    reference: "reference",
+    currency: "currency",
+    description: "description"
   },
   
-  // Deposit response fields
+  // Deposit response fields mapping
   depositResponseFields: {
-    // Casino API fields -> Our DB fields
-    status: 'casinoTransferStatus',  // Casino transfer status
-    reference: 'casinoReference',    // Casino reference
-    transactionId: 'casinoTransactionId', // Casino transaction ID
-    balanceBefore: 'casinoBalanceBefore', // Balance before transaction
-    balanceAfter: 'casinoBalanceAfter', // Balance after transaction
+    transactionId: "casinoTransactionId",
+    reference: "casinoReference",
+    status: "casinoTransferStatus",
+    amount: "amount",
+    currency: "currency",
+    description: "description",
+    timestamp: "casinoTimestamp"
   },
   
-  // Transfer fields
+  // Transfer request fields mapping
   transferFields: {
-    // Our fields -> Casino API fields
-    fromCasinoUsername: 'fromUsername', // Sender username
-    toClientId: 'toClientId',        // Recipient client ID
-    toUsername: 'toUsername',        // Recipient username
-    amount: 'amount',                // Transfer amount
-    currency: 'currency',            // Currency code
-    comment: 'comment',              // Transfer comment/description
+    amount: "amount",
+    fromUsername: "fromUsername",
+    fromClientId: "fromClientId",
+    toUsername: "toUsername",
+    toClientId: "toClientId",
+    currency: "currency",
+    reference: "reference",
+    comment: "comment"
   },
   
-  // Status mapping for casino transfers
+  // Status mapping from Casino to our system
   transferStatusMapping: {
-    // Casino status -> Our status
-    'pending': 'pending',
-    'processing': 'processing',
-    'success': 'completed',
-    'failed': 'failed',
-    'cancelled': 'cancelled'
+    "pending": "pending",
+    "processing": "processing",
+    "completed": "completed",
+    "failed": "failed",
+    "cancelled": "cancelled"
   }
 };
 
-// Paygram (Telegram) API field mapping
+// Paygram (Telegram) API Field Mappings
 export const paygramApiFields = {
-  // Response fields from Paygram
-  responseFields: {
-    // Paygram API fields -> Our DB fields
-    invoiceCode: 'telegramReference', // Telegram invoice code
-    paymentUrl: 'payUrl',            // Payment URL for redirecting
-    status: 'status',                // Payment status
-    amount: 'amount',                // Payment amount
-    currency: 'currency',            // Currency (PHPT, USDT)
-    expiresAt: 'expiresAt',          // Payment expiration timestamp
-  },
-  
-  // Request fields for Paygram
+  // Fields for outgoing requests to Paygram
   requestFields: {
-    // Our fields -> Paygram API fields
-    userId: 'userId',                // User ID in our system
-    amount: 'amount',                // Payment amount
-    currency: 'currency',            // Currency code
-    callbackUrl: 'callback_url',     // Callback URL for payment notifications
+    amount: "amount",
+    userId: "user_id",
+    currency: "currency",
+    callbackUrl: "callback_url",
+    description: "description"
   },
   
-  // Paygram webhook payload fields
+  // Fields from Paygram responses
+  responseFields: {
+    invoice_id: "invoiceId",
+    payment_url: "payUrl",
+    amount: "amount",
+    currency: "currency",
+    status: "status",
+    expires_at: "expiresAt"
+  },
+  
+  // Fields from Paygram webhooks
   webhookFields: {
-    // Paygram webhook -> Our DB fields
-    invoiceCode: 'telegramReference', // Telegram invoice code
-    status: 'status',                // Payment status
-    amount: 'amount',                // Payment amount
-    currency: 'currency',            // Currency code
-    sender: 'senderAddress',         // Sender wallet address
-    recipient: 'recipientAddress',   // Recipient wallet address
-    txHash: 'transactionHash',       // Blockchain transaction hash
+    invoice_id: "invoiceId",
+    external_id: "telegramReference",
+    status: "status",
+    amount: "amount",
+    currency: "currency",
+    user_id: "userId"
   },
   
-  // Payment statuses from Paygram
+  // Status mapping from Paygram to our system
   paymentStatusMapping: {
-    // Paygram status -> Our status
-    'pending': 'pending',
-    'processing': 'processing',
-    'completed': 'payment_completed',
-    'failed': 'failed',
-    'expired': 'expired',
+    "pending": "pending",
+    "processing": "processing",
+    "completed": "payment_completed",
+    "failed": "failed",
+    "cancelled": "cancelled"
   }
 };
 
-// Manual Payment field mapping
+// Manual Payment Field Mappings
 export const manualPaymentFields = {
-  // Request fields for manual payments
+  // Fields for manual payment requests
   requestFields: {
-    // Our fields -> Processing fields
-    amount: 'amount',                // Payment amount
-    paymentMethod: 'paymentMethod',  // Payment method (gcash, bank_transfer, etc.)
-    notes: 'notes',                  // Payment notes
-    reference: 'reference',          // Payment reference
-    proofImageUrl: 'proofImageUrl',  // URL to uploaded receipt image
-  },
-  
-  // Response fields from manual payments
-  responseFields: {
-    // Processing fields -> Our DB fields
-    id: 'manualPaymentId',           // Manual payment ID
-    status: 'status',                // Payment status
-    adminId: 'adminId',              // Admin who approved/rejected
-    adminNotes: 'adminNotes',        // Admin notes
-    transactionId: 'transactionId',  // Associated transaction ID
+    amount: "amount",
+    reference: "reference",
+    paymentMethod: "paymentMethod",
+    notes: "notes",
+    proofImageUrl: "proofImageUrl",
+    senderName: "senderName",
+    senderAccount: "senderAccount",
+    currency: "currency",
+    receiverDetails: "receiverDetails"
   },
   
   // Status mapping for manual payments
-  statusMapping: {
-    // Admin status -> Transaction status
-    'pending': 'pending',
-    'approved': 'payment_completed',
-    'rejected': 'failed',
-  },
-  
-  // Payment method types
-  paymentMethodTypes: [
-    'gcash',
-    'paymaya',
-    'bank_transfer',
-    'remittance',
-    'other'
-  ]
+  paymentStatusMapping: {
+    "pending": "pending",
+    "processing": "processing",
+    "completed": "payment_completed",
+    "failed": "failed",
+    "expired": "expired"
+  }
 };
 
-// Shared transaction status mapping
+// Transaction Status Mapping for all payment types
 export const transactionStatusMapping = {
-  // Payment status -> Transaction status
-  'pending': 'pending',
-  'processing': 'processing',
-  'payment_completed': 'payment_completed',  // Payment received but casino transfer may be pending
-  'completed': 'completed',                  // Full transaction completed including casino transfer
-  'failed': 'failed',
-  'expired': 'expired',
-  'cancelled': 'cancelled',
-  'refunded': 'refunded',
-  'disputed': 'disputed',
+  // Standard status values used across the application
+  "created": "Transaction created",
+  "pending": "Payment pending",
+  "processing": "Payment processing",
+  "payment_completed": "Payment completed",
+  "completed": "Transaction completed",
+  "failed": "Transaction failed",
+  "expired": "Payment expired",
+  "cancelled": "Transaction cancelled",
+  "refunded": "Transaction refunded",
+  "disputed": "Transaction disputed"
 };
 
-// Transaction timeline status mapping
+// Transaction Timeline Status Details
 export const transactionTimelineStatusMapping = {
-  'created': {
-    label: 'Transaction Created',
-    description: 'Payment request initiated'
+  // Detailed information for transaction timeline display
+  "created": {
+    label: "Transaction Created",
+    description: "Transaction has been created and is awaiting payment"
   },
-  'pending': {
-    label: 'Payment Pending',
-    description: 'Waiting for payment confirmation'
+  "pending": {
+    label: "Payment Pending",
+    description: "Waiting for payment confirmation"
   },
-  'processing': {
-    label: 'Processing Payment',
-    description: 'Payment is being processed'
+  "processing": {
+    label: "Payment Processing",
+    description: "Payment is being processed"
   },
-  'payment_completed': {
-    label: 'Payment Completed',
-    description: 'Payment received and confirmed'
+  "payment_completed": {
+    label: "Payment Completed",
+    description: "Payment has been received and confirmed"
   },
-  'casino_transfer_pending': {
-    label: 'Casino Transfer Pending',
-    description: 'Payment completed, waiting for casino transfer'
+  "casino_transfer_initiated": {
+    label: "Casino Transfer Initiated",
+    description: "Transferring funds to casino balance"
   },
-  'casino_transfer_processing': {
-    label: 'Casino Transfer Processing',
-    description: 'Casino transfer in progress'
+  "casino_transfer_completed": {
+    label: "Casino Transfer Completed",
+    description: "Funds successfully transferred to casino balance"
   },
-  'casino_transfer_completed': {
-    label: 'Casino Transfer Completed',
-    description: 'Funds successfully transferred to casino'
+  "casino_transfer_failed": {
+    label: "Casino Transfer Failed",
+    description: "Failed to transfer funds to casino balance"
   },
-  'casino_transfer_failed': {
-    label: 'Casino Transfer Failed',
-    description: 'Failed to transfer funds to casino'
+  "completed": {
+    label: "Transaction Completed",
+    description: "Transaction has been completed successfully"
   },
-  'completed': {
-    label: 'Transaction Completed',
-    description: 'Transaction fully completed'
+  "failed": {
+    label: "Transaction Failed",
+    description: "Transaction has failed"
   },
-  'failed': {
-    label: 'Transaction Failed',
-    description: 'Transaction failed to complete'
+  "expired": {
+    label: "Payment Expired",
+    description: "Payment time has expired"
   },
-  'expired': {
-    label: 'Transaction Expired',
-    description: 'Payment request expired'
+  "cancelled": {
+    label: "Transaction Cancelled",
+    description: "Transaction has been cancelled"
   },
-  'cancelled': {
-    label: 'Transaction Cancelled',
-    description: 'Transaction cancelled by user or system'
+  "refunded": {
+    label: "Transaction Refunded",
+    description: "Transaction has been refunded to customer"
   },
-  'refunded': {
-    label: 'Transaction Refunded',
-    description: 'Payment was refunded'
-  },
-  'disputed': {
-    label: 'Transaction Disputed',
-    description: 'Transaction under dispute or investigation'
+  "disputed": {
+    label: "Transaction Disputed",
+    description: "Transaction is under dispute"
   }
 };

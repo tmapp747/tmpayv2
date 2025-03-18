@@ -8,6 +8,17 @@ export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
 export const supportedUserRoles = ['player', 'agent', 'admin'];
 export const supportedUserStatuses = ['active', 'suspended', 'inactive', 'pending_review'];
 
+// Define available resources and their actions for permissions
+export const resourceActionMap = {
+  users: ['read', 'create', 'update', 'delete', 'approve', 'reject', 'suspend', 'manage'],
+  transactions: ['read', 'create', 'update', 'delete', 'approve', 'reject', 'manage'],
+  deposits: ['read', 'create', 'approve', 'reject', 'manage'],
+  withdrawals: ['read', 'create', 'approve', 'reject', 'manage'],
+  reports: ['read', 'create', 'export', 'share'],
+  settings: ['read', 'update', 'manage'],
+  casino: ['connect', 'transfer', 'sync', 'manage']
+};
+
 // Role Permissions schema - Defines what each role can do
 export const rolePermissions = pgTable("role_permissions", {
   id: serial("id").primaryKey(),
@@ -18,6 +29,13 @@ export const rolePermissions = pgTable("role_permissions", {
 });
 
 // User schema
+// Insert schema for role permissions
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -73,6 +91,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -80,7 +99,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 }).extend({
   email: z.string().email(),
   casinoId: z.string().nonempty(),
-  preferredCurrency: z.enum(supportedCurrencies)
+  preferredCurrency: z.enum(['PHP', 'PHPT', 'USDT']).default('PHP')
 });
 
 // Transaction ledger schema with enhanced tracking and analytics capabilities
@@ -299,7 +318,7 @@ export const updateBalanceSchema = z.object({
 });
 
 // Multi-currency schemas
-export const currencySchema = z.enum(supportedCurrencies as [string, ...string[]]);
+export const currencySchema = z.enum(['PHP', 'PHPT', 'USDT']);
 
 export const updatePreferredCurrencySchema = z.object({
   userId: z.number(),
@@ -380,24 +399,6 @@ export const getUserPreferenceSchema = z.object({
 // Type definitions for the role management system
 export type UserRole = 'player' | 'agent' | 'admin';
 export type UserStatus = 'active' | 'suspended' | 'inactive' | 'pending_review';
-
-// Role permissions schema with predefined resources and actions
-export const resourceActionMap = {
-  users: ['read', 'create', 'update', 'delete', 'manage'],
-  transactions: ['read', 'create', 'update', 'delete', 'approve', 'reject'],
-  deposits: ['create', 'read', 'update', 'approve', 'reject', 'manage'],
-  withdrawals: ['create', 'read', 'update', 'approve', 'reject', 'manage'],
-  reports: ['read', 'create', 'export'],
-  settings: ['read', 'update'],
-  casino: ['connect', 'transfer', 'sync', 'manage']
-};
-
-// Insert schema for role permissions
-export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

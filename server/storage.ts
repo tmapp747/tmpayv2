@@ -46,6 +46,19 @@ export interface IStorage {
   updateUserBalance(id: number, amount: number): Promise<User>;
   updateUserPendingBalance(id: number, amount: number): Promise<User>;
   getAllUsers(): Map<number, User>;
+  
+  // User role operations
+  updateUserRole(id: number, role: UserRole): Promise<User>;
+  updateUserStatus(id: number, status: UserStatus, reason?: string): Promise<User>;
+  getUsersByRole(role: UserRole): Promise<User[]>;
+  getUsersByStatus(status: UserStatus): Promise<User[]>;
+  updateUserLastLogin(id: number, ip?: string): Promise<User>;
+  
+  // Role permissions operations
+  getRolePermissions(role: string): Promise<string[]>;
+  updateRolePermissions(role: string, permissions: string[]): Promise<void>;
+  checkPermission(userId: number, permission: string): Promise<boolean>;
+  
   // Casino user operations
   updateUserCasinoDetails(id: number, casinoDetails: Partial<User>): Promise<User>;
   updateUserCasinoBalance(id: number, amount: number): Promise<User>;
@@ -265,6 +278,92 @@ export class MemStorage implements IStorage {
   // Returns all users
   getAllUsers(): Map<number, User> {
     return this.users;
+  }
+  
+  // User role operations
+  async updateUserRole(id: number, role: UserRole): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      role,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async updateUserStatus(id: number, status: UserStatus, reason?: string): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      status,
+      statusReason: reason || null,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async getUsersByRole(role: UserRole): Promise<User[]> {
+    return Array.from(this.users.values()).filter(user => user.role === role);
+  }
+  
+  async getUsersByStatus(status: UserStatus): Promise<User[]> {
+    return Array.from(this.users.values()).filter(user => user.status === status);
+  }
+  
+  async updateUserLastLogin(id: number, ip?: string): Promise<User> {
+    const user = await this.getUser(id);
+    if (!user) throw new Error(`User with ID ${id} not found`);
+    
+    const updatedUser = { 
+      ...user, 
+      lastLoginAt: new Date(),
+      lastLoginIp: ip || null,
+      updatedAt: new Date() 
+    };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  // Role permissions operations
+  async getRolePermissions(role: string): Promise<string[]> {
+    // In memory implementation we'll return default permissions based on role
+    const defaultPermissions = {
+      'admin': [
+        'users.view', 'users.create', 'users.edit', 'users.delete',
+        'transactions.view', 'transactions.create', 'transactions.update', 'transactions.delete',
+        'reports.view', 'settings.edit', 'casino.transfer', 'casino.view',
+        'payments.approve', 'payments.reject'
+      ],
+      'agent': [
+        'users.view', 'transactions.view', 'reports.view', 
+        'casino.view', 'payments.view'
+      ],
+      'player': [
+        'transactions.view', 'casino.transfer'
+      ]
+    };
+    
+    return defaultPermissions[role as keyof typeof defaultPermissions] || [];
+  }
+  
+  async updateRolePermissions(role: string, permissions: string[]): Promise<void> {
+    // For in-memory implementation, this is a no-op
+    console.log(`[MemStorage] Updating role permissions for ${role}:`, permissions);
+    // In a real implementation, we would store these in a Map
+  }
+  
+  async checkPermission(userId: number, permission: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    
+    const userPermissions = await this.getRolePermissions(user.role);
+    return userPermissions.includes(permission);
   }
 
   // Casino user operations
