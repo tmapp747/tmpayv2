@@ -772,7 +772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Token refresh endpoint
   // Modified to use session-based authentication
   // Route adapter to forward /api/auth/refresh-token to Passport's expected endpoint
-  app.post("/api/auth/refresh-token", (req: Request, res: Response, next: Function) => {
+  app.post("/api/auth/refresh-token", (req: Request, res: Response, next: NextFunction) => {
     console.log("Route adapter: Forwarding /api/auth/refresh-token to /api/refresh-token (Passport)");
     req.url = "/api/refresh-token"; // Change the URL to the one Passport expects
     next(); // Forward to next matching route
@@ -848,7 +848,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+  // Route adapter to forward /api/auth/logout to Passport's expected endpoint
+  app.post("/api/auth/logout", (req: Request, res: Response, next: Function) => {
+    console.log("Route adapter: Forwarding /api/auth/logout to /api/logout (Passport)");
+    req.url = "/api/logout"; // Change the URL to the one Passport expects
+    next(); // Forward to next matching route
+  });
+  
+  // Original logout implementation
+  app.post("/api/logout", async (req: Request, res: Response) => {
     try {
       // Try to get the authenticated user, but don't require it
       // This allows users to logout even if their token is invalid
