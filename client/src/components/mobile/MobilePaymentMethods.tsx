@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   PlusCircle, CreditCard, Trash2, Check, 
-  Wallet, Building, Plus, X, Star
+  Wallet, Building, Plus, X, Star,
+  ChevronDown, Edit3, Smartphone, Key, FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -53,47 +54,54 @@ interface PaymentMethodCardProps {
 const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, onSetDefault, onDelete }) => {
   return (
     <motion.div 
-      className="bg-white/5 backdrop-blur-md rounded-xl p-3 mt-3"
+      className="bg-white/5 backdrop-blur-md rounded-xl p-4 mt-3 shadow-md"
       whileTap={{ scale: 0.98 }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
             method.type === 'bank' ? 'bg-gradient-to-br from-blue-500 to-purple-500' :
             method.type === 'wallet' ? 'bg-gradient-to-br from-green-500 to-teal-500' :
             method.type === 'crypto' ? 'bg-gradient-to-br from-orange-500 to-yellow-500' :
             'bg-gradient-to-br from-gray-500 to-slate-500'
           }`}>
-            {method.type === 'bank' && <Building className="h-5 w-5 text-white" />}
-            {method.type === 'wallet' && <Wallet className="h-5 w-5 text-white" />}
-            {method.type === 'crypto' && <CreditCard className="h-5 w-5 text-white" />}
+            {method.type === 'bank' && <Building className="h-6 w-6 text-white" />}
+            {method.type === 'wallet' && <Wallet className="h-6 w-6 text-white" />}
+            {method.type === 'crypto' && <CreditCard className="h-6 w-6 text-white" />}
             {(method.type !== 'bank' && method.type !== 'wallet' && method.type !== 'crypto') && 
-             <CreditCard className="h-5 w-5 text-white" />}
+             <CreditCard className="h-6 w-6 text-white" />}
           </div>
-          <div>
-            <h3 className="font-medium text-white">{method.name}</h3>
-            <p className="text-xs text-gray-400">{method.details}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium text-white truncate">{method.name}</h3>
+            <p className="text-sm text-gray-400 truncate">{method.details}</p>
+            <div className="mt-1">
+              <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full inline-block">
+                {method.type === 'bank' ? 'Bank Account' :
+                 method.type === 'wallet' ? 'E-Wallet' :
+                 method.type === 'crypto' ? 'Crypto Wallet' : 'Other'}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-2 ml-3 shrink-0">
           {method.isDefault ? (
-            <div className="bg-blue-500 rounded-full p-1 mr-2">
+            <div className="bg-blue-600 rounded-full p-1.5">
               <Star className="h-4 w-4 text-white" />
             </div>
           ) : (
             <button 
               onClick={() => onSetDefault(method.id)} 
-              className="text-blue-400 mr-2 hover:text-blue-300"
+              className="text-blue-400 hover:text-blue-300 bg-blue-950/50 p-1.5 rounded-full"
             >
               <Star className="h-4 w-4" />
             </button>
           )}
           <button 
             onClick={() => onDelete(method.id)} 
-            className="text-red-400 hover:text-red-300"
+            className="text-red-400 hover:text-red-300 bg-red-950/50 p-1.5 rounded-full"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -162,91 +170,117 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 50 }}
-      className="bg-white/10 backdrop-blur-md rounded-xl p-4 mt-3"
+      className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 backdrop-blur-md rounded-xl p-5 mt-3 shadow-lg"
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium text-white">Add Payment Method</h3>
-        <button onClick={onCancel} className="text-white/70">
+      <div className="flex justify-between items-center mb-5 border-b border-white/10 pb-3">
+        <h3 className="text-lg font-medium text-white">Add Banking Method</h3>
+        <button 
+          onClick={onCancel} 
+          className="text-white/70 hover:text-white transition-colors bg-white/5 rounded-full p-1.5"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
       
       <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-white/80 mb-1">Method Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="bank">Bank Account</option>
-              <option value="wallet">E-Wallet</option>
-              <option value="crypto">Crypto Wallet</option>
-              <option value="other">Other</option>
-            </select>
+            <label className="block text-sm font-medium text-white/90 mb-1.5">Method Type</label>
+            <div className="relative">
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              >
+                <option value="bank">Bank Account</option>
+                <option value="wallet">E-Wallet</option>
+                <option value="crypto">Crypto Wallet</option>
+                <option value="other">Other</option>
+              </select>
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <ChevronDown className="h-5 w-5 text-white/70" />
+              </div>
+            </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-white/80 mb-1">Payment Method</label>
-            <select
-              value={methodId || ''}
-              onChange={(e) => setMethodId(parseInt(e.target.value))}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select a payment method</option>
-              {availablePaymentMethods
-                .filter(method => method.type === type && method.isActive)
-                .map(method => (
-                  <option key={method.id} value={method.id}>
-                    {method.name}
-                  </option>
-                ))}
-            </select>
+            <label className="block text-sm font-medium text-white/90 mb-1.5">Payment Provider</label>
+            <div className="relative">
+              <select
+                value={methodId || ''}
+                onChange={(e) => setMethodId(parseInt(e.target.value))}
+                className="w-full bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
+              >
+                <option value="">Select a payment method</option>
+                {availablePaymentMethods
+                  .filter(method => method.type === type && method.isActive)
+                  .map(method => (
+                    <option key={method.id} value={method.id}>
+                      {method.name}
+                    </option>
+                  ))}
+              </select>
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <ChevronDown className="h-5 w-5 text-white/70" />
+              </div>
+            </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-white/80 mb-1">Name / Alias</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., My Personal Bank Account"
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="block text-sm font-medium text-white/90 mb-1.5">Name / Alias</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., My Personal Bank Account"
+                className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                <Edit3 className="h-5 w-5 text-white/50" />
+              </div>
+            </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-white/80 mb-1">
+            <label className="block text-sm font-medium text-white/90 mb-1.5">
               {type === 'bank' ? 'Account Number' : 
                type === 'wallet' ? 'Wallet Number/ID' : 
                type === 'crypto' ? 'Wallet Address' : 'Details'}
             </label>
-            <input
-              type="text"
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={
-                type === 'bank' ? 'Enter account number...' :
-                type === 'wallet' ? 'Enter wallet number/ID...' :
-                type === 'crypto' ? 'Enter wallet address...' : 'Enter details...'
-              }
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                placeholder={
+                  type === 'bank' ? 'Enter account number...' :
+                  type === 'wallet' ? 'Enter wallet number/ID...' :
+                  type === 'crypto' ? 'Enter wallet address...' : 'Enter details...'
+                }
+                className="w-full bg-white/10 border border-white/10 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                {type === 'bank' ? <CreditCard className="h-5 w-5 text-white/50" /> :
+                 type === 'wallet' ? <Smartphone className="h-5 w-5 text-white/50" /> :
+                 type === 'crypto' ? <Key className="h-5 w-5 text-white/50" /> :
+                 <FileText className="h-5 w-5 text-white/50" />}
+              </div>
+            </div>
           </div>
           
-          <div className="flex space-x-3 pt-2">
+          <div className="flex space-x-3 pt-3">
             <button
               type="button"
               onClick={onCancel}
-              className="flex-1 py-2 border border-white/20 rounded-lg text-white font-medium"
+              className="flex-1 py-3 border border-white/20 rounded-lg text-white font-medium hover:bg-white/5 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={addPaymentMethodMutation.isPending}
-              className="flex-1 py-2 bg-blue-600 rounded-lg text-white font-medium flex justify-center items-center"
+              className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg text-white font-medium flex justify-center items-center shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all"
             >
               {addPaymentMethodMutation.isPending ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -357,13 +391,13 @@ export default function MobilePaymentMethods() {
   return (
     <div className="space-y-4 pb-6">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-white">Payment Methods</h2>
+        <h2 className="text-lg font-medium text-white">Banking Management</h2>
         {!showAddForm && (
           <button 
             onClick={() => setShowAddForm(true)}
-            className="flex items-center justify-center text-white"
+            className="flex items-center justify-center text-white bg-blue-600/80 rounded-lg px-3 py-1 text-sm"
           >
-            <PlusCircle className="h-5 w-5 mr-1" />
+            <PlusCircle className="h-4 w-4 mr-1.5" />
             <span>Add</span>
           </button>
         )}
