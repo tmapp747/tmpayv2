@@ -4,13 +4,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { 
   ArrowDownToLine, ArrowUpRight, CreditCard, 
-  ChevronRight, Plus, Search, Filter, History
+  ChevronRight, Plus, Search, Filter, History, RefreshCw
 } from 'lucide-react';
 import NewBalanceCard from '@/components/NewBalanceCard';
 import BottomNavBar from '@/components/navigation/BottomNavBar';
 import MobileTransactionHistory from '@/components/mobile/MobileTransactionHistory';
 import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods';
 import { formatCurrency } from '@/lib/utils';
+import { Transaction } from '@/lib/types';
 
 export default function MobileWallet() {
   const [activeTab, setActiveTab] = useState<'history' | 'cards'>('history');
@@ -20,7 +21,14 @@ export default function MobileWallet() {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   
-  // Enhanced with real-time transaction history
+  // Fetch transactions from API
+  const { data: transactionsData, isLoading, error } = useQuery<{
+    success: boolean;
+    transactions: Transaction[];
+  }>({
+    queryKey: ['/api/transactions'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
   
   // Handle pull-to-refresh interaction
   const onTouchStart = (e: React.TouchEvent) => {
@@ -201,8 +209,25 @@ export default function MobileWallet() {
               transition={{ duration: 0.2 }}
               className="px-4 pt-2 space-y-1"
             >
-              {/* Use the enhanced MobileTransactionHistory component */}
-              <MobileTransactionHistory />
+              {/* Transaction loading state */}
+              {isLoading ? (
+                <div className="flex justify-center items-center p-8">
+                  <RefreshCw className="h-6 w-6 text-blue-400 animate-spin" />
+                  <span className="ml-2 text-blue-300">Loading transactions...</span>
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center p-8 text-red-300">
+                  <p>Failed to load transactions</p>
+                  <button 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/transactions'] })}
+                    className="mt-2 text-blue-400 underline"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <MobileTransactionHistory transactions={transactionsData?.transactions || []} />
+              )}
             </motion.div>
           ) : (
             <motion.div 
