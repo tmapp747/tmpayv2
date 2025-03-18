@@ -2157,12 +2157,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // This is useful for cases where the webhook might not have been received
         if (qrPayment.status === "pending") {
           try {
-            // Query DirectPay API for the latest payment status
-            const directPayStatus = await directPayApi.checkPaymentStatus(qrPayment.directPayReference || referenceId);
+            // Query DirectPay API for the latest payment status using the new GCash status endpoint
+            // This provides more detailed status information about GCash payments
+            const directPayStatus = await directPayApi.checkGCashStatus(qrPayment.directPayReference || referenceId);
             
             // If DirectPay says the payment is completed or failed, update our status
             if (directPayStatus.status !== "pending") {
-              console.log(`Payment status from DirectPay: ${directPayStatus.status} for reference ${referenceId}`);
+              console.log(`Payment status from DirectPay GCash API: ${directPayStatus.status} for reference ${referenceId}`);
+              console.log(`Payment details: ${JSON.stringify(directPayStatus.details || {})}`);
               
               // Update our QR payment status
               await storage.updateQrPaymentStatus(qrPayment.id, directPayStatus.status);
@@ -2175,11 +2177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const user = await storage.getUser(qrPayment.userId);
                 
                 if (transaction && user) {
-                  // Update transaction status
+                  // Update transaction status with additional details from the GCash API
                   await storage.updateTransactionStatus(
                     transaction.id, 
                     "completed",
-                    directPayStatus.transactionId
+                    directPayStatus.transactionId,
+                    { gcashDetails: directPayStatus.details }
                   );
                   
                   // Call 747 Casino API to complete the topup

@@ -363,7 +363,7 @@ class DirectPayApi {
   }
 
   /**
-   * Check the status of a payment
+   * Check the status of a payment using the original endpoint
    */
   async checkPaymentStatus(reference: string): Promise<{
     status: string;
@@ -411,6 +411,89 @@ class DirectPayApi {
         status: 'expired',
         transactionId: reference,
         error: true
+      };
+    }
+  }
+  
+  /**
+   * Check the status of a GCash payment using the new dedicated endpoint
+   * Uses the /gcash_cashin/check_status endpoint for more detailed status information
+   * Example curl:
+   * curl --location 'https://direct-payph.com/api/gcash_cashin/check_status' \
+   *      --header 'Authorization: Bearer TOKEN' \
+   *      --header 'Content-Type: application/json' \
+   *      --header 'Cookie: PHPSESSID=sessionid' \
+   *      --data '{ "refId": "ref_a41ae11397fde96d"}'
+   */
+  async checkGCashStatus(reference: string): Promise<{
+    status: string;
+    transactionId?: string;
+    details?: any;
+  }> {
+    try {
+      const token = await this.authenticate();
+
+      const statusEndpoint = `${this.baseUrl}/gcash_cashin/check_status`;
+      console.log('GCash status check endpoint:', statusEndpoint);
+      console.log('Checking status for reference:', reference);
+      
+      // Apply rate limiting before making the request
+      await this.rateLimiter.throttle();
+      
+      const response = await axios.post(statusEndpoint, {
+        refId: reference
+      }, {
+        httpsAgent,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Cookie': this.phpSessionId ? `PHPSESSID=${this.phpSessionId}` : ''
+        },
+        withCredentials: true,
+        timeout: 30000 // 30 second timeout
+      });
+
+      console.log('GCash status check response:', JSON.stringify(response.data, null, 2));
+
+      // Extract and normalize the status
+      let status = 'pending';
+      
+      // Check various response formats to extract status
+      const responseStatus = 
+        response.data.status ||
+        (response.data.data && response.data.data.status) ||
+        (response.data.payment && response.data.payment.status);
+      
+      if (responseStatus) {
+        if (['completed', 'success', 'paid', 'successful'].includes(responseStatus.toLowerCase())) {
+          status = 'completed';
+        } else if (['failed', 'canceled', 'cancelled', 'rejected', 'expired'].includes(responseStatus.toLowerCase())) {
+          status = 'failed';
+        } else if (['pending', 'processing', 'waiting'].includes(responseStatus.toLowerCase())) {
+          status = 'pending';
+        }
+      }
+
+      // Extract transaction ID if available
+      const transactionId = 
+        response.data.transactionId ||
+        response.data.transaction_id ||
+        (response.data.data && response.data.data.transactionId) ||
+        (response.data.payment && response.data.payment.transactionId) ||
+        reference;
+
+      return {
+        status,
+        transactionId,
+        details: response.data // Return full response for detailed processing
+      };
+    } catch (error) {
+      console.error('DirectPay GCash status check error:', error);
+      // Return pending status for resilience
+      return {
+        status: 'pending',
+        transactionId: reference,
+        details: { error: 'API error during status check' }
       };
     }
   }
