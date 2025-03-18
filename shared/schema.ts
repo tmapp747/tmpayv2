@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean, numeric, json, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, numeric, json, date, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -38,6 +38,7 @@ export const insertRolePermissionSchema = createInsertSchema(rolePermissions).om
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull(), // Email is now required
@@ -107,6 +108,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 // Transaction ledger schema with enhanced tracking and analytics capabilities
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
   userId: integer("user_id").notNull(),
   // Core transaction fields
   type: text("type").notNull(), // 'deposit', 'withdraw', 'transfer', 'casino_deposit', 'casino_withdraw', 'exchange', 'refund'
@@ -165,6 +167,7 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 // QR Payment schema
 export const qrPayments = pgTable("qr_payments", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
   userId: integer("user_id").notNull(),
   transactionId: integer("transaction_id").notNull(),
   qrCodeData: text("qr_code_data").notNull(),
@@ -180,6 +183,7 @@ export const qrPayments = pgTable("qr_payments", {
 // Telegram PayBot Payment schema
 export const telegramPayments = pgTable("telegram_payments", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
   userId: integer("user_id").notNull(),
   transactionId: integer("transaction_id").notNull(),
   payUrl: text("pay_url").notNull(),       // URL provided by Telegram PayBot
@@ -196,6 +200,7 @@ export const telegramPayments = pgTable("telegram_payments", {
 // Manual Payment schema (for receipt uploads)
 export const manualPayments = pgTable("manual_payments", {
   id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
   userId: integer("user_id").notNull(),
   transactionId: integer("transaction_id").notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
@@ -260,18 +265,21 @@ export const userPaymentMethods = pgTable("user_payment_methods", {
 
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
   id: true,
+  uuid: true, // UUID will be auto-generated
   createdAt: true,
   updatedAt: true,
 });
 
 export const insertTelegramPaymentSchema = createInsertSchema(telegramPayments).omit({
   id: true,
+  uuid: true, // UUID will be auto-generated
   createdAt: true,
   updatedAt: true,
 });
 
 export const insertManualPaymentSchema = createInsertSchema(manualPayments).omit({
   id: true,
+  uuid: true, // UUID will be auto-generated
   createdAt: true,
   updatedAt: true,
 });
