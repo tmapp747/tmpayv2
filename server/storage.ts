@@ -2685,9 +2685,8 @@ export class DbStorage extends MemStorage {
         ? transaction.metadata 
         : null;
 
-      // Insert into the database
+      // Insert into the database - omit ID to let PostgreSQL auto-increment
       const inserted = await this.dbInstance.insert(transactions).values({
-        id: transaction.id,
         userId: transaction.userId,
         type: transaction.type,
         method: transaction.method,
@@ -2716,6 +2715,8 @@ export class DbStorage extends MemStorage {
       }).returning();
       
       if (inserted && inserted[0]) {
+        // Update the in-memory transaction ID to match the database auto-increment ID
+        transaction.id = inserted[0].id;
         console.log(`Created transaction in database: ID=${transaction.id}, Type=${transaction.type}, Amount=${transaction.amount}`);
       }
     } catch (error) {
@@ -3059,6 +3060,8 @@ export class DbStorage extends MemStorage {
       }).returning();
       
       if (inserted && inserted[0]) {
+        // Update the in-memory QR payment ID to match the database auto-increment ID
+        qrPayment.id = inserted[0].id;
         console.log(`Successfully created QR payment in database: ID=${qrPayment.id}, Amount=${qrPayment.amount}, Reference=${qrPayment.directPayReference}`);
       }
     } catch (error) {
@@ -3198,6 +3201,8 @@ export class DbStorage extends MemStorage {
       }).returning();
       
       if (inserted && inserted[0]) {
+        // Update the in-memory Telegram payment ID to match the database auto-increment ID
+        telegramPayment.id = inserted[0].id;
         console.log(`Successfully created Telegram payment in database: ID=${telegramPayment.id}, Amount=${telegramPayment.amount}, Reference=${telegramPayment.telegramReference}`);
       }
     } catch (error) {
