@@ -8,7 +8,11 @@ import {
   userPreferences,
   paymentMethods,
   userPaymentMethods,
+  rolePermissions,
   supportedCurrencies,
+  supportedUserRoles,
+  supportedUserStatuses,
+  resourceActionMap,
   type User, 
   type InsertUser,
   type Transaction,
@@ -26,7 +30,9 @@ import {
   type UserPaymentMethod,
   type InsertUserPaymentMethod,
   type Currency,
-  type CurrencyBalances
+  type CurrencyBalances,
+  type UserRole,
+  type UserStatus
 } from "@shared/schema";
 import { DbStorage } from "./DbStorage";
 
