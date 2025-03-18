@@ -71,6 +71,9 @@ export function getStatusColor(status: string): string {
     case "completed":
     case "success":
       return "border-l-green-500";
+    case "payment_completed":
+      // Special gradient-like styling for intermediate payment_completed state
+      return "border-l-green-400 bg-gradient-to-r from-transparent to-yellow-500/5";
     case "pending":
     case "processing":
     case "waiting":

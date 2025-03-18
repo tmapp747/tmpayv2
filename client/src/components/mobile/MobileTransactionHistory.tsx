@@ -70,8 +70,11 @@ export default function MobileTransactionHistory() {
       case "success":
       case "payment_completed": // New status for when payment is completed but casino transfer is pending
         return (
-          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-green-500/20">
-            <Check size={10} className="text-green-500" />
+          <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gradient-to-r from-green-500/30 to-yellow-500/30 border border-green-500/20">
+            <div className="relative">
+              <Check size={8} className="text-green-500" />
+              <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse"></div>
+            </div>
           </div>
         );
       case "failed":
