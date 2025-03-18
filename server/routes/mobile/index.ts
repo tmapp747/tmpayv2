@@ -265,6 +265,91 @@ router.post("/user/preferred-currency", authMiddleware, async (req: Request, res
   }
 });
 
+// Currency exchange endpoint
+router.post("/currency/exchange", authMiddleware, async (req: Request, res: Response) => {
+  try {
+    // Validate the request data
+    const validatedData = exchangeCurrencySchema.parse(req.body);
+    const userId = req.user?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "User not authenticated" });
+    }
+    
+    // Get current balances before exchange
+    const user = await storage.getUser(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+    
+    const fromCurrency = validatedData.fromCurrency;
+    const toCurrency = validatedData.toCurrency;
+    const amount = parseFloat(validatedData.amount);
+    
+    // Check if user has sufficient balance
+    const currentBalance = await storage.getUserCurrencyBalance(userId, fromCurrency);
+    if (parseFloat(currentBalance) < amount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Insufficient ${fromCurrency} balance`,
+        currentBalance
+      });
+    }
+    
+    console.log(`Processing currency exchange for user ${userId}:`);
+    console.log(`- From: ${amount} ${fromCurrency}`);
+    console.log(`- To: ${toCurrency}`);
+    
+    // Perform the exchange
+    const updatedUser = await storage.exchangeCurrency(userId, fromCurrency, toCurrency, amount);
+    
+    // Return updated balances
+    const currencyBalances = {
+      PHP: updatedUser.balancePHP?.toString() || updatedUser.balance.toString(),
+      PHPT: updatedUser.balancePHPT?.toString() || "0.00",
+      USDT: updatedUser.balanceUSDT?.toString() || "0.00"
+    };
+    
+    // Create a transaction record for this exchange
+    const transaction = await storage.createTransaction({
+      userId,
+      type: "exchange",
+      method: "internal",
+      amount: amount.toString(),
+      status: "completed",
+      uniqueId: `EX-${randomUUID()}`,
+      currency: fromCurrency,
+      description: `Exchange ${amount} ${fromCurrency} to ${toCurrency}`,
+      metadata: {
+        fromCurrency,
+        toCurrency,
+        exchangeRate: validatedData.rate || 1,
+        completedAt: new Date().toISOString()
+      }
+    });
+    
+    return res.json({
+      success: true,
+      message: `Successfully exchanged ${amount} ${fromCurrency} to ${toCurrency}`,
+      balances: currencyBalances,
+      preferredCurrency: updatedUser.preferredCurrency,
+      transaction: {
+        id: transaction.id,
+        type: transaction.type,
+        amount: transaction.amount,
+        status: transaction.status,
+        createdAt: transaction.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error exchanging currency:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, message: "Invalid request data", errors: error.errors });
+    }
+    return res.status(500).json({ success: false, message: "Failed to exchange currency" });
+  }
+});
+
 // Get user transactions
 router.get("/transactions", authMiddleware, async (req: Request, res: Response) => {
   try {
