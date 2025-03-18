@@ -7,6 +7,12 @@
 let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
 
+// Map auth routes to their correct endpoints
+const AUTH_ROUTE_MAPPING: Record<string, string> = {
+  '/api/auth/login': '/api/login',       // Map client /auth/login to server /login
+  '/api/auth/logout': '/api/logout',     // Map client /auth/logout to server /logout
+};
+
 /**
  * Make an authenticated API request with automatic token refresh
  * Uses server-side session cookies for authentication
@@ -18,6 +24,9 @@ export async function apiRequest(
   headers?: Record<string, string>,
   retry = true
 ): Promise<Response> {
+  // Map endpoint to correct server path if needed
+  const mappedEndpoint = AUTH_ROUTE_MAPPING[endpoint] || endpoint;
+  
   // Always ensure we use session cookies and the right content type
   const options: RequestInit = {
     method,
@@ -34,7 +43,7 @@ export async function apiRequest(
   }
   
   // Log the request details for debugging
-  console.log(`API Request: ${method} ${endpoint}`);
+  console.log(`API Request: ${method} ${endpoint}${mappedEndpoint !== endpoint ? ` (mapped to ${mappedEndpoint})` : ''}`);
   if (body && method !== 'GET') {
     // Avoid logging potentially sensitive data
     console.log('Request body type:', typeof body);
@@ -42,7 +51,7 @@ export async function apiRequest(
   
   try {
     // Make the request with credentials to ensure cookies are sent
-    const res = await fetch(endpoint, options);
+    const res = await fetch(mappedEndpoint, options);
     
     // Log response status for debugging
     console.log(`API Response status: ${res.status} for ${method} ${endpoint}`);
@@ -97,7 +106,11 @@ async function refreshAccessToken(): Promise<string> {
   try {
     console.log('Attempting to refresh authentication session...');
     
-    const res = await fetch('/api/auth/refresh-token', {
+    // Use direct fetch here since apiRequest would cause circular reference
+    const refreshEndpoint = '/api/auth/refresh-token';
+    const mappedRefreshEndpoint = AUTH_ROUTE_MAPPING[refreshEndpoint] || refreshEndpoint;
+    
+    const res = await fetch(mappedRefreshEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Include cookies for session auth
