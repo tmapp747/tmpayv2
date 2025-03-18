@@ -3920,6 +3920,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // First try to find the transaction by payment reference
+      console.log(`[PAYMENT CANCEL] Searching for transaction with payment reference: ${referenceId}`);
+      const transactions = await storage.getTransactionsByUserId(userId, {
+        status: 'pending'
+      });
+
+      // Find the transaction with matching payment reference
+      const transaction = transactions.find(t => t.paymentReference === referenceId);
+      
+      if (transaction) {
+        console.log(`[PAYMENT CANCEL] Found transaction with ID ${transaction.id} and payment reference ${referenceId}`);
+        
+        // Verify the transaction belongs to the authenticated user
+        if (transaction.userId !== userId) {
+          return res.status(403).json({ 
+            success: false,
+            message: "You don't have permission to cancel this payment" 
+          });
+        }
+        
+        // Check if transaction can be cancelled (only pending transactions can be cancelled)
+        if (transaction.status !== 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: `Cannot cancel transaction with status: ${transaction.status}`
+          });
+        }
+        
+        // Update transaction status
+        await storage.updateTransactionStatus(transaction.id, 'cancelled');
+        await storage.addStatusHistoryEntry(
+          transaction.id, 
+          'cancelled', 
+          'Cancelled by user'
+        );
+        
+        // Reduce pending balance in user account
+        const user = await storage.getUser(userId);
+        if (user) {
+          const amount = parseFloat(transaction.amount.toString());
+          // Subtract from the user's pending balance
+          await storage.updateUserPendingBalance(userId, -amount);
+        }
+        
+        // Try to update associated payment record if it exists
+        let paymentUpdated = false;
+        
+        // Check QR payments
+        const qrPayment = await storage.getQrPaymentByReference(referenceId);
+        if (qrPayment && qrPayment.status === 'pending') {
+          await storage.updateQrPaymentStatus(qrPayment.id, 'cancelled');
+          paymentUpdated = true;
+          console.log(`[PAYMENT CANCEL] Updated QR payment with ID ${qrPayment.id}`);
+        }
+        
+        // Check Telegram payments
+        if (!paymentUpdated) {
+          const telegramPayment = await storage.getTelegramPaymentByReference(referenceId);
+          if (telegramPayment && telegramPayment.status === 'pending') {
+            await storage.updateTelegramPaymentStatus(telegramPayment.id, 'cancelled');
+            paymentUpdated = true;
+            console.log(`[PAYMENT CANCEL] Updated Telegram payment with ID ${telegramPayment.id}`);
+          }
+        }
+        
+        // Check Manual payments
+        if (!paymentUpdated) {
+          const manualPayment = await storage.getManualPaymentByReference(referenceId);
+          if (manualPayment && manualPayment.status === 'pending') {
+            await storage.updateManualPaymentStatus(manualPayment.id, 'cancelled');
+            paymentUpdated = true;
+            console.log(`[PAYMENT CANCEL] Updated Manual payment with ID ${manualPayment.id}`);
+          }
+        }
+        
+        return res.json({
+          success: true,
+          message: "Payment cancelled successfully",
+          transaction: { 
+            ...transaction, 
+            status: 'cancelled' 
+          }
+        });
+      }
+      
+      // If we couldn't find by transaction directly, use the legacy approach
       // Check QR payments first
       const qrPayment = await storage.getQrPaymentByReference(referenceId);
       if (qrPayment) {
@@ -4065,6 +4151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // If we get here, the payment wasn't found
+      console.log(`[PAYMENT CANCEL] Payment not found with reference: ${referenceId}`);
       return res.status(404).json({
         success: false,
         message: "Payment not found"
