@@ -14,7 +14,7 @@ echo -e "${BLUE}Testing login API on $SERVER_URL${NC}"
 echo -e "\n${BLUE}Step 1: Testing login with Wakay credentials...${NC}"
 LOGIN_RESPONSE=$(curl -s -c cookies.txt -X POST "$SERVER_URL/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"username":"wakay","password":"wakat12","userType":"player"}')
+  -d '{"username":"Wakay","password":"Wakay@123","userType":"player"}')
 
 echo -e "${GREEN}Login Response:${NC}"
 echo $LOGIN_RESPONSE | jq . || echo $LOGIN_RESPONSE
