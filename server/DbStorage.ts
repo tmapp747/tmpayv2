@@ -585,9 +585,6 @@ export class DbStorage implements IStorage {
     } catch (error) {
       console.error(`[DB] Error updating preferred currency for user ID ${id}:`, error);
       throw new Error(`Failed to update preferred currency: ${error instanceof Error ? error.message : String(error)}`);
-    } {
-      console.error(`[DB] Error updating preferred currency for user ID ${id}:`, error);
-      throw new Error(`Failed to update preferred currency: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
