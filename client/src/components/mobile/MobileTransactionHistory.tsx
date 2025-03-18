@@ -68,6 +68,7 @@ export default function MobileTransactionHistory() {
     switch (status) {
       case "completed":
       case "success":
+      case "payment_completed": // New status for when payment is completed but casino transfer is pending
         return (
           <div className="flex items-center justify-center w-4 h-4 rounded-full bg-green-500/20">
             <Check size={10} className="text-green-500" />
@@ -257,6 +258,35 @@ export default function MobileTransactionHistory() {
                                 )}
                               </div>
                             )}
+                            {/* New status for when payment is completed but casino transfer is pending or failed */}
+                            {transaction.status === 'payment_completed' && (
+                              <div className="flex flex-col gap-1">
+                                <Badge variant="outline" className="text-[10px] bg-green-500/10 border-green-500/20 text-green-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                  <Check size={10} className="mr-1" />
+                                  Payment Completed
+                                </Badge>
+                                
+                                {transaction.metadata?.casinoTransferStatus === 'pending' && (
+                                  <Badge variant="outline" className="text-[10px] bg-yellow-500/10 border-yellow-500/20 text-yellow-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                    <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
+                                    Casino Transfer Pending
+                                  </Badge>
+                                )}
+                                
+                                {transaction.metadata?.casinoTransferStatus === 'failed' && (
+                                  <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/20 text-red-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                    <X size={10} className="mr-1" />
+                                    Casino Transfer Failed
+                                  </Badge>
+                                )}
+                                
+                                {transaction.metadata?.manuallyCompleted && (
+                                  <Badge variant="outline" className="text-[9px] bg-blue-500/10 border-blue-500/20 text-blue-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                    Manual Completion
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
                             {transaction.statusUpdatedAt && transaction.status === 'pending' && (
                               <div className="flex items-center">
                                 <Badge variant="outline" className="text-[10px] bg-yellow-500/10 border-yellow-500/20 text-yellow-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
@@ -281,6 +311,15 @@ export default function MobileTransactionHistory() {
                                 </Badge>
                               </div>
                             )}
+                            
+                            {/* Show a badge if this was manually completed */}
+                            {transaction.status === 'completed' && transaction.metadata?.manuallyCompleted && (
+                              <div className="flex items-center mt-1">
+                                <Badge variant="outline" className="text-[9px] bg-blue-500/10 border-blue-500/20 text-blue-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                  Manual Completion
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -301,9 +340,13 @@ export default function MobileTransactionHistory() {
                                 ? 'text-red-400'
                                 : transaction.status === 'expired'
                                 ? 'text-gray-400'
+                                : transaction.status === 'payment_completed'
+                                ? 'text-green-400'
                                 : 'text-yellow-400'
                             }`}>
-                              {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                              {transaction.status === 'payment_completed' 
+                                ? 'Payment Verified'
+                                : transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                             </span>
                           </div>
                         </div>
@@ -330,9 +373,15 @@ export default function MobileTransactionHistory() {
                           </AlertDialogTrigger>
                           <AlertDialogContent className="bg-[#001138] border border-blue-900/50 text-white">
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Cancel GCash Payment?</AlertDialogTitle>
+                              <AlertDialogTitle>Cancel Payment Process?</AlertDialogTitle>
                               <AlertDialogDescription className="text-blue-200">
-                                Are you sure you want to cancel this pending GCash payment of ₱{formatCurrency(Number(transaction.amount), '')}?
+                                <p className="mb-2">
+                                  Are you sure you want to cancel this pending GCash payment of ₱{formatCurrency(Number(transaction.amount), '')}?
+                                </p>
+                                <p className="text-xs text-yellow-300">
+                                  Note: If you've already made the GCash payment but it's still showing as pending, 
+                                  use "Mark as Completed" instead of canceling.
+                                </p>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="mt-4">
@@ -376,8 +425,17 @@ export default function MobileTransactionHistory() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Mark Payment as Completed?</AlertDialogTitle>
                               <AlertDialogDescription className="text-blue-200">
-                                This will mark this GCash payment of ₱{formatCurrency(Number(transaction.amount), '')} as completed. 
-                                Only use this if you've confirmed that the payment was successful but is still showing as pending.
+                                <p className="mb-2">
+                                  This will mark this GCash payment of ₱{formatCurrency(Number(transaction.amount), '')} as completed and 
+                                  initiate a casino transfer. The process has two steps:
+                                </p>
+                                <ul className="list-disc pl-4 space-y-1 text-xs">
+                                  <li>Your payment will be marked as verified</li> 
+                                  <li>The system will transfer funds to your casino account</li>
+                                </ul>
+                                <p className="mt-2 text-yellow-300 text-xs">
+                                  Only use this if you've confirmed that you made the GCash payment but it's still showing as pending.
+                                </p>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="mt-4">
@@ -419,7 +477,10 @@ export default function MobileTransactionHistory() {
         <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
           <div className="bg-green-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
             <Check size={16} className="mr-2" />
-            Payment successfully canceled
+            <div className="flex flex-col">
+              <span>Payment successfully canceled</span>
+              <span className="text-xs opacity-80">Request has been removed</span>
+            </div>
           </div>
         </div>
       )}
@@ -428,9 +489,14 @@ export default function MobileTransactionHistory() {
         <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
           <div className="bg-red-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
             <AlertCircle size={16} className="mr-2" />
-            {cancelPaymentMutation.error instanceof Error 
-              ? cancelPaymentMutation.error.message 
-              : "Failed to cancel payment"}
+            <div className="flex flex-col">
+              <span>
+                {cancelPaymentMutation.error instanceof Error 
+                  ? cancelPaymentMutation.error.message 
+                  : "Failed to cancel payment"}
+              </span>
+              <span className="text-xs opacity-80">Try again or contact support</span>
+            </div>
           </div>
         </div>
       )}
@@ -440,7 +506,10 @@ export default function MobileTransactionHistory() {
         <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
           <div className="bg-green-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
             <Check size={16} className="mr-2" />
-            Payment marked as completed
+            <div className="flex flex-col">
+              <span>Payment marked as verified</span>
+              <span className="text-xs opacity-80">Casino transfer processing</span>
+            </div>
           </div>
         </div>
       )}
@@ -449,9 +518,14 @@ export default function MobileTransactionHistory() {
         <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
           <div className="bg-red-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
             <AlertCircle size={16} className="mr-2" />
-            {markAsCompletedMutation.error instanceof Error 
-              ? markAsCompletedMutation.error.message 
-              : "Failed to mark payment as completed"}
+            <div className="flex flex-col">
+              <span>
+                {markAsCompletedMutation.error instanceof Error 
+                  ? markAsCompletedMutation.error.message 
+                  : "Payment verification failed"}
+              </span>
+              <span className="text-xs opacity-80">Try again or contact support</span>
+            </div>
           </div>
         </div>
       )}

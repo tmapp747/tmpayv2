@@ -4349,6 +4349,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[PAYMENT] Updated QR payment with ID ${qrPayment.id}`);
       }
       
+      // Before completing the payment, check for potential fraud
+      // This section checks for signs that the user might be trying to falsely mark a payment as completed
+      const paymentMethod = transaction.method?.toLowerCase() || '';
+      
+      if (paymentMethod.includes('gcash')) {
+        // For GCash payments, we want to check the QR payment record
+        const qrPayment = await storage.getQrPaymentByReference(paymentReference);
+        
+        // Check for the 10-60-30 rule: 10 GCash attempts can't be marked completed within 1 hour
+        // Simplified version for now - check if user has recently marked other payments as completed
+        const recentCompletions = transactions.filter(t => 
+          t.status === 'completed' && 
+          t.metadata?.manuallyCompleted === true &&
+          t.updatedAt && 
+          new Date(t.updatedAt).getTime() > Date.now() - (60 * 60 * 1000) // Last hour
+        );
+        
+        if (recentCompletions.length >= 3) {
+          return res.status(403).json({
+            success: false,
+            message: "Too many manual completions in the last hour. Please contact support."
+          });
+        }
+        
+        // Add a note about this being a manual completion in the status history
+        await storage.addStatusHistoryEntry(
+          transaction.id, 
+          'manual_completion_initiated',
+          'User manually marked payment as completed'
+        );
+      }
+      
+      // Set initial payment completion status
+      await storage.updateTransactionStatus(
+        transaction.id,
+        "payment_completed", // New intermediate state
+        undefined,
+        { 
+          manuallyCompleted: true,
+          paymentCompletedAt: new Date(),
+          casinoTransferStatus: 'pending'
+        }
+      );
+      
       // Call casino API to complete the topup if user has casino ID
       if (user.casinoId) {
         try {
@@ -4371,32 +4415,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Update the transaction with the casino transfer information
           await storage.updateTransactionStatus(
             transaction.id,
-            "completed",
+            "completed", // Final completion state when both payment and casino transfer succeed
             undefined,
             { 
               casinoNonce: casinoResult.nonce,
               casinoTransactionId: casinoResult.transactionId,
-              casinoTransferCompleted: true,
-              manuallyCompleted: true
+              casinoTransferStatus: 'completed',
+              casinoTransferCompletedAt: new Date(),
+              manuallyCompleted: true,
+              paymentCompletedAt: transaction.metadata?.paymentCompletedAt || new Date()
             }
+          );
+          
+          // Add a success entry to status history
+          await storage.addStatusHistoryEntry(
+            transaction.id,
+            'casino_transfer_completed',
+            `Casino transfer completed with ID ${casinoResult.transactionId}`
           );
         } catch (casinoError) {
           console.error("[CASINO] Error completing casino transfer for manually completed payment:", casinoError);
           
-          // Add error information to the transaction for reconciliation
+          // Add error information to the transaction but keep payment_completed status
+          // This allows admin to see that payment was marked completed but casino transfer failed
           await storage.updateTransactionStatus(
             transaction.id,
-            "completed",
+            "payment_completed", // Keep payment completed status
             undefined,
             { 
               manuallyCompleted: true,
-              casinoError: casinoError instanceof Error ? casinoError.message : String(casinoError),
-              casinoTransferFailed: true
+              casinoTransferStatus: 'failed',
+              casinoTransferError: casinoError instanceof Error ? casinoError.message : String(casinoError),
+              casinoTransferAttemptedAt: new Date()
             }
+          );
+          
+          // Add failure entry to status history
+          await storage.addStatusHistoryEntry(
+            transaction.id,
+            'casino_transfer_failed',
+            `Casino transfer failed: ${casinoError instanceof Error ? casinoError.message : String(casinoError)}`
           );
         }
       } else {
         console.log(`[CASINO] User has no casino ID, skipping casino transfer for manual completion`);
+        
+        // For users without casino IDs, mark as fully completed
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "completed",
+          undefined,
+          { 
+            manuallyCompleted: true,
+            casinoTransferStatus: 'not_applicable',
+            completedAt: new Date()
+          }
+        );
       }
       
       return res.json({
