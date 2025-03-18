@@ -57,6 +57,14 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
+args = "# Kill any existing process on port 5000"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pkill -f \"node.*5000\" || true"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
 args = "# Install dependencies first"
 
 [[workflows.workflow.tasks]]
