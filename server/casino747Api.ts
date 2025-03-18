@@ -102,11 +102,29 @@ export class Casino747Api {
    */
   async getUserBalance(clientId: number, username: string) {
     try {
-      // Use Marcthepogi's token directly from env for reliability
-      const authToken = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf';
+      // First get a valid auth token for the appropriate top manager
+      let topManager = 'Marcthepogi'; // Default to Marcthepogi
+      
+      // Try to find the user's top manager from database
+      const user = await storage.getUserByCasinoUsername(username);
+      if (user && user.topManager) {
+        topManager = user.topManager;
+        console.log(`Using top manager from database: ${topManager}`);
+      } else {
+        console.log(`User not found in database, using default top manager: ${topManager}`);
+      }
       
       console.log(`🔍 Making balance request for ${username} with clientId ${clientId}`);
-      console.log(`🔑 Using fixed auth token`);
+      console.log(`👑 Getting auth token for top manager: ${topManager}`);
+      
+      // Get fresh auth token using the top manager
+      const authToken = await this.getTopManagerToken(topManager);
+      
+      if (!authToken) {
+        throw new Error(`Could not obtain valid auth token for manager ${topManager}`);
+      }
+      
+      console.log(`🔑 Successfully obtained auth token for ${topManager}`);
       
       // Create the request payload with required fields
       const requestData = {
@@ -117,8 +135,9 @@ export class Casino747Api {
         currency: "PHP" // Default currency
       };
       
-      console.log(`DEBUG: Request data: ${JSON.stringify(requestData)}`);
-      console.log(`DEBUG: Request URL: ${this.baseUrl}/account/get-balances`);
+      // Don't log the full token for security
+      const redactedData = { ...requestData, authToken: '***REDACTED***' };
+      console.log(`DEBUG: Making request with data: ${JSON.stringify(redactedData)}`);
       
       const response = await axios.post(`${this.baseUrl}/account/get-balances`, requestData, {
         headers: {
@@ -127,29 +146,27 @@ export class Casino747Api {
         }
       });
       
-      // Log the complete response for debugging
-      console.log(`DEBUG: Balance API Response Headers:`, response.headers);
-      console.log(`DEBUG: Balance API Response Status:`, response.status);
-      console.log(`DEBUG: Balance API Response:`, JSON.stringify(response.data, null, 2));
-      
+      console.log(`✅ Balance request successful for ${username}`);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        // For 401/403 errors, clear the token cache to force refresh next time
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          console.error('Authentication error with casino API. Clearing token cache.');
+          this.tokenCacheMap.clear();
+        }
+        
         console.error('Error fetching balance from casino API:', {
           status: error.response?.status,
           statusText: error.response?.statusText,
           data: error.response?.data,
-          message: error.message,
-          config: error.config
+          message: error.message
         });
         
-        // Print the complete error for deeper analysis
-        console.error('Complete error details:', JSON.stringify(error.toJSON(), null, 2));
-        
-        throw new Error(`Failed to fetch balance: ${error.response?.data?.message || error.message}`);
+        throw new Error(`Failed to fetch balance: ${error.response?.data?.message || 'Authentication error'}`);
       } else {
         console.error('Error fetching balance from casino API:', error);
-        throw new Error('Failed to fetch balance from 747 Casino API');
+        throw new Error('Failed to fetch balance from casino API');
       }
     }
   }
