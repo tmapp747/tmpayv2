@@ -4349,6 +4349,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[PAYMENT] Updated QR payment with ID ${qrPayment.id}`);
       }
       
+      // Call casino API to complete the topup if user has casino ID
+      if (user.casinoId) {
+        try {
+          console.log(`[CASINO] Attempting to credit ${amount} PHP to casino account for user ${user.casinoUsername || 'unknown'} (ID: ${user.casinoId})`);
+          
+          const casinoResult = await casino747CompleteTopup(
+            user.casinoId,
+            amount,
+            transaction.paymentReference || paymentReference
+          );
+          
+          console.log(`[CASINO] Transfer completed successfully for manually completed payment:`, {
+            amount,
+            casinoId: user.casinoId,
+            reference: paymentReference,
+            nonce: casinoResult.nonce,
+            transactionId: casinoResult.transactionId
+          });
+          
+          // Update the transaction with the casino transfer information
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "completed",
+            undefined,
+            { 
+              casinoNonce: casinoResult.nonce,
+              casinoTransactionId: casinoResult.transactionId,
+              casinoTransferCompleted: true,
+              manuallyCompleted: true
+            }
+          );
+        } catch (casinoError) {
+          console.error("[CASINO] Error completing casino transfer for manually completed payment:", casinoError);
+          
+          // Add error information to the transaction for reconciliation
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "completed",
+            undefined,
+            { 
+              manuallyCompleted: true,
+              casinoError: casinoError instanceof Error ? casinoError.message : String(casinoError),
+              casinoTransferFailed: true
+            }
+          );
+        }
+      } else {
+        console.log(`[CASINO] User has no casino ID, skipping casino transfer for manual completion`);
+      }
+      
       return res.json({
         success: true,
         message: "Payment marked as completed successfully",
