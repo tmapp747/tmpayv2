@@ -75,14 +75,18 @@ const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({ method, onSetDefa
              <CreditCard className="h-6 w-6 text-white" />}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-white truncate">{method.name}</h3>
-            <p className="text-sm text-gray-400 truncate">{method.details}</p>
-            <div className="mt-1">
-              <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full inline-block">
-                {method.type === 'bank' ? 'Bank Account' :
-                 method.type === 'wallet' ? 'E-Wallet' :
-                 method.type === 'crypto' ? 'Crypto Wallet' : 'Other'}
-              </span>
+            <div className="flex flex-col h-14 justify-between">
+              <div>
+                <h3 className="font-medium text-white truncate">{method.name}</h3>
+                <p className="text-sm text-gray-400 truncate">{method.details}</p>
+              </div>
+              <div className="mt-1">
+                <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full inline-block">
+                  {method.type === 'bank' ? 'Bank Account' :
+                   method.type === 'wallet' ? 'E-Wallet' :
+                   method.type === 'crypto' ? 'Crypto Wallet' : 'Other'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
