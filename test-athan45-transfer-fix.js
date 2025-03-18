@@ -5,8 +5,8 @@
  * handling of missing casinoUsername by using username as a fallback
  */
 
-const axios = require('axios');
-const { setTimeout } = require('timers/promises');
+import axios from 'axios';
+import { setTimeout } from 'timers/promises';
 
 async function makeRequest(endpoint, method = 'GET', body = null, token = null) {
   try {
