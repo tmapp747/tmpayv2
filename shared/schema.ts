@@ -58,13 +58,6 @@ export const users = pgTable("users", {
   balances: json("balances").default({}).notNull(), // JSON object with currency as key and balance as value
   preferredCurrency: text("preferred_currency").default("PHP").notNull(),
   
-  // User attributes
-  isVip: boolean("is_vip").default(false),
-  vipLevel: integer("vip_level").default(0),
-  vipSince: timestamp("vip_since"),
-  referredBy: integer("referred_by"), // ID of user who referred this user
-  referralCode: text("referral_code"), // Unique referral code for this user
-  
   // Casino integration
   casinoId: text("casino_id").notNull(),
   casinoUsername: text("casino_username"),
@@ -72,7 +65,6 @@ export const users = pgTable("users", {
   topManager: text("top_manager"),
   immediateManager: text("immediate_manager"),
   casinoUserType: text("casino_user_type"),
-  casinoBalance: numeric("casino_balance", { precision: 10, scale: 2 }).default("0"),
   
   // Auth and tokens
   accessToken: text("access_token"), // Each user has a unique token for transfers
@@ -84,9 +76,6 @@ export const users = pgTable("users", {
   
   // Authorization and hierarchy management
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
-  bypassCasinoAuth: boolean("bypass_casino_auth").default(false), // If true, user bypasses casino auth checks (for admin)
-  hasAllTokenAccess: boolean("has_all_token_access").default(false), // If true, user can access all top manager tokens
-  hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
   allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
   
   // Audit and timestamps

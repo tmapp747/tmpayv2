@@ -42,3 +42,38 @@ export const FILE_STORAGE_SUB_DIRS = ['uploads', 'receipts', 'profiles', 'qrcode
 export const API_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 export const API_RATE_LIMIT_MAX_REQUESTS = 100;
 export const AUTH_RATE_LIMIT_MAX_REQUESTS = 10;
+
+// Global variables for the top managers in the casino system
+export const DEFAULT_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
+export const DEFAULT_TOP_MANAGER = 'Marcthepogi';
+
+// Global transaction status variables
+export const TRANSACTION_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled',
+  REFUNDED: 'refunded',
+  DISPUTED: 'disputed'
+};
+
+// Global payment status variables
+export const PAYMENT_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing', 
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled'
+};
+
+// Casino statuses
+export const CASINO_STATUS = {
+  PENDING: 'pending',
+  PROCESSING: 'processing',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  CANCELLED: 'cancelled'
+};
