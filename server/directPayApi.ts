@@ -405,7 +405,13 @@ class DirectPayApi {
       };
     } catch (error) {
       console.error('DirectPay payment status check error:', error);
-      throw new Error('Failed to check payment status');
+      // Return expired status instead of throwing an error for production resilience
+      // This allows the system to recover from temporary API outages
+      return {
+        status: 'expired',
+        transactionId: reference,
+        error: true
+      };
     }
   }
 }
