@@ -586,10 +586,12 @@ export default function MobileCasinoStats() {
                 {renderIcon()}
               </div>
               <div>
-                <p className="font-medium">{node.username}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">{node.username}</p>
+                  <span className="text-xs bg-blue-600/60 px-1.5 py-0.5 rounded-sm whitespace-nowrap font-medium">{roleName}</span>
+                </div>
                 <div className="flex items-center gap-2">
                   <p className="text-xs opacity-70">ID: {node.clientId}</p>
-                  <span className="text-xs bg-blue-900/60 px-1.5 py-0.5 rounded-sm whitespace-nowrap">{roleName}</span>
                 </div>
               </div>
             </div>
