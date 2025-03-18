@@ -1,338 +1,494 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, CheckCircle, Clock, Copy, ExternalLink, File, FileText, RefreshCcw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ExternalLink, Copy, Check, QrCode, RefreshCw, Download } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PAYMENT_STATUS, TRANSACTION_TYPES } from "@/lib/constants";
+import { apiRequest } from "@/lib/api-client";
+import QRCode from "react-qr-code";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Timeline } from "@/components/Timeline";
 
-interface Transaction {
-  id: number;
-  userId: number;
-  type: string;
-  method: string;
-  amount: string;
-  status: string;
-  paymentReference: string;
-  createdAt: string;
-  metadata?: Record<string, any>;
-  updatedAt?: string;
-}
-
-interface QrPayment {
-  id: number;
-  userId: number;
-  transactionId: number;
-  qrCodeData?: string;
-  payUrl?: string;
-  amount: string | number;
-  expiresAt: string;
-  directPayReference: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Props {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type TransactionDetailsModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
   transactionId: number | null;
-}
+};
 
-export default function TransactionDetailsModal({ open, onOpenChange, transactionId }: Props) {
+export function TransactionDetailsModal({ isOpen, onClose, transactionId }: TransactionDetailsModalProps) {
   const { toast } = useToast();
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [qrPayment, setQrPayment] = useState<QrPayment | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [copied, setCopied] = useState<boolean>(false);
-  
-  // Fetch transaction details whenever the modal opens with a valid transaction ID
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState("details");
+  const [showQRFullscreen, setShowQRFullscreen] = useState(false);
+
+  // Fetch transaction details when transaction ID changes
+  const { data, isLoading, error, refetch } = useQuery<{
+    success: boolean;
+    transaction: any;
+    qrPayment?: any;
+    telegramPayment?: any;
+    manualPayment?: any;
+    statusHistory: Array<{ status: string; timestamp: string; note?: string }>;
+  }>({
+    queryKey: [`/api/transactions/${transactionId}`, transactionId],
+    queryFn: async () => {
+      if (!transactionId) return null;
+      const response = await apiRequest(`/api/transactions/${transactionId}`);
+      return response;
+    },
+    enabled: !!transactionId && isOpen,
+    refetchInterval: 10000, // Poll every 10 seconds for any status updates
+  });
+
+  const transaction = data?.transaction;
+  const qrPayment = data?.qrPayment;
+  const paymentMethod = transaction?.method;
+  const statusHistory = transaction?.statusHistory || [];
+
+  // Automatic polling for pending transactions to check for status updates
   useEffect(() => {
-    if (open && transactionId) {
-      fetchTransactionDetails(transactionId);
-    } else {
-      // Reset state when modal closes
-      setTransaction(null);
-      setQrPayment(null);
+    if (!transaction) return;
+    
+    // Only poll for pending transactions
+    if (transaction.status === "pending" || 
+        transaction.status === "processing" || 
+        (transaction.metadata?.casinoTransferStatus === "pending" && transaction.status === "payment_completed")) {
+      const interval = setInterval(() => {
+        refetch();
+      }, 5000);
+      
+      return () => clearInterval(interval);
     }
-  }, [open, transactionId]);
-  
-  // Fetch transaction and associated payment details
-  const fetchTransactionDetails = async (id: number) => {
-    setLoading(true);
-    try {
-      // Fetch transaction details
-      const response = await fetch(`/api/transactions/${id}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch transaction details');
-      }
-      
-      const data = await response.json();
-      setTransaction(data.transaction);
-      
-      // Check if there's QR payment data
-      if (data.qrPayment) {
-        setQrPayment(data.qrPayment);
-      }
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching transaction details:', error);
+  }, [transaction, refetch]);
+
+  // Handle QR code copying
+  const copyQRCodeData = () => {
+    if (qrPayment?.qrCodeData) {
+      navigator.clipboard.writeText(qrPayment.qrCodeData);
       toast({
-        title: "Error",
-        description: "Failed to load transaction details",
-        variant: "destructive",
+        title: "Copied!",
+        description: "QR code data copied to clipboard",
       });
-      setLoading(false);
     }
   };
-  
-  // Copy reference to clipboard
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-    
-    toast({
-      title: "Copied!",
-      description: "Reference copied to clipboard",
-    });
-  };
-  
-  // Helper function to open payment URL
-  const openPaymentUrl = () => {
+
+  // Handle payment URL opening
+  const openPaymentURL = () => {
     if (qrPayment?.payUrl) {
       window.open(qrPayment.payUrl, '_blank');
-    } else {
-      toast({
-        title: "Error",
-        description: "Payment URL not available",
-        variant: "destructive",
-      });
     }
   };
-  
-  // Helper to determine status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
-      case 'failed':
-        return <Badge variant="destructive">Failed</Badge>;
-      case 'expired':
-        return <Badge variant="outline" className="text-amber-500 border-amber-500">Expired</Badge>;
-      case 'pending':
-        return <Badge variant="secondary" className="animate-pulse">Pending</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-  
-  // Download QR Code as image
-  const downloadQrCode = () => {
-    if (!qrPayment?.qrCodeData) {
-      toast({
-        title: "Error",
-        description: "QR code data not available",
-        variant: "destructive",
+
+  // Handle manual payment completion
+  const markAsCompleted = async () => {
+    try {
+      const response = await apiRequest('/api/payments/mark-as-completed', 'POST', {
+        referenceId: transaction?.reference
       });
-      return;
-    }
-    
-    // Create a temporary canvas to draw the QR code
-    const canvas = document.createElement('canvas');
-    const qrImage = new Image();
-    qrImage.onload = () => {
-      canvas.width = qrImage.width;
-      canvas.height = qrImage.height;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(qrImage, 0, 0);
-        const dataUrl = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `qr-payment-${transaction?.paymentReference || 'gcash'}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+      
+      if (response.success) {
+        toast({
+          title: "Success!",
+          description: "Payment marked as completed",
+        });
+        // Invalidate transaction queries to reflect the change
+        queryClient.invalidateQueries({
+          queryKey: [`/api/transactions/${transactionId}`],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['/api/transactions'],
+        });
       }
-    };
-    
-    qrImage.src = qrPayment.qrCodeData;
+    } catch (err) {
+      console.error('Error marking payment as completed:', err);
+      toast({
+        title: "Error",
+        description: "Failed to mark payment as completed",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle transaction cancellation
+  const cancelTransaction = async () => {
+    try {
+      const response = await apiRequest(`/api/payments/cancel/${transaction?.reference}`, 'POST');
+      
+      if (response.success) {
+        toast({
+          title: "Success!",
+          description: "Payment was canceled",
+        });
+        // Invalidate transaction queries to reflect the change
+        queryClient.invalidateQueries({
+          queryKey: [`/api/transactions/${transactionId}`],
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['/api/transactions'],
+        });
+      }
+    } catch (err) {
+      console.error('Error canceling payment:', err);
+      toast({
+        title: "Error",
+        description: "Failed to cancel payment",
+        variant: "destructive",
+      });
+    }
   };
   
+  // Function to check if QR code is expired
+  const isQRExpired = () => {
+    if (!qrPayment?.expiresAt) return false;
+    const expiry = new Date(qrPayment.expiresAt);
+    return expiry < new Date();
+  };
+
+  // Show QR code if applicable for this transaction
+  const showQRCode = qrPayment?.qrCodeData && (
+    transaction?.status === "pending" || 
+    transaction?.status === "processing" || 
+    transaction?.status === "payment_completed"
+  );
+
+  if (isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => onClose()}>
+        <DialogContent className="bg-emerald-950 border border-emerald-700/30 text-emerald-50 p-0 overflow-hidden max-w-md md:max-w-lg">
+          <div className="p-5 text-center">
+            <RefreshCcw className="h-8 w-8 text-emerald-400 mx-auto animate-spin mb-3" />
+            <p>Loading transaction details...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (error || !transaction) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => onClose()}>
+        <DialogContent className="bg-emerald-950 border border-emerald-700/30 text-emerald-50 p-0 overflow-hidden max-w-md md:max-w-lg">
+          <div className="p-5 text-center">
+            <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-3" />
+            <p>Error loading transaction details. Please try again.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4" 
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md md:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            Transaction Details
-            {transaction && getStatusBadge(transaction.status)}
+    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <DialogContent className="bg-emerald-950 border border-emerald-700/30 text-emerald-50 p-0 overflow-hidden max-w-md md:max-w-lg">
+        <DialogHeader className="p-5 border-b border-emerald-700/30">
+          <DialogTitle className="text-lg font-semibold text-emerald-100 flex items-center justify-between">
+            <span className="flex items-center">
+              {transaction.type === TRANSACTION_TYPES.DEPOSIT 
+                ? "Deposit" 
+                : transaction.type === TRANSACTION_TYPES.WITHDRAWAL 
+                  ? "Withdrawal" 
+                  : "Transaction"} Details
+              <StatusBadge status={transaction.status} className="ml-3" />
+            </span>
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              className="h-8 w-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-900/50" 
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </DialogTitle>
-          <DialogDescription>
-            View complete details of your transaction
-          </DialogDescription>
         </DialogHeader>
         
-        {loading ? (
-          <div className="space-y-3">
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-6 w-5/6" />
-            <Skeleton className="h-6 w-2/3" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-        ) : transaction ? (
-          <div className="space-y-6">
-            {/* Basic transaction details */}
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Amount:</span>
-                <span className="font-semibold">{formatCurrency(Number(transaction.amount))}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Type:</span>
-                <span>{transaction.type === 'deposit' ? 'Deposit' : transaction.type}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Method:</span>
-                <span>{transaction.method === 'gcash' ? 'GCash' : transaction.method}</span>
-              </div>
-              
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Date:</span>
-                <span>{formatDate(new Date(transaction.createdAt))}</span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Reference:</span>
-                <div className="flex items-center">
-                  <span className="text-xs font-mono bg-muted py-1 px-2 rounded mr-2">
-                    {transaction.paymentReference}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(transaction.paymentReference)}
-                  >
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  </Button>
+        {/* Tabs for transaction details */}
+        <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full border-b border-emerald-700/30 bg-emerald-900/30 rounded-none p-0">
+            <TabsTrigger 
+              value="details" 
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-transparent text-emerald-300 data-[state=active]:text-emerald-100 hover:text-emerald-100 transition-all"
+            >
+              Details
+            </TabsTrigger>
+            <TabsTrigger 
+              value="timeline" 
+              className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-transparent text-emerald-300 data-[state=active]:text-emerald-100 hover:text-emerald-100 transition-all"
+            >
+              Timeline
+            </TabsTrigger>
+            {showQRCode && (
+              <TabsTrigger 
+                value="qrcode" 
+                className="flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-400 data-[state=active]:bg-transparent text-emerald-300 data-[state=active]:text-emerald-100 hover:text-emerald-100 transition-all"
+              >
+                QR Code
+              </TabsTrigger>
+            )}
+          </TabsList>
+          
+          {/* Details Tab */}
+          <TabsContent value="details" className="p-5 space-y-4 mt-0">
+            <div className="grid grid-cols-1 gap-4">
+              {/* Transaction ID and Reference */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-emerald-400 mb-1">Transaction ID</p>
+                  <p className="text-sm font-medium text-emerald-100">{transaction.id}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-emerald-400 mb-1">Reference</p>
+                  <p className="text-sm font-medium text-emerald-100 flex items-center">
+                    {transaction.reference.substring(0, 12)}... 
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 ml-1 hover:bg-emerald-800/50"
+                      onClick={() => {
+                        navigator.clipboard.writeText(transaction.reference);
+                        toast({
+                          title: "Copied!",
+                          description: "Reference copied to clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="h-3 w-3 text-emerald-300" />
+                    </Button>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Amount and Status */}
+              <div className="bg-emerald-900/40 rounded-lg p-4 border border-emerald-700/30">
+                <h3 className="text-lg font-bold text-emerald-100">
+                  {formatCurrency(parseFloat(transaction.amount), transaction.currency || "PHP")}
+                </h3>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-sm text-emerald-300">
+                    {transaction.type === TRANSACTION_TYPES.DEPOSIT ? "Deposit" : "Withdrawal"}
+                  </span>
+                  <Badge 
+                    className={`
+                      ${transaction.status === "completed" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                      ${transaction.status === "payment_completed" ? "bg-yellow-600 hover:bg-yellow-700 text-white" : ""}
+                      ${transaction.status === "pending" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                      ${transaction.status === "processing" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+                      ${transaction.status === "failed" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                      ${transaction.status === "expired" ? "bg-gray-600 hover:bg-gray-700 text-white" : ""}
+                    `}
+                  >
+                    {transaction.status === "payment_completed" ? "Awaiting Transfer" : transaction.status}
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Payment Method */}
+              <div>
+                <p className="text-xs text-emerald-400 mb-1">Payment Method</p>
+                <p className="text-sm font-medium text-emerald-100">
+                  {paymentMethod === "gcash" ? "GCash" : 
+                   paymentMethod === "paygram" ? "Paygram" :
+                   paymentMethod === "manual" ? "Manual Bank Transfer" :
+                   paymentMethod || "Unknown"}
+                </p>
+              </div>
+              
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-emerald-400 mb-1">Created</p>
+                  <p className="text-sm font-medium text-emerald-100">
+                    {formatDate(new Date(transaction.createdAt))}
+                  </p>
+                </div>
+                {transaction.updatedAt && (
+                  <div>
+                    <p className="text-xs text-emerald-400 mb-1">Last Updated</p>
+                    <p className="text-sm font-medium text-emerald-100">
+                      {formatDate(new Date(transaction.updatedAt))}
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Payment completed timestamp if available */}
+              {transaction.metadata?.paymentCompletedAt && (
+                <div>
+                  <p className="text-xs text-emerald-400 mb-1">Payment Completed</p>
+                  <p className="text-sm font-medium text-emerald-100">
+                    {formatDate(new Date(transaction.metadata.paymentCompletedAt))}
+                  </p>
+                </div>
+              )}
+              
+              {/* Casino transfer status if available */}
+              {transaction.metadata?.casinoTransferStatus && (
+                <div>
+                  <p className="text-xs text-emerald-400 mb-1">Casino Transfer</p>
+                  <div className="flex items-center">
+                    <Badge 
+                      className={`
+                        ${transaction.metadata.casinoTransferStatus === "completed" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                        ${transaction.metadata.casinoTransferStatus === "pending" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
+                        ${transaction.metadata.casinoTransferStatus === "failed" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+                      `}
+                    >
+                      {transaction.metadata.casinoTransferStatus}
+                    </Badge>
+                    
+                    {transaction.metadata.casinoTransferStatus === "completed" && transaction.metadata.casinoTransferTimestamp && (
+                      <span className="text-xs text-emerald-300 ml-2">
+                        {formatDate(new Date(transaction.metadata.casinoTransferTimestamp))}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Action buttons based on payment status */}
+              <div className="flex flex-col gap-2 mt-2">
+                {/* GCash payment specific section */}
+                {qrPayment && transaction.status === "pending" && !isQRExpired() && (
+                  <Alert className="bg-yellow-900/30 border-yellow-700/50 text-yellow-100">
+                    <AlertDescription className="text-xs">
+                      Complete this payment by scanning the QR code in the GCash app.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Manual payment completion button (for users to manually mark as completed) */}
+                {transaction.status === "pending" && (
+                  <Button 
+                    variant="outline" 
+                    onClick={markAsCompleted}
+                    className="bg-emerald-800/50 border-emerald-600/30 hover:bg-emerald-700/50 hover:text-white"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    I've Completed This Payment
+                  </Button>
+                )}
+                
+                {/* Cancel payment button */}
+                {(transaction.status === "pending" || transaction.status === "processing") && (
+                  <Button 
+                    variant="outline" 
+                    onClick={cancelTransaction}
+                    className="bg-red-900/30 border-red-700/30 hover:bg-red-800/50 text-red-200 hover:text-white"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel Payment
+                  </Button>
+                )}
+                
+                {/* Show QR Code Button */}
+                {showQRCode && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab("qrcode")}
+                    className="bg-emerald-800/50 border-emerald-600/30 hover:bg-emerald-700/50 hover:text-white"
+                  >
+                    <QRCode className="h-4 w-4 mr-2" />
+                    View QR Code
+                  </Button>
+                )}
               </div>
             </div>
-            
-            <Separator />
-            
-            {/* QR Code section if available */}
-            {qrPayment && qrPayment.qrCodeData && (
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium">Payment QR Code</h4>
-                
-                <div className="flex flex-col items-center">
-                  <div className="p-2 border rounded-md bg-white">
-                    <img 
-                      src={qrPayment.qrCodeData} 
-                      alt="GCash QR Code" 
-                      className="w-44 h-44"
+          </TabsContent>
+          
+          {/* Timeline Tab */}
+          <TabsContent value="timeline" className="p-5 space-y-4 mt-0">
+            {statusHistory.length > 0 ? (
+              <Timeline items={statusHistory.map((item: any, index: number) => ({
+                id: index,
+                title: item.status,
+                description: item.note || "",
+                timestamp: new Date(item.timestamp),
+                icon: item.status === "completed" ? CheckCircle :
+                      item.status === "payment_completed" ? CheckCircle :
+                      item.status === "pending" ? Clock :
+                      item.status === "processing" ? RefreshCcw :
+                      item.status === "failed" ? AlertCircle :
+                      item.status === "expired" ? X :
+                      FileText
+              }))} />
+            ) : (
+              <p className="text-sm text-emerald-400">No status history available</p>
+            )}
+          </TabsContent>
+          
+          {/* QR Code Tab */}
+          {showQRCode && (
+            <TabsContent value="qrcode" className="p-5 space-y-4 mt-0">
+              <div className="flex flex-col items-center">
+                {/* QR Code Display */}
+                <div className={`
+                  p-4 bg-white rounded-lg 
+                  ${isQRExpired() ? 'opacity-50' : ''}
+                `}>
+                  {qrPayment?.qrCodeData ? (
+                    <QRCode
+                      value={qrPayment.qrCodeData}
+                      size={200}
+                      className="mx-auto"
                     />
-                  </div>
-                  
-                  <div className="text-xs text-muted-foreground mt-2">
-                    <span>Expires: {formatDate(new Date(qrPayment.expiresAt))}</span>
-                  </div>
+                  ) : (
+                    <div className="h-[200px] w-[200px] bg-gray-200 rounded flex items-center justify-center">
+                      <AlertCircle className="h-10 w-10 text-gray-400" />
+                    </div>
+                  )}
                 </div>
                 
-                <div className="flex gap-2 justify-center">
-                  {qrPayment.payUrl && (
+                {/* Expiry Warning */}
+                {isQRExpired() && (
+                  <Alert className="bg-red-900/30 border-red-700/50 text-red-100 mt-4">
+                    <AlertDescription className="text-xs">
+                      This QR code has expired. Please create a new payment.
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {/* Pay URL and QR Code Data */}
+                <div className="w-full mt-4 space-y-3">
+                  {/* Pay URL Button */}
+                  {qrPayment?.payUrl && !isQRExpired() && (
                     <Button 
-                      className="bg-[#0074E0] hover:bg-[#005BB1] text-white"
-                      onClick={openPaymentUrl}
+                      onClick={openPaymentURL}
+                      className="w-full bg-emerald-700 hover:bg-emerald-600"
                     >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Pay with GCash
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open Payment URL
                     </Button>
                   )}
                   
-                  <Button
-                    variant="outline"
-                    onClick={downloadQrCode}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download QR
-                  </Button>
+                  {/* Copy QR Code Data */}
+                  {qrPayment?.qrCodeData && !isQRExpired() && (
+                    <Button 
+                      variant="outline" 
+                      onClick={copyQRCodeData}
+                      className="w-full border-emerald-600/30 bg-emerald-800/50 hover:bg-emerald-700/50"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy QR Code Data
+                    </Button>
+                  )}
                 </div>
               </div>
-            )}
-            
-            {/* Status history if available */}
-            {transaction.metadata?.statusHistory && (
-              <div className="space-y-3">
-                <h4 className="text-sm font-medium">Status Timeline</h4>
-                
-                <div className="space-y-2">
-                  {transaction.metadata.statusHistory.map((status: any, index: number) => (
-                    <div key={index} className="flex items-start text-sm border-l-2 border-emerald-500 pl-3 pb-3">
-                      <div>
-                        <p className="font-medium">{status.status}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(new Date(status.timestamp))}
-                        </p>
-                        {status.note && (
-                          <p className="text-xs mt-1">{status.note}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground">No transaction data available</p>
-          </div>
-        )}
-        
-        <DialogFooter className="sm:justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => onOpenChange(false)}
-            className="mr-auto"
-          >
-            Close
-          </Button>
-          
-          {transactionId && (
-            <Button 
-              variant="outline" 
-              onClick={() => fetchTransactionDetails(transactionId)}
-              disabled={loading}
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            </TabsContent>
           )}
-        </DialogFooter>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

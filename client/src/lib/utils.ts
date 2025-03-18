@@ -205,3 +205,25 @@ export function getTimeAgo(date: Date | string): string {
     });
   }
 }
+
+// Format time ago with date for timeline displays
+export function formatTimeAgo(date: Date | string): string {
+  const timeAgo = getTimeAgo(date);
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  
+  // For recent times, just show the time ago
+  if (timeAgo.includes('just now') || 
+      timeAgo.includes('seconds') || 
+      timeAgo.includes('minute') || 
+      timeAgo.includes('hour')) {
+    return timeAgo;
+  }
+  
+  // For older times, include the exact time
+  const exactTime = dateObj.toLocaleTimeString('en-PH', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  return `${timeAgo} at ${exactTime}`;
+}

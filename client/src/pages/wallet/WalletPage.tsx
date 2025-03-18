@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import DepositForm from "@/components/wallet/DepositForm";
-import TransactionTable from "@/components/wallet/TransactionTable";
+import TransactionTable from "@/components/TransactionTable";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@/lib/types";

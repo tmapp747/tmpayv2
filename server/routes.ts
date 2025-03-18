@@ -1462,27 +1462,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // If this is a GCash QR payment, fetch the associated QR payment data
-      if (transaction.method === 'gcash' && transaction.paymentReference) {
-        const qrPayment = await storage.getQrPaymentByReference(transaction.paymentReference);
+      if (transaction.method === 'gcash') {
+        const reference = transaction.paymentReference || transaction.reference;
+        const qrPayment = await storage.getQrPaymentByReference(reference);
         if (qrPayment) {
           response.qrPayment = qrPayment;
         }
       }
       
       // If this is a Telegram payment, fetch the associated Telegram payment data
-      if (transaction.method === 'telegram' && transaction.paymentReference) {
-        const telegramPayment = await storage.getTelegramPaymentByReference(transaction.paymentReference);
+      if (transaction.method === 'telegram' || transaction.method === 'paygram') {
+        const reference = transaction.paymentReference || transaction.reference;
+        const telegramPayment = await storage.getTelegramPaymentByReference(reference);
         if (telegramPayment) {
           response.telegramPayment = telegramPayment;
         }
       }
       
       // If this is a manual payment, fetch the associated manual payment data
-      if (transaction.method === 'manual' && transaction.paymentReference) {
-        const manualPayment = await storage.getManualPaymentByReference(transaction.paymentReference);
+      if (transaction.method === 'manual') {
+        const reference = transaction.paymentReference || transaction.reference;
+        const manualPayment = await storage.getManualPaymentByReference(reference);
         if (manualPayment) {
           response.manualPayment = manualPayment;
         }
+      }
+      
+      // Add status history from metadata if available
+      if (transaction.metadata?.statusHistory) {
+        response.statusHistory = transaction.metadata.statusHistory;
+      } else {
+        // Create a basic status history if not available
+        response.statusHistory = [
+          {
+            status: transaction.status,
+            timestamp: transaction.updatedAt || transaction.createdAt,
+            note: "Transaction created"
+          }
+        ];
       }
       
       return res.json(response);

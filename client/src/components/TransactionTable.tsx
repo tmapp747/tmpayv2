@@ -1,188 +1,204 @@
 import React, { useState } from 'react';
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getStatusColor, formatCurrency, getTransactionTypeIcon, truncateText, getTimeAgo } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from '@tanstack/react-query';
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { ArrowUpRight, ChevronDown, ChevronUp, Eye, Filter, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { PAYMENT_STATUS, TRANSACTION_TYPES } from "@/lib/constants";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import TransactionDetailsModal from "./TransactionDetailsModal";
-
-interface Transaction {
-  id: number;
-  userId: number;
-  type: string;
-  method: string;
-  amount: string;
-  status: string;
-  paymentReference: string;
-  createdAt: string;
-  updatedAt: string;
-  metadata?: Record<string, any>;
-}
+import { Clock, Copy, ExternalLink, Info, RefreshCw } from "lucide-react";
+import { apiRequest } from "@/lib/api-client";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
+import { StatusBadge } from '@/components/StatusBadge';
+import { TransactionDetailsModal } from "./TransactionDetailsModal";
 
 export default function TransactionTable() {
+  const { toast } = useToast();
   const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   
-  // Query to fetch transactions
-  const { data, isLoading, error } = useQuery<{ success: boolean, transactions: Transaction[] }>({
+  // Query for transactions data
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/transactions'],
-    retry: 1,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
   
-  // No transactions or loading state
+  // Extract transactions from data
+  const transactions = data?.transactions || [];
+  
+  // Handle transaction row click to open details modal
+  const handleTransactionClick = (transactionId: number) => {
+    setSelectedTransactionId(transactionId);
+    setIsDetailsModalOpen(true);
+  };
+  
+  // Handle copy reference to clipboard
+  const handleCopyReference = (e: React.MouseEvent, reference: string) => {
+    e.stopPropagation(); // Prevent opening modal
+    navigator.clipboard.writeText(reference);
+    toast({
+      title: "Copied!",
+      description: "Reference copied to clipboard",
+    });
+  };
+  
+  // Loading UI
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-        <Skeleton className="h-8 w-full" />
-      </div>
+      <Card className="bg-emerald-950 border border-emerald-700/30">
+        <CardHeader className="border-b border-emerald-700/30 pb-3">
+          <CardTitle className="text-emerald-100 text-lg">
+            Transactions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="p-4">
+            <div className="space-y-3">
+              {[1, 2, 3].map((index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[150px] bg-emerald-800/50" />
+                    <Skeleton className="h-3 w-[80px] bg-emerald-800/50" />
+                  </div>
+                  <Skeleton className="h-8 w-[100px] bg-emerald-800/50" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
   
+  // Error UI
   if (error) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-destructive">Error loading transactions</p>
-      </div>
+      <Card className="bg-emerald-950 border border-emerald-700/30">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-emerald-100 mb-2">Error Loading Transactions</h3>
+            <p className="text-emerald-300 mb-4">
+              We couldn't load your transactions. Please try again.
+            </p>
+            <Button onClick={() => refetch()} variant="outline" className="bg-emerald-800/50 border-emerald-700/30">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
   
-  if (!data?.transactions || data.transactions.length === 0) {
+  // Empty state
+  if (transactions.length === 0) {
     return (
-      <div className="p-4 text-center">
-        <p className="text-muted-foreground">No transactions yet</p>
-      </div>
+      <Card className="bg-emerald-950 border border-emerald-700/30">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <Clock className="h-10 w-10 text-emerald-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-emerald-100 mb-2">No Transactions Yet</h3>
+            <p className="text-emerald-300">
+              Your transaction history will appear here once you make your first deposit.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
-  
-  // Sort transactions by date (newest first)
-  const transactions = [...data.transactions].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-  
-  // Helper to determine status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return <Badge className="bg-green-500 hover:bg-green-600">Completed</Badge>;
-      case 'failed':
-        return <Badge variant="destructive">Failed</Badge>;
-      case 'expired':
-        return <Badge variant="outline" className="text-amber-500 border-amber-500">Expired</Badge>;
-      case 'pending':
-        return <Badge variant="secondary" className="animate-pulse">Pending</Badge>;
-      case 'cancelled':
-        return <Badge variant="outline" className="text-slate-500 border-slate-500">Cancelled</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-  
-  // Get transaction type and method friendly names
-  const getTypeName = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'deposit':
-        return 'Deposit';
-      case 'withdrawal':
-        return 'Withdraw';
-      case 'transfer':
-        return 'Transfer';
-      default:
-        return type;
-    }
-  };
-  
-  const getMethodName = (method: string) => {
-    switch (method.toLowerCase()) {
-      case 'gcash':
-      case 'gcash_qr':
-        return 'GCash';
-      case 'telegram':
-        return 'PHPT';
-      case 'manual':
-        return 'Manual';
-      default:
-        return method;
-    }
-  };
-  
-  // Open transaction details modal
-  const handleViewTransaction = (transactionId: number) => {
-    setSelectedTransactionId(transactionId);
-    setModalOpen(true);
-  };
   
   return (
     <>
-      <Table className="border rounded-lg overflow-hidden">
-        <TableCaption>Recent transaction history</TableCaption>
-        <TableHeader>
-          <TableRow className="bg-emerald-900/30 border-b border-emerald-800/30">
-            <TableHead className="font-medium text-emerald-100">Date</TableHead>
-            <TableHead className="font-medium text-emerald-100">Type</TableHead>
-            <TableHead className="font-medium text-emerald-100">Method</TableHead>
-            <TableHead className="font-medium text-emerald-100 text-right">Amount</TableHead>
-            <TableHead className="font-medium text-emerald-100">Status</TableHead>
-            <TableHead className="font-medium text-emerald-100 text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow 
-              key={transaction.id}
-              className="hover:bg-emerald-900/10 border-b border-emerald-900/10 cursor-pointer"
-              onClick={() => handleViewTransaction(transaction.id)}
-            >
-              <TableCell className="font-mono text-xs">
-                {formatDate(new Date(transaction.createdAt))}
-              </TableCell>
-              <TableCell>
-                {getTypeName(transaction.type)}
-              </TableCell>
-              <TableCell>
-                {getMethodName(transaction.method)}
-              </TableCell>
-              <TableCell className="text-right font-medium">
-                {formatCurrency(Number(transaction.amount))}
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(transaction.status)}
-              </TableCell>
-              <TableCell className="text-right">
-                <Button
-                  variant="ghost" 
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewTransaction(transaction.id);
-                  }}
-                >
-                  <Eye size={16} className="text-emerald-500" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Card className="bg-emerald-950 border border-emerald-700/30">
+        <CardHeader className="border-b border-emerald-700/30 pb-3">
+          <CardTitle className="text-emerald-100 text-lg">
+            Transactions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-emerald-700/30 hover:bg-emerald-900/40">
+                  <TableHead className="text-emerald-400">Date</TableHead>
+                  <TableHead className="text-emerald-400">Type</TableHead>
+                  <TableHead className="text-emerald-400">Method</TableHead>
+                  <TableHead className="text-emerald-400">Amount</TableHead>
+                  <TableHead className="text-emerald-400">Status</TableHead>
+                  <TableHead className="text-emerald-400">Reference</TableHead>
+                  <TableHead className="text-emerald-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction: any) => (
+                  <TableRow
+                    key={transaction.id}
+                    className={`cursor-pointer border-emerald-700/30 hover:bg-emerald-900/40 ${getStatusColor(transaction.status)}`}
+                    onClick={() => handleTransactionClick(transaction.id)}
+                  >
+                    <TableCell className="text-emerald-200 text-sm">
+                      {getTimeAgo(transaction.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-emerald-200 text-sm">
+                      {transaction.type === TRANSACTION_TYPES.DEPOSIT 
+                        ? "Deposit" 
+                        : transaction.type === TRANSACTION_TYPES.WITHDRAW 
+                          ? "Withdrawal" 
+                          : transaction.type}
+                    </TableCell>
+                    <TableCell className="text-emerald-200 text-sm capitalize">
+                      {transaction.method === "gcash" ? "GCash" :
+                       transaction.method === "paygram" ? "Paygram" :
+                       transaction.method === "manual" ? "Manual" :
+                       transaction.method || "Unknown"}
+                    </TableCell>
+                    <TableCell className="text-emerald-200 text-sm font-medium">
+                      {formatCurrency(parseFloat(transaction.amount), transaction.currency || "PHP")}
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={transaction.status} size="sm" />
+                    </TableCell>
+                    <TableCell className="text-emerald-200 text-sm">
+                      <div className="flex items-center">
+                        <span className="truncate max-w-[80px]">{transaction.reference.substring(0, 10)}...</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-1 hover:bg-emerald-800/50 hover:text-emerald-100"
+                          onClick={(e) => handleCopyReference(e, transaction.reference)}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 hover:bg-emerald-800/50 hover:text-emerald-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTransactionClick(transaction.id);
+                        }}
+                      >
+                        <Info className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
       
-      {/* Transaction details modal */}
-      <TransactionDetailsModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
+      {/* Transaction Details Modal */}
+      <TransactionDetailsModal 
+        isOpen={isDetailsModalOpen} 
+        onClose={() => setIsDetailsModalOpen(false)} 
         transactionId={selectedTransactionId}
       />
     </>
