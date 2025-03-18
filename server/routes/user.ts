@@ -19,3 +19,14 @@ router.post('/preferences/theme', (req, res) => {
 });
 
 router.get('/info', (req, res) => {
+  // ... existing code ...
+});
+
+
+async function syncUserHierarchy(user, casino747Api) {
+    const hierarchyData = await casino747Api.getUserHierarchy(
+      user.casinoUsername || user.username,
+      user.casinoUserType === 'agent' || user.hierarchyLevel > 1
+    );
+    // ...rest of the hierarchy sync logic...
+}

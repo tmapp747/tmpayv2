@@ -166,7 +166,7 @@ export function setupAuth(app: Express) {
 
         if (!user) {
           console.log(`Login failed: no user found with username "${username}"`);
-          return done(null, false);
+          return done(null, false, { message: 'Invalid username or password' });
         }
 
         // Compare passwords using our enhanced function that handles both hashed and plaintext passwords
@@ -174,7 +174,7 @@ export function setupAuth(app: Express) {
 
         if (!isPasswordValid) {
           console.log(`Login failed: invalid password for user "${username}"`);
-          return done(null, false);
+          return done(null, false, { message: 'Invalid username or password' });
         }
 
         // If login successful and password is not hashed (plaintext), perform automatic migration
@@ -231,42 +231,42 @@ export function setupAuth(app: Express) {
   });
 
   // Admin registration endpoint
-app.post("/api/admin/register", async (req, res, next) => {
-  try {
-    // Check if request contains the specified credentials
-    if (req.body.username !== 'admin' || req.body.password !== 'Bossmarc@747live') {
-      return res.status(400).json({ success: false, message: "Invalid admin credentials" });
+  app.post("/api/admin/register", async (req, res, next) => {
+    try {
+      // Check if request contains the specified credentials
+      if (req.body.username !== 'admin' || req.body.password !== 'Bossmarc@747live') {
+        return res.status(400).json({ success: false, message: "Invalid admin credentials" });
+      }
+
+      // Check if admin already exists
+      const existingAdmin = await storage.getUserByUsername('admin');
+      if (existingAdmin) {
+        return res.status(400).json({ success: false, message: "Admin account already exists" });
+      }
+
+      // Create admin user with specified credentials
+      const hashedPassword = await hashPassword('Bossmarc@747live');
+      const admin = await storage.createUser({
+        username: 'admin',
+        password: hashedPassword,
+        email: 'admin@tmpay.com',
+        role: 'admin',
+        isAuthorized: true,
+        casinoId: 'admin',
+        isVip: true,
+        hierarchyLevel: 3, // Top level access
+        balances: { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
+        preferredCurrency: 'PHP'
+      });
+
+      res.status(201).json({ success: true, message: "Admin account created successfully" });
+    } catch (error) {
+      console.error('Error creating admin account:', error);
+      next(error);
     }
+  });
 
-    // Check if admin already exists
-    const existingAdmin = await storage.getUserByUsername('admin');
-    if (existingAdmin) {
-      return res.status(400).json({ success: false, message: "Admin account already exists" });
-    }
-
-    // Create admin user with specified credentials
-    const hashedPassword = await hashPassword('Bossmarc@747live');
-    const admin = await storage.createUser({
-      username: 'admin',
-      password: hashedPassword,
-      email: 'admin@tmpay.com',
-      role: 'admin',
-      isAuthorized: true,
-      casinoId: 'admin',
-      isVip: true,
-      hierarchyLevel: 3, // Top level access
-      balances: { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
-      preferredCurrency: 'PHP'
-    });
-
-    res.status(201).json({ success: true, message: "Admin account created successfully" });
-  } catch (error) {
-    console.error('Error creating admin account:', error);
-    next(error);
-  }
-});
-
-app.post("/api/register", async (req, res, next) => {
+  app.post("/api/register", async (req, res, next) => {
     try {
       // Validate registration data using insertUserSchema
       const registrationData = insertUserSchema.parse(req.body);
