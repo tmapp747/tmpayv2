@@ -38,6 +38,14 @@ export async function comparePasswords(supplied: string, stored: string): Promis
   }
 }
 
+/**
+ * Check if a password is hashed (starts with the bcrypt identifier $2a$, $2b$, or $2y$)
+ * This is used for automatic migration of plaintext passwords to bcrypt hashes
+ */
+export function isPasswordHashed(password: string): boolean {
+  return password.startsWith('$2a$') || password.startsWith('$2b$') || password.startsWith('$2y$');
+}
+
 export function setupAuth(app: Express) {
   const PgStore = pgSession(session);
   const pgSessionStore = new PgStore({
