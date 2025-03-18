@@ -1822,6 +1822,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[TRANSACTION] Created QR payment ID: ${qrPayment.id} for transaction ID: ${transaction.id}`);
       
       // Verify transactions in database before responding to ensure they're visible immediately
+
+  // Manual payment completion endpoint
+  app.post("/api/payments/complete-manual/:reference", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { reference } = req.params;
+      const user = (req as any).user;
+
+      // Find the pending payment
+      const qrPayment = await storage.getQrPaymentByReference(reference);
+      
+      if (!qrPayment || qrPayment.userId !== user.id) {
+        return res.status(404).json({
+          success: false,
+          message: "Payment not found or unauthorized"
+        });
+      }
+
+      // Process payment completion
+      const result = await handleDirectPayWebhook({
+        reference,
+        status: 'completed',
+        payment_status: 'success'
+      });
+
+      return res.json({
+        success: true,
+        message: "Payment manually completed",
+        result
+      });
+    } catch (error) {
+      console.error("Manual completion error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to complete payment manually"
+      });
+    }
+  });
+
       const userTransactions = await storage.getTransactionsByUserId(user.id);
       console.log(`[TRANSACTION] User ${user.username} has ${userTransactions.length} transactions in database`);
       
@@ -4172,14 +4210,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("✅ DirectPay webhook received:", JSON.stringify(req.body));
       
-      // Process the webhook using our comprehensive helper function
-      const result = await handleDirectPayWebhook(req.body);
+      // Extract payment reference from various possible fields
+      const paymentReference = req.body.reference || req.body.payment_reference || req.body.ref;
       
-      // Return a 200 OK response with the result
-      // Important: Always return 200 status for webhooks to prevent retries
+      if (!paymentReference) {
+        console.warn("❌ Payment reference missing in webhook payload");
+        return res.status(200).json({ 
+          success: false,
+          message: "Missing payment reference",
+          webhookReceived: true
+        });
+      }
+
+      // Add timeout handling
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Webhook processing timeout')), 30000)
+      );
+
+      // Process webhook with timeout
+      const result = await Promise.race([
+        handleDirectPayWebhook(req.body),
+        timeoutPromise
+      ]);
+
+      console.log(`✅ Webhook processed for reference: ${paymentReference}`);
+      
       return res.status(200).json({
         ...result,
-        webhookReceived: true
+        webhookReceived: true,
+        processedAt: new Date().toISOString()
       });
     } catch (error) {
       console.error("DirectPay webhook processing error:", error);
