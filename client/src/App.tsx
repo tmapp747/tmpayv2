@@ -17,6 +17,8 @@ import MobileDashboard from "@/pages/MobileDashboard";
 import MobileWallet from "@/pages/MobileWallet";
 import MobileProfile from "@/pages/MobileProfile";
 import MobileDepositPage from "@/pages/mobile-deposit";
+import MobileTransactionHistory from "@/components/mobile/MobileTransactionHistory";
+import BottomNavBar from "@/components/navigation/BottomNavBar";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
@@ -42,6 +44,7 @@ function Router() {
       if (location === "/wallet") navigate("/mobile/wallet");
       if (location === "/profile") navigate("/mobile/profile");
       if (location === "/auth") navigate("/mobile/auth");
+      if (location === "/history") navigate("/mobile/history");
       
       // Legacy mobile routes to new pattern
       if (location === "/mobile-wallet") navigate("/mobile/wallet");
@@ -59,6 +62,7 @@ function Router() {
       if (location === "/mobile") navigate("/dashboard");
       if (location === "/mobile/wallet") navigate("/wallet");
       if (location === "/mobile/profile") navigate("/profile");
+      if (location === "/mobile/history") navigate("/history");
       if (location === "/mobile/auth") navigate("/auth");
       if (location === "/mobile-wallet") navigate("/wallet");
       if (location === "/mobile-profile") navigate("/profile");
@@ -112,19 +116,52 @@ function Router() {
       <ProtectedRoute path="/mobile/wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
+      <ProtectedRoute path="/mobile/history" component={() => {
+        return (
+          <div className="banking-app min-h-screen pb-20 overflow-hidden bg-gradient-to-b from-[#001138] to-[#002D87]">
+            <header className="p-4 sticky top-0 z-40 backdrop-blur-md bg-[#00174F]/70">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold text-white">Transaction History</h1>
+                  <p className="text-sm text-blue-300">All your transactions</p>
+                </div>
+              </div>
+            </header>
+            
+            <main className="px-4 pb-16">
+              <MobileTransactionHistory />
+            </main>
+            
+            <BottomNavBar />
+          </div>
+        );
+      }} />
       
       {/* Legacy mobile route patterns for backward compatibility */}
       <ProtectedRoute path="/mobile-wallet" component={() => {
-        window.location.href = "/mobile/wallet";
-        return null;
+        // Redirect using useEffect to avoid immediate redirect before component mount
+        useEffect(() => {
+          window.location.href = "/mobile/wallet";
+        }, []);
+        return <div className="min-h-screen flex items-center justify-center bg-blue-900">
+          <div className="animate-pulse">Redirecting...</div>
+        </div>;
       }} />
       <ProtectedRoute path="/mobile-profile" component={() => {
-        window.location.href = "/mobile/profile";
-        return null;
+        useEffect(() => {
+          window.location.href = "/mobile/profile";
+        }, []);
+        return <div className="min-h-screen flex items-center justify-center bg-blue-900">
+          <div className="animate-pulse">Redirecting...</div>
+        </div>;
       }} />
       <ProtectedRoute path="/mobile-deposit" component={() => {
-        window.location.href = "/mobile/deposit";
-        return null;
+        useEffect(() => {
+          window.location.href = "/mobile/deposit";
+        }, []);
+        return <div className="min-h-screen flex items-center justify-center bg-blue-900">
+          <div className="animate-pulse">Redirecting...</div>
+        </div>;
       }} />
       
       {/* Admin routes */}

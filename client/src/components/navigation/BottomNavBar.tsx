@@ -58,10 +58,10 @@ export default function BottomNavBar() {
           isActive={isWalletPage || isWalletPageAlt || isDepositPage || isDepositPageAlt}
         />
         <NavItem 
-          href="/history" 
+          href="/mobile/history" 
           icon={<History size={24} />} 
           label="History" 
-          isActive={false}
+          isActive={isHistoryPage}
         />
         <NavItem 
           href="/mobile/profile" 
