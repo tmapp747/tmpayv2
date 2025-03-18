@@ -4,13 +4,19 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function BottomNavBar() {
+  // Use the standard /mobile/* route pattern
   const [isHomePage] = useRoute("/mobile");
   const [isWalletPage] = useRoute("/mobile/wallet");
-  const [isWalletPageAlt] = useRoute("/mobile-wallet");
   const [isProfilePage] = useRoute("/mobile/profile");
-  const [isProfilePageAlt] = useRoute("/mobile-profile");
   const [isDepositPage] = useRoute("/mobile/deposit");
+  
+  // For backward compatibility with legacy routes
+  const [isWalletPageAlt] = useRoute("/mobile-wallet");
+  const [isProfilePageAlt] = useRoute("/mobile-profile");
   const [isDepositPageAlt] = useRoute("/mobile-deposit");
+  
+  // New history page route
+  const [isHistoryPage] = useRoute("/mobile/history");
   
   const [lastScrollY, setLastScrollY] = useState(0);
   const [hidden, setHidden] = useState(false);

@@ -37,22 +37,32 @@ function Router() {
   useEffect(() => {
     // Only redirect specific routes and only on initial page load or direct navigation
     if (isMobile) {
+      // Use consistent /mobile/[page] pattern for all mobile routes
       if (location === "/dashboard") navigate("/mobile");
-      if (location === "/wallet") navigate("/mobile-wallet");
-      if (location === "/profile") navigate("/mobile-profile");
+      if (location === "/wallet") navigate("/mobile/wallet");
+      if (location === "/profile") navigate("/mobile/profile");
       if (location === "/auth") navigate("/mobile/auth");
       
+      // Legacy mobile routes to new pattern
+      if (location === "/mobile-wallet") navigate("/mobile/wallet");
+      if (location === "/mobile-profile") navigate("/mobile/profile");
+      if (location === "/mobile-deposit") navigate("/mobile/deposit");
+      if (location === "/mobile-auth") navigate("/mobile/auth");
+      
       // This fixes the issue with mobile-auth not redirecting to /mobile
-      if ((location === "/mobile-auth" || location === "/mobile/auth") && sessionStorage.getItem("redirectToMobile")) {
+      if (location === "/mobile/auth" && sessionStorage.getItem("redirectToMobile")) {
         sessionStorage.removeItem("redirectToMobile");
         navigate("/mobile");
       }
     } else {
       // Redirect mobile routes to desktop if on desktop
       if (location === "/mobile") navigate("/dashboard");
+      if (location === "/mobile/wallet") navigate("/wallet");
+      if (location === "/mobile/profile") navigate("/profile");
+      if (location === "/mobile/auth") navigate("/auth");
       if (location === "/mobile-wallet") navigate("/wallet");
       if (location === "/mobile-profile") navigate("/profile");
-      if (location === "/mobile/auth") navigate("/auth");
+      if (location === "/mobile-auth") navigate("/auth");
     }
   }, [isMobile, location, navigate]);
 
@@ -97,14 +107,25 @@ function Router() {
         </Layout>
       )} />
       
-      {/* Mobile-optimized routes */}
+      {/* Mobile-optimized routes - standardized on /mobile/* pattern */}
       <ProtectedRoute path="/mobile" component={MobileDashboard} />
       <ProtectedRoute path="/mobile/wallet" component={MobileWallet} />
-      <ProtectedRoute path="/mobile-wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
-      <ProtectedRoute path="/mobile-profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
-      <ProtectedRoute path="/mobile-deposit" component={MobileDepositPage} />
+      
+      {/* Legacy mobile route patterns for backward compatibility */}
+      <ProtectedRoute path="/mobile-wallet" component={() => {
+        window.location.href = "/mobile/wallet";
+        return null;
+      }} />
+      <ProtectedRoute path="/mobile-profile" component={() => {
+        window.location.href = "/mobile/profile";
+        return null;
+      }} />
+      <ProtectedRoute path="/mobile-deposit" component={() => {
+        window.location.href = "/mobile/deposit";
+        return null;
+      }} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
