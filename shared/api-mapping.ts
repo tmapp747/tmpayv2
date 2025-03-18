@@ -51,21 +51,37 @@ export const directPayApiFields = {
   // Status mapping from DirectPay to our system
   paymentStatusMapping: {
     "pending": "pending",
+    "PENDING": "pending",
     "processing": "processing",
+    "PROCESSING": "processing",
     "success": "payment_completed",
+    "SUCCESS": "payment_completed",
+    "PAID": "payment_completed",
+    "paid": "payment_completed",
     "failed": "failed",
+    "FAILED": "failed",
     "expired": "expired",
-    "cancelled": "cancelled"
+    "EXPIRED": "expired",
+    "cancelled": "cancelled",
+    "CANCELLED": "cancelled"
   },
   
   // GCash status mapping (for dual-status tracking)
   gcashStatusMapping: {
     "pending": "processing", // GCash payment is being processed
+    "PENDING": "processing", // GCash payment is being processed
     "processing": "processing", // GCash payment is being processed
+    "PROCESSING": "processing", // GCash payment is being processed
     "success": "completed", // GCash payment completed successfully
+    "SUCCESS": "completed", // GCash payment completed successfully
+    "PAID": "completed", // GCash payment completed successfully
+    "paid": "completed", // GCash payment completed successfully
     "failed": "failed", // GCash payment failed
+    "FAILED": "failed", // GCash payment failed
     "expired": "failed", // GCash payment expired (considered failed)
-    "cancelled": "failed" // GCash payment cancelled (considered failed)
+    "EXPIRED": "failed", // GCash payment expired (considered failed)
+    "cancelled": "failed", // GCash payment cancelled (considered failed)
+    "CANCELLED": "failed" // GCash payment cancelled (considered failed)
   }
 };
 
@@ -317,8 +333,37 @@ export const transactionTimelineStatusMapping = {
  * @returns Standardized gcashStatus value
  */
 export function mapDirectPayStatusToGcashStatus(directPayStatus: string): string {
-  const gcashStatus = directPayApiFields.gcashStatusMapping[directPayStatus] || 'processing';
-  return gcashStatus;
+  // Handle null or undefined status
+  if (!directPayStatus) {
+    return 'processing';
+  }
+  
+  // First try direct lookup with the status as-is
+  const directMatch = directPayApiFields.gcashStatusMapping[directPayStatus];
+  if (directMatch) {
+    return directMatch;
+  }
+  
+  // If no direct match, try case-insensitive lookup
+  const statusLower = directPayStatus.toLowerCase();
+  for (const [key, value] of Object.entries(directPayApiFields.gcashStatusMapping)) {
+    if (key.toLowerCase() === statusLower) {
+      return value;
+    }
+  }
+  
+  // Fallback to common status mappings
+  if (statusLower.includes('paid') || statusLower.includes('success') || statusLower.includes('complete')) {
+    return 'completed';
+  } else if (statusLower.includes('fail') || statusLower.includes('error') || statusLower.includes('decline')) {
+    return 'failed';
+  } else if (statusLower.includes('pending') || statusLower.includes('wait')) {
+    return 'processing';
+  }
+  
+  // Default fallback
+  console.log(`Unknown DirectPay status: ${directPayStatus}, using default 'processing'`);
+  return 'processing';
 }
 
 /**

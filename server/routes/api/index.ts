@@ -723,17 +723,27 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     
     const payload = req.body;
     
+    // Extract reference from multiple possible fields based on DirectPay format
+    // DirectPay may send refId, reference, or ref fields
+    const reference = payload.refId || payload.reference || payload.ref;
+    
+    // Extract status from multiple possible fields
+    // DirectPay may send status as 'status' or 'status' with values like 'FAILED', 'SUCCESS', etc.
+    const status = payload.status;
+    
     // Validate essential fields
-    if (!payload || !payload.reference || !payload.status) {
-      console.error("Invalid webhook payload: missing required fields");
+    if (!reference || !status) {
+      console.error("Invalid webhook payload: missing required fields (reference/status)");
       return res.status(400).json({ success: false, message: "Invalid webhook payload" });
     }
     
+    console.log(`Processing DirectPay webhook with reference: ${reference}, status: ${status}`);
+    
     // Find the QR payment by reference
-    const qrPayment = await storage.getQrPaymentByReference(payload.reference);
+    const qrPayment = await storage.getQrPaymentByReference(reference);
     
     if (!qrPayment) {
-      console.error(`QR payment not found for reference: ${payload.reference}`);
+      console.error(`QR payment not found for reference: ${reference}`);
       return res.status(404).json({ success: false, message: "Payment not found" });
     }
     
