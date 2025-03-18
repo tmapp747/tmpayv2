@@ -41,7 +41,7 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
     queryFn: async () => {
       if (!transactionId) return null;
       const response = await apiRequest(`/api/transactions/${transactionId}`);
-      return response;
+      return response as any;
     },
     enabled: !!transactionId && isOpen,
     refetchInterval: 10000, // Poll every 10 seconds for any status updates
@@ -400,7 +400,7 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
                     onClick={() => setActiveTab("qrcode")}
                     className="bg-emerald-800/50 border-emerald-600/30 hover:bg-emerald-700/50 hover:text-white"
                   >
-                    <QRCode className="h-4 w-4 mr-2" />
+                    <QrCode className="h-4 w-4 mr-2" />
                     View QR Code
                   </Button>
                 )}
