@@ -40,8 +40,11 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
     queryKey: [`/api/transactions/${transactionId}`, transactionId],
     queryFn: async () => {
       if (!transactionId) return { success: false, transaction: null, statusHistory: [] };
-      const response = await apiRequest(`/api/transactions/${transactionId}`);
-      return response as any;
+      // Fix the parameter order - method should be first, then URL
+      const response = await apiRequest('GET', `/api/transactions/${transactionId}`);
+      const data = await response.json();
+      console.log('Transaction details response:', data);
+      return data;
     },
     enabled: !!transactionId && isOpen,
     refetchInterval: 10000, // Poll every 10 seconds for any status updates
@@ -89,11 +92,11 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   // Handle manual payment completion
   const markAsCompleted = async () => {
     try {
-      const response = await apiRequest('/api/payments/mark-as-completed', 'POST', {
+      const response = await apiRequest('POST', '/api/payments/mark-as-completed', {
         paymentReference: transaction?.reference
       });
       
-      const result = response as any;
+      const result = await response.json();
       if (result.success) {
         toast({
           title: "Success!",
@@ -120,9 +123,9 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   // Handle transaction cancellation
   const cancelTransaction = async () => {
     try {
-      const response = await apiRequest(`/api/payments/cancel/${transaction?.reference}`, 'POST');
+      const response = await apiRequest('POST', `/api/payments/cancel/${transaction?.reference}`);
       
-      const result = response as any;
+      const result = await response.json();
       if (result.success) {
         toast({
           title: "Success!",
