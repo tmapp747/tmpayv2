@@ -30,7 +30,10 @@ export default function MobileDepositPage() {
   }
 
   return (
-    <div className="mobile-app-container">
+    <div className="mobile-app-container min-h-screen pb-28"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
+      }}>
       <MobileGCashDeposit />
       <BottomNavBar />
     </div>
