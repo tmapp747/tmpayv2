@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { userApi } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import teamMarcLogo from "../assets/Logo teammarc.png";
 
 const DesktopSidebar = () => {
   const [location] = useLocation();
@@ -38,25 +39,15 @@ const DesktopSidebar = () => {
       
       <div className="flex justify-center p-4 border-b border-secondary/30 relative">
         <div className="flex items-center">
-          <div className="w-12 h-12 overflow-hidden relative" style={{
+          <div className="w-12 h-12 overflow-hidden relative flex items-center justify-center" style={{
             filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
             transform: 'translateZ(0)'
           }}>
-            <svg viewBox="0 0 200 200" className="h-full w-full">
-              <defs>
-                <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#d4af37" />
-                  <stop offset="50%" stopColor="#f2d87f" />
-                  <stop offset="100%" stopColor="#b78628" />
-                </linearGradient>
-              </defs>
-              <circle cx="100" cy="100" r="90" fill="#1a2b47" />
-              <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="url(#goldGradient)" fontSize="60" fontWeight="bold" style={{textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'}}>747</text>
-            </svg>
+            <img src={teamMarcLogo} alt="TeamMARC" className="h-9 w-auto object-contain" />
           </div>
           <div className="ml-2">
             <h1 className="text-xl font-bold text-white font-montserrat" style={{textShadow: '0 2px 3px rgba(0, 0, 0, 0.5)'}}>
-              747 <span className="text-secondary" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))'}}>E-Wallet</span>
+              TeamMARC <span className="text-secondary" style={{filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5))'}}>E-Wallet</span>
             </h1>
           </div>
         </div>
