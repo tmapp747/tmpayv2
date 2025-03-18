@@ -10,7 +10,7 @@ const baseUrl = 'http://localhost:5000';
 
 // Find an existing payment reference or create one if needed
 // You can get this from the database or admin panel
-const existingPaymentReference = 'ref_cf29739c7f2e6482'; // Using a pending payment from the database
+const existingPaymentReference = 'ref_test_webhook_trigger'; // Using our newly created pending payment
 
 async function simulateWebhook() {
   try {
