@@ -385,19 +385,9 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
       console.error('❌ All fallback attempts failed:', fallbackError.message);
     }
     
-    // Last resort fallback for development/testing
-    console.log(`[LAST RESORT FALLBACK] Casino747: Simulating completed topup for ${casinoId} with amount ${amount}`);
-    
-    const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    
-    return {
-      success: true,
-      newBalance: amount,
-      transactionId: `TXN${Math.floor(Math.random() * 10000000)}`,
-      nonce: nonce,
-      fromManager: 'system',
-      simulated: true
-    };
+    // Production error - don't use simulation fallbacks
+    console.error(`[CASINO TRANSFER ERROR] All attempts to transfer funds to ${casinoId} failed`);
+    throw new Error(`Failed to complete casino transfer after multiple attempts. Please try again later.`);
   }
 }
 
