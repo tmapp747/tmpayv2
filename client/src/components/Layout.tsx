@@ -1,5 +1,6 @@
+
 import { ReactNode } from "react";
-import MobileNavigation from "./MobileNavigation";
+import { BottomNavBar } from "./navigation/BottomNavBar";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -28,7 +29,7 @@ export default function Layout({ children }: LayoutProps) {
       <main className="flex-1 flex flex-col overflow-x-hidden max-w-full relative">
         {children}
       </main>
-      <MobileNavigation />
+      <BottomNavBar />
     </div>
   );
 }
