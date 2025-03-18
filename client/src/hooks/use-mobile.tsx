@@ -226,7 +226,7 @@ export function useSwipe(
   }, [onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown, threshold]);
   
   return {
-    handleTouchStart,
-    handleTouchEnd
+    onTouchStart: handleTouchStart,
+    onTouchEnd: handleTouchEnd
   };
 }
