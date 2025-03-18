@@ -1917,6 +1917,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Debug endpoint to get transaction details by ID
+  app.get("/api/debug/get-transaction/:id", async (req: Request, res: Response) => {
+    try {
+      const transactionId = parseInt(req.params.id);
+      if (isNaN(transactionId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid transaction ID"
+        });
+      }
+      
+      const transaction = await storage.getTransaction(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({
+          success: false,
+          message: "Transaction not found"
+        });
+      }
+      
+      return res.json({
+        success: true,
+        transaction
+      });
+    } catch (error) {
+      console.error("Error getting transaction:", error);
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Password migration utility endpoint for fixing existing plaintext passwords
   app.post("/api/debug/fix-password", async (req: Request, res: Response) => {
     try {
