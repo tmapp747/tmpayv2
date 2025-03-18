@@ -3,8 +3,14 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw, Ban, AlertCircle, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatCurrency, formatDate, getStatusColor, getTimeAgo } from "@/lib/utils";
-import { Transaction } from "@/lib/types";
+import { Transaction as BaseTransaction } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+
+// Extend the Transaction type to include payment_completed status
+type EnhancedTransactionStatus = 'pending' | 'completed' | 'failed' | 'expired' | 'payment_completed';
+type Transaction = Omit<BaseTransaction, 'status'> & {
+  status: EnhancedTransactionStatus;
+};
 import { apiRequest } from "@/lib/queryClient";
 import { TransactionStatusTimeline } from "@/components/TransactionStatusTimeline";
 import { 
