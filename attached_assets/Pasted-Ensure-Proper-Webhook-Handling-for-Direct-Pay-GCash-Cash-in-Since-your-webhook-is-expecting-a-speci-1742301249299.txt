@@ -1,0 +1,133 @@
+Ensure Proper Webhook Handling for Direct Pay GCash Cash-in
+
+Since your webhook is expecting a specific JSON format upon receiving a notification from Direct Pay, you need to ensure that the API is correctly sending the required fields. Below are some key steps and best practices:
+
+⸻
+
+1. Confirm the Webhook URL and Structure
+
+When creating a cash-in link, ensure your request contains the correct webhook URL:
+
+Updated cURL Request:
+
+curl --location 'https://direct-payph.com/api/gcash_cashin' \
+--header 'Authorization: Bearer a238fe8a542b2ad2a8727126e2fc8885092f8bf502120574935329d5df1f7252ec8564dbed05692115bb3df5670b221d' \
+--header 'Content-Type: application/json' \
+--header 'Cookie: PHPSESSID=9joh7sntppefje0plo27f3fhct' \
+--data '{
+  "amount": 100.00,
+  "webhook": "https://yourserver.com/webhook/gcash_sync",
+  "redirectUrl": "https://thankyoupage.com"
+}'
+
+🔹 Make sure your webhook URL (https://yourserver.com/webhook/gcash_sync) is publicly accessible so Direct Pay can send the response.
+
+⸻
+
+2. Expected Webhook Payload Format
+
+Once the transaction is processed, Direct Pay will send a POST request to your webhook URL with a JSON payload like this:
+
+{
+    "amount": "100",
+    "currency": "PHP",
+    "refId": "ref_1ae942cfd281eaa9",
+    "invoiceNo": "The QR code has expired.",
+    "txnDesc": "Add Funds via GCASH QR|refId:ref_1ae942cfd281eaa9",
+    "txnDate": "1742016549514",
+    "txnId": "9908728",
+    "status": "FAILED",
+    "merchant_id": "ACw4xoKnvj52StUi"
+}
+
+
+
+⸻
+
+3. Handling the Webhook in PHP
+
+If your server is handling the webhook using PHP, you can process the payload like this:
+
+<?php
+// Get the raw POST data
+$payload = file_get_contents("php://input");
+
+// Decode JSON data
+$data = json_decode($payload, true);
+
+// Log the received webhook data
+file_put_contents("webhook_log.txt", print_r($data, true), FILE_APPEND);
+
+// Check if the request contains necessary fields
+if (isset($data["status"]) && isset($data["refId"])) {
+    if ($data["status"] === "SUCCESS") {
+        // Process successful payment
+        echo json_encode(["message" => "Payment successful", "refId" => $data["refId"]]);
+    } else {
+        // Process failed or expired payment
+        echo json_encode(["message" => "Payment failed", "refId" => $data["refId"]]);
+    }
+} else {
+    echo json_encode(["error" => "Invalid webhook payload"]);
+}
+?>
+
+🔹 Save webhook logs (webhook_log.txt) to debug issues if the webhook doesn’t work as expected.
+
+⸻
+
+4. Testing the Webhook
+
+To test if your webhook receives data correctly:
+	•	Use Postman to send a POST request to your webhook URL with the expected JSON payload.
+	•	Run this command in cURL to simulate the webhook call:
+
+curl --location --request POST 'https://yourserver.com/webhook/gcash_sync' \
+--header 'Content-Type: application/json' \
+--data '{
+    "amount": "100",
+    "currency": "PHP",
+    "refId": "ref_1ae942cfd281eaa9",
+    "invoiceNo": "The QR code has expired.",
+    "txnDesc": "Add Funds via GCASH QR|refId:ref_1ae942cfd281eaa9",
+    "txnDate": "1742016549514",
+    "txnId": "9908728",
+    "status": "FAILED",
+    "merchant_id": "ACw4xoKnvj52StUi"
+}'
+
+
+	•	Check your server logs to verify that the webhook is being received and processed correctly.
+
+⸻
+
+5. Handling Expired QR Code Responses
+
+Your webhook response includes:
+
+"invoiceNo": "The QR code has expired.",
+"status": "FAILED"
+
+🔹 If your system needs to resend the cash-in request when a QR expires, consider:
+	•	Automatically generating a new cash-in request with a new reference ID.
+	•	Notifying the user that the QR code expired and providing a new one.
+
+⸻
+
+6. Debugging Webhook Issues
+
+If the webhook isn’t triggering correctly:
+	•	Ensure the webhook server is reachable (https://yourserver.com/webhook/gcash_sync).
+	•	Check if your firewall or security settings are blocking external requests.
+	•	Log the entire payload to a file (webhook_log.txt) for debugging.
+	•	If using Cloudflare or a CDN, disable caching for webhook requests.
+
+⸻
+
+Final Thoughts
+	•	✅ Ensure the webhook URL is accessible.
+	•	✅ Log incoming webhook requests for debugging.
+	•	✅ Automatically retry failed transactions if necessary.
+	•	✅ Use Postman or cURL to test the webhook manually.
+
+Let me know if you need more improvements! 🚀

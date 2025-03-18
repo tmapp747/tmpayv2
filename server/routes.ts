@@ -3247,11 +3247,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { 
       reference, status, state, payment_status, 
       amount, transactionId, transaction_id, 
-      payment_reference
+      payment_reference, refId, invoiceNo
     } = payload;
     
     // Determine the actual reference value from possible fields
-    const paymentReference = reference || payment_reference || payload.ref;
+    // Support both official DirectPay format (refId) and legacy formats
+    const paymentReference = refId || reference || payment_reference || payload.ref || invoiceNo;
     
     if (!paymentReference) {
       console.warn("❌ Payment reference is missing in webhook:", payload);
@@ -3475,7 +3476,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ DirectPay webhook received:", JSON.stringify(req.body));
       
       // Extract payment reference from various possible fields
-      const paymentReference = req.body.reference || req.body.payment_reference || req.body.ref;
+      // Official DirectPay format uses refId, but we support legacy formats too
+      const paymentReference = req.body.refId || req.body.reference || req.body.payment_reference || req.body.ref;
       
       if (!paymentReference) {
         console.warn("❌ Payment reference missing in webhook payload");

@@ -719,38 +719,59 @@ router.post("/casino/deposit", authMiddleware, async (req: Request, res: Respons
 // DirectPay webhook handler
 router.post("/webhook/directpay/payment", async (req: Request, res: Response) => {
   try {
-    console.log("Received DirectPay webhook:", JSON.stringify(req.body, null, 2));
+    console.log("💰 Received DirectPay webhook:", JSON.stringify(req.body, null, 2));
     
     const payload = req.body;
     
     // Extract reference from multiple possible fields based on DirectPay format
-    // DirectPay may send refId, reference, or ref fields
-    const reference = payload.refId || payload.reference || payload.ref;
+    // Official DirectPay API sends refId field, but we support legacy fields too
+    const reference = payload.refId || payload.reference || payload.ref || payload.invoiceNo;
     
-    // Extract status from multiple possible fields
-    // DirectPay may send status as 'status' or 'status' with values like 'FAILED', 'SUCCESS', etc.
+    // Extract additional reference details from official format
+    const invoiceNo = payload.invoiceNo || payload.invoice_no;
+    const txnDesc = payload.txnDesc || payload.description || payload.txn_desc;
+    const txnId = payload.txnId || payload.transaction_id || payload.txn_id;
+    const txnDate = payload.txnDate || payload.txn_date || payload.date;
+    const merchant = payload.merchant_id || payload.merchantId;
+    
+    // Extract status from payload - official DirectPay uses uppercase status values
+    // Support both lowercase and uppercase status formats
     const status = payload.status;
+    
+    // Log all identified fields for debugging
+    console.log(`📝 Extracted webhook fields:
+      Reference: ${reference}
+      Invoice: ${invoiceNo}
+      Status: ${status}
+      Transaction ID: ${txnId}
+      Transaction Date: ${txnDate}
+      Description: ${txnDesc}
+      Merchant: ${merchant}
+    `);
     
     // Validate essential fields
     if (!reference || !status) {
-      console.error("Invalid webhook payload: missing required fields (reference/status)");
+      console.error("❌ Invalid webhook payload: missing required fields (reference/status)");
       return res.status(400).json({ success: false, message: "Invalid webhook payload" });
     }
     
-    console.log(`Processing DirectPay webhook with reference: ${reference}, status: ${status}`);
+    console.log(`🔄 Processing DirectPay webhook with reference: ${reference}, status: ${status}`);
     
     // Find the QR payment by reference
     const qrPayment = await storage.getQrPaymentByReference(reference);
     
     if (!qrPayment) {
-      console.error(`QR payment not found for reference: ${reference}`);
+      console.error(`❌ QR payment not found for reference: ${reference}`);
       return res.status(404).json({ success: false, message: "Payment not found" });
     }
     
-    console.log(`Found QR payment with ID ${qrPayment.id} for user ${qrPayment.userId}`);
+    console.log(`✅ Found QR payment with ID ${qrPayment.id} for user ${qrPayment.userId}`);
     
     // Map DirectPay status to our standardized gcashStatus
-    const gcashStatus = mapDirectPayStatusToGcashStatus(payload.status);
+    // This handles case-insensitive status comparison (SUCCESS, Success, success)
+    const gcashStatus = mapDirectPayStatusToGcashStatus(status);
+    
+    console.log(`📊 Mapped DirectPay status "${status}" to internal status "${gcashStatus}"`);
     
     // Update QR payment status
     await storage.updateQrPaymentStatus(qrPayment.id, gcashStatus);
@@ -759,15 +780,15 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     const transaction = await storage.getTransaction(qrPayment.transactionId);
     
     if (!transaction) {
-      console.error(`Transaction not found for QR payment: ${qrPayment.id}`);
+      console.error(`❌ Transaction not found for QR payment: ${qrPayment.id}`);
       return res.status(404).json({ success: false, message: "Transaction not found" });
     }
     
-    console.log(`Found transaction ${transaction.id} with status ${transaction.status}`);
+    console.log(`📋 Found transaction ${transaction.id} with status ${transaction.status}`);
     
     // Only proceed if transaction is not already fully completed or failed
     if (transaction.status === "completed" || transaction.status === "failed") {
-      console.log(`Transaction ${transaction.id} already has final status ${transaction.status}, not updating`);
+      console.log(`🔄 Transaction ${transaction.id} already has final status ${transaction.status}, not updating`);
       return res.json({
         success: true,
         message: `Transaction already has final status: ${transaction.status}`,
@@ -778,12 +799,19 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     // Get the current metadata or initialize if not present
     const metadata = transaction.metadata || {};
     
-    // Update transaction metadata with new gcashStatus
+    // Update transaction metadata with new gcashStatus and all DirectPay fields
     await storage.updateTransactionMetadata(transaction.id, {
       ...metadata,
       gcashStatus,
       directPayResponse: payload,
-      gcashStatusUpdatedAt: new Date().toISOString()
+      gcashStatusUpdatedAt: new Date().toISOString(),
+      // Store additional DirectPay fields for better tracking
+      invoiceNo,
+      txnId,
+      txnDate,
+      txnDesc,
+      merchant,
+      webhookReceivedAt: new Date().toISOString()
     });
     
     // Determine the next transaction status based on dual-status tracking
@@ -792,7 +820,7 @@ router.post("/webhook/directpay/payment", async (req: Request, res: Response) =>
     
     // Update transaction status if it has changed
     if (newTransactionStatus !== transaction.status) {
-      console.log(`Updating transaction ${transaction.id} status from ${transaction.status} to ${newTransactionStatus}`);
+      console.log(`🔄 Updating transaction ${transaction.id} status from ${transaction.status} to ${newTransactionStatus}`);
       await storage.updateTransactionStatus(transaction.id, newTransactionStatus);
       await storage.addStatusHistoryEntry(transaction.id, newTransactionStatus, 
         `Status updated based on GCash payment status: ${gcashStatus}`);
