@@ -715,7 +715,7 @@ export class DbStorage implements IStorage {
     try {
       // Use transaction to ensure atomic update
       return await this.dbInstance.transaction(async (tx) => {
-        // Get current transaction to update with row lock
+        // Get current transaction with financial data
         const currentTransaction = await tx
           .select()
           .from(transactions)
@@ -725,14 +725,25 @@ export class DbStorage implements IStorage {
         if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
         
         const transaction = currentTransaction[0];
-        const statusHistory = transaction.statusHistory || [];
-      
-      // Add new status history entry
-      statusHistory.push({
-        status,
-        timestamp: new Date().toISOString(),
-        note: `Status updated to ${status}`
-      });
+        const existingHistory = transaction.statusHistory || [];
+        const currentMetadata = transaction.metadata || {};
+        
+        // Create new history entry
+        const historyEntry = {
+          status,
+          timestamp: new Date().toISOString(),
+          note: `Status updated to ${status}`,
+          previousStatus: transaction.status
+        };
+
+        // Update both places that track history
+        const updatedHistory = [...existingHistory, historyEntry];
+        const updatedMetadata = {
+          ...currentMetadata,
+          statusHistory: currentMetadata.statusHistory ? 
+            [...currentMetadata.statusHistory, historyEntry] : 
+            [historyEntry]
+        };
       
       // Prepare update data
       const updateData: Partial<Transaction> = {
