@@ -68,6 +68,8 @@ interface CasinoHierarchy {
 export default function MobileCasinoStats() {
   const [activeTab, setActiveTab] = useState<'stats' | 'hierarchy'>('stats');
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [showStatistics, setShowStatistics] = useState<boolean>(false);
+  const [showHierarchy, setShowHierarchy] = useState<boolean>(false);
   
   // Fetch user data
   const { data: userData } = useQuery<{ user: User }>({
@@ -507,18 +509,23 @@ export default function MobileCasinoStats() {
     }));
     
     // Render a node and its children
-    // Get user role based on hierarchy level
+    // Get user role based on hierarchy level - simplified per requirements
     const getUserRole = (level: number): string => {
       const roles = [
-        "Casino Owner",
+        "Owner",
         "Continental Manager",
-        "Country Manager",
-        "Regional Manager",
-        "City Manager",
-        "Area Manager",
+        "Top Manager",
+        "Direct Manager",
+        "Direct Manager",
+        "Direct Manager",
         "Agent",
         "Player"
       ];
+      
+      // Ensure we only return Player or Agent for actual users
+      if (level >= 6) {
+        return level === 6 ? "Agent" : "Player";
+      }
       
       return level < roles.length ? roles[level] : "Player";
     };
@@ -692,25 +699,72 @@ export default function MobileCasinoStats() {
 
   return (
     <div className="rounded-xl overflow-hidden bg-[#001030] shadow-lg">
-      {/* Tab Navigation */}
-      <div className="flex border-b border-gray-800">
-        <button
-          className={`flex-1 py-3 text-center font-medium text-sm ${activeTab === 'stats' ? 'bg-[#001849] text-white' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('stats')}
+      <div className="p-4 space-y-4">
+        {/* Statistics Section with Toggle */}
+        <div 
+          className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
+          onClick={() => setShowStatistics(!showStatistics)}
         >
-          Statistics
-        </button>
-        <button
-          className={`flex-1 py-3 text-center font-medium text-sm ${activeTab === 'hierarchy' ? 'bg-[#001849] text-white' : 'text-gray-400'}`}
-          onClick={() => setActiveTab('hierarchy')}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-blue-300" />
+              <h3 className="font-medium text-lg">Casino Statistics</h3>
+            </div>
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform ${showStatistics ? 'rotate-180' : ''}`}
+            />
+          </div>
+          <p className="text-sm opacity-70 mt-1">
+            View your performance metrics and financial data
+          </p>
+        </div>
+        
+        {/* Statistics Content (Collapsible) */}
+        <AnimatePresence>
+          {showStatistics && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden rounded-xl"
+            >
+              {renderStatistics()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* Hierarchy Section with Toggle */}
+        <div 
+          className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
+          onClick={() => setShowHierarchy(!showHierarchy)}
         >
-          Hierarchy
-        </button>
-      </div>
-      
-      {/* Content */}
-      <div className="p-4">
-        {activeTab === 'stats' ? renderStatistics() : renderHierarchy()}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-300" />
+              <h3 className="font-medium text-lg">Management Hierarchy</h3>
+            </div>
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform ${showHierarchy ? 'rotate-180' : ''}`}
+            />
+          </div>
+          <p className="text-sm opacity-70 mt-1">
+            Explore your position in the casino organization
+          </p>
+        </div>
+        
+        {/* Hierarchy Content (Collapsible) */}
+        <AnimatePresence>
+          {showHierarchy && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden rounded-xl"
+            >
+              {renderHierarchy()}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
