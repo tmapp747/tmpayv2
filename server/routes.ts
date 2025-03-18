@@ -4317,29 +4317,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[PAYMENT] Found transaction with ID ${transaction.id} for reference ${paymentReference}`);
       
-      // Update transaction status to completed
-      await storage.updateTransactionStatus(transaction.id, 'completed');
-      await storage.addStatusHistoryEntry(
-        transaction.id,
-        'completed',
-        'Payment marked as completed by user'
-      );
-      
-      // Update user balance
+      // Get user details
       const user = await storage.getUser(userId);
       const amount = parseFloat(transaction.amount.toString());
       
-      // Add to the user's balance
-      await storage.updateUserBalance(userId, amount);
-      
-      // Subtract from pending balance
-      await storage.updateUserPendingBalance(userId, -amount);
-      
-      // Record financials in transaction
-      await storage.recordTransactionFinancials(
+      // Set initial payment completion status - intermediate state
+      await storage.updateTransactionStatus(
         transaction.id,
-        parseFloat(user.balance),
-        parseFloat(user.balance) + amount
+        "payment_completed", // New intermediate state
+        undefined,
+        { 
+          manuallyCompleted: true,
+          paymentCompletedAt: new Date(),
+          casinoTransferStatus: 'pending'
+        }
+      );
+      
+      await storage.addStatusHistoryEntry(
+        transaction.id,
+        'payment_completed',
+        'Payment marked as verified by user'
       );
       
       // Try to update associated QR payment if it exists
@@ -4347,6 +4344,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (qrPayment && qrPayment.status === 'pending') {
         await storage.updateQrPaymentStatus(qrPayment.id, 'completed');
         console.log(`[PAYMENT] Updated QR payment with ID ${qrPayment.id}`);
+      }
+      
+      // Call casino API to complete the topup if user has casino ID
+      if (user.casinoId) {
+        try {
+          console.log(`[CASINO] Attempting to credit ${amount} PHP to casino account for user ${user.casinoUsername || 'unknown'} (ID: ${user.casinoId})`);
+          
+          const casinoResult = await casino747CompleteTopup(
+            user.casinoId,
+            amount,
+            transaction.paymentReference || paymentReference
+          );
+          
+          console.log(`[CASINO] Transfer completed successfully:`, {
+            amount,
+            casinoId: user.casinoId,
+            reference: paymentReference,
+            nonce: casinoResult.nonce,
+            transactionId: casinoResult.transactionId
+          });
+          
+          // Update the transaction with the casino transfer information
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "completed", // Final completion state when both payment and casino transfer succeed
+            undefined,
+            { 
+              casinoNonce: casinoResult.nonce,
+              casinoTransactionId: casinoResult.transactionId,
+              casinoTransferStatus: 'completed',
+              casinoTransferCompletedAt: new Date(),
+              manuallyCompleted: true,
+              paymentCompletedAt: new Date()
+            }
+          );
+          
+          // Add a success entry to status history
+          await storage.addStatusHistoryEntry(
+            transaction.id,
+            'casino_transfer_completed',
+            `Casino transfer completed with ID ${casinoResult.transactionId}`
+          );
+          
+          // Update user balance
+          // Add to the user's balance
+          await storage.updateUserBalance(userId, amount);
+          
+          // Subtract from pending balance
+          await storage.updateUserPendingBalance(userId, -amount);
+          
+          // Record financials in transaction
+          await storage.recordTransactionFinancials(
+            transaction.id,
+            parseFloat(user.balance),
+            parseFloat(user.balance) + amount
+          );
+          
+        } catch (casinoError) {
+          console.error("[CASINO] Error completing casino transfer:", casinoError);
+          
+          // Add error information to the transaction but keep payment_completed status
+          // This allows admin to see that payment was marked completed but casino transfer failed
+          await storage.updateTransactionStatus(
+            transaction.id,
+            "payment_completed", // Keep payment completed status
+            undefined,
+            { 
+              manuallyCompleted: true,
+              casinoTransferStatus: 'failed',
+              casinoTransferError: casinoError instanceof Error ? casinoError.message : String(casinoError),
+              casinoTransferAttemptedAt: new Date()
+            }
+          );
+          
+          // Add a failure entry to status history
+          await storage.addStatusHistoryEntry(
+            transaction.id,
+            'casino_transfer_failed',
+            `Casino transfer failed: ${casinoError instanceof Error ? casinoError.message : String(casinoError)}`
+          );
+          
+          // Still update the user's balance since the payment was verified
+          await storage.updateUserBalance(userId, amount);
+          await storage.updateUserPendingBalance(userId, -amount);
+          await storage.recordTransactionFinancials(
+            transaction.id,
+            parseFloat(user.balance),
+            parseFloat(user.balance) + amount
+          );
+        }
+      } else {
+        // No casino ID, just complete the transaction normally
+        console.log(`[PAYMENT] User has no casino ID, completing transaction without casino transfer`);
+        
+        await storage.updateTransactionStatus(transaction.id, 'completed');
+        await storage.addStatusHistoryEntry(
+          transaction.id,
+          'completed',
+          'Payment completed (no casino transfer needed)'
+        );
+        
+        // Update user balance
+        await storage.updateUserBalance(userId, amount);
+        await storage.updateUserPendingBalance(userId, -amount);
+        await storage.recordTransactionFinancials(
+          transaction.id,
+          parseFloat(user.balance),
+          parseFloat(user.balance) + amount
+        );
       }
       
       // Before completing the payment, check for potential fraud
@@ -4378,98 +4484,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transaction.id, 
           'manual_completion_initiated',
           'User manually marked payment as completed'
-        );
-      }
-      
-      // Set initial payment completion status
-      await storage.updateTransactionStatus(
-        transaction.id,
-        "payment_completed", // New intermediate state
-        undefined,
-        { 
-          manuallyCompleted: true,
-          paymentCompletedAt: new Date(),
-          casinoTransferStatus: 'pending'
-        }
-      );
-      
-      // Call casino API to complete the topup if user has casino ID
-      if (user.casinoId) {
-        try {
-          console.log(`[CASINO] Attempting to credit ${amount} PHP to casino account for user ${user.casinoUsername || 'unknown'} (ID: ${user.casinoId})`);
-          
-          const casinoResult = await casino747CompleteTopup(
-            user.casinoId,
-            amount,
-            transaction.paymentReference || paymentReference
-          );
-          
-          console.log(`[CASINO] Transfer completed successfully for manually completed payment:`, {
-            amount,
-            casinoId: user.casinoId,
-            reference: paymentReference,
-            nonce: casinoResult.nonce,
-            transactionId: casinoResult.transactionId
-          });
-          
-          // Update the transaction with the casino transfer information
-          await storage.updateTransactionStatus(
-            transaction.id,
-            "completed", // Final completion state when both payment and casino transfer succeed
-            undefined,
-            { 
-              casinoNonce: casinoResult.nonce,
-              casinoTransactionId: casinoResult.transactionId,
-              casinoTransferStatus: 'completed',
-              casinoTransferCompletedAt: new Date(),
-              manuallyCompleted: true,
-              paymentCompletedAt: transaction.metadata?.paymentCompletedAt || new Date()
-            }
-          );
-          
-          // Add a success entry to status history
-          await storage.addStatusHistoryEntry(
-            transaction.id,
-            'casino_transfer_completed',
-            `Casino transfer completed with ID ${casinoResult.transactionId}`
-          );
-        } catch (casinoError) {
-          console.error("[CASINO] Error completing casino transfer for manually completed payment:", casinoError);
-          
-          // Add error information to the transaction but keep payment_completed status
-          // This allows admin to see that payment was marked completed but casino transfer failed
-          await storage.updateTransactionStatus(
-            transaction.id,
-            "payment_completed", // Keep payment completed status
-            undefined,
-            { 
-              manuallyCompleted: true,
-              casinoTransferStatus: 'failed',
-              casinoTransferError: casinoError instanceof Error ? casinoError.message : String(casinoError),
-              casinoTransferAttemptedAt: new Date()
-            }
-          );
-          
-          // Add failure entry to status history
-          await storage.addStatusHistoryEntry(
-            transaction.id,
-            'casino_transfer_failed',
-            `Casino transfer failed: ${casinoError instanceof Error ? casinoError.message : String(casinoError)}`
-          );
-        }
-      } else {
-        console.log(`[CASINO] User has no casino ID, skipping casino transfer for manual completion`);
-        
-        // For users without casino IDs, mark as fully completed
-        await storage.updateTransactionStatus(
-          transaction.id,
-          "completed",
-          undefined,
-          { 
-            manuallyCompleted: true,
-            casinoTransferStatus: 'not_applicable',
-            completedAt: new Date()
-          }
         );
       }
       
