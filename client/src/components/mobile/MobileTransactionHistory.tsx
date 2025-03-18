@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, getStatusColor, getTimeAgo } from "@/lib/ut
 import { Transaction } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
+import { TransactionStatusTimeline } from "@/components/TransactionStatusTimeline";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -263,31 +264,50 @@ export default function MobileTransactionHistory() {
                             )}
                             {/* New status for when payment is completed but casino transfer is pending or failed */}
                             {transaction.status === 'payment_completed' && (
-                              <div className="flex flex-col gap-1">
-                                <Badge variant="outline" className="text-[10px] bg-green-500/10 border-green-500/20 text-green-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
-                                  <Check size={10} className="mr-1" />
-                                  Payment Completed
-                                </Badge>
+                              <div className="flex flex-col gap-2">
+                                {/* Status Timeline */}
+                                <div className="mt-1 mb-1">
+                                  <TransactionStatusTimeline 
+                                    paymentStatus="completed"
+                                    casinoTransferStatus={transaction.metadata?.casinoTransferStatus as any || 'pending'}
+                                    paymentCompletedAt={transaction.metadata?.paymentCompletedAt as string}
+                                    casinoTransferCompletedAt={transaction.metadata?.casinoTransferCompletedAt as string}
+                                  />
+                                </div>
                                 
-                                {transaction.metadata?.casinoTransferStatus === 'pending' && (
-                                  <Badge variant="outline" className="text-[10px] bg-yellow-500/10 border-yellow-500/20 text-yellow-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
-                                    <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
-                                    Casino Transfer Pending
+                                <div className="flex flex-wrap gap-1">
+                                  <Badge variant="outline" className="text-[10px] bg-green-500/10 border-green-500/20 text-green-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                    <Check size={10} className="mr-1" />
+                                    Payment Verified
                                   </Badge>
-                                )}
-                                
-                                {transaction.metadata?.casinoTransferStatus === 'failed' && (
-                                  <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/20 text-red-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
-                                    <X size={10} className="mr-1" />
-                                    Casino Transfer Failed
-                                  </Badge>
-                                )}
-                                
-                                {transaction.metadata?.manuallyCompleted && (
-                                  <Badge variant="outline" className="text-[9px] bg-blue-500/10 border-blue-500/20 text-blue-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
-                                    Manual Completion
-                                  </Badge>
-                                )}
+                                  
+                                  {transaction.metadata?.casinoTransferStatus === 'pending' && (
+                                    <Badge variant="outline" className="text-[10px] bg-yellow-500/10 border-yellow-500/20 text-yellow-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                      <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mr-1 animate-pulse"></div>
+                                      Casino Transfer Pending
+                                    </Badge>
+                                  )}
+                                  
+                                  {transaction.metadata?.casinoTransferStatus === 'failed' && (
+                                    <Badge variant="outline" className="text-[10px] bg-red-500/10 border-red-500/20 text-red-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                      <X size={10} className="mr-1" />
+                                      Casino Transfer Failed
+                                    </Badge>
+                                  )}
+                                  
+                                  {transaction.metadata?.casinoTransferStatus === 'completed' && (
+                                    <Badge variant="outline" className="text-[10px] bg-green-500/10 border-green-500/20 text-green-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                      <Check size={10} className="mr-1" />
+                                      Casino Transfer Complete
+                                    </Badge>
+                                  )}
+                                  
+                                  {transaction.metadata?.manuallyCompleted && (
+                                    <Badge variant="outline" className="text-[9px] bg-blue-500/10 border-blue-500/20 text-blue-400 px-1.5 py-0 h-4 rounded-sm flex items-center">
+                                      Manual Completion
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             )}
                             {transaction.statusUpdatedAt && transaction.status === 'pending' && (
