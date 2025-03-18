@@ -287,6 +287,47 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
       transferResult: JSON.stringify(transferResult)
     });
     
+    // Try to find the transaction for additional details
+    try {
+      const transaction = await storage.getTransactionByUniqueId(reference) || 
+                        await storage.getTransactionByCasinoReference(reference);
+      
+      // Send a deposit notification to the player's manager
+      try {
+        if (transaction) {
+          console.log(`📬 Sending deposit notification to manager for player ${effectiveCasinoUsername}`);
+          
+          // Determine payment method based on transaction type
+          let paymentMethod = "GCash";
+          if (transaction.type === "telegram_payment") {
+            paymentMethod = "Telegram";
+          } else if (transaction.type === "manual_payment") {
+            paymentMethod = "Manual Payment";
+          } else if (transaction.type === "qr_payment") {
+            paymentMethod = "GCash QR";
+          }
+          
+          // Send the notification
+          await casino747Api.sendDepositNotification(effectiveCasinoUsername, {
+            amount: amount,
+            currency: "PHP",
+            method: paymentMethod,
+            reference: reference,
+            timestamp: new Date()
+          });
+          
+          console.log(`✅ Deposit notification sent successfully for ${effectiveCasinoUsername}`);
+        } else {
+          console.log(`⚠️ Could not find transaction with reference ${reference} for notification`);
+        }
+      } catch (notificationError) {
+        // Log but don't fail the whole process if notification sending fails
+        console.error(`⚠️ Error sending deposit notification:`, notificationError);
+      }
+    } catch (transactionError) {
+      console.warn(`⚠️ Error retrieving transaction details for notification:`, transactionError);
+    }
+    
     return {
       success: true,
       newBalance: transferResult.newBalance || amount,

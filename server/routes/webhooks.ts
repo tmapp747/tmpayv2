@@ -202,6 +202,35 @@ router.post('/directpay/payment', async (req: Request, res: Response) => {
           `Casino transfer completed with ID ${transferResult.transactionId}`
         );
         
+        // Send formatted deposit notification to the player's manager
+        try {
+          console.log(`📬 Sending deposit notification to manager for player ${user.username}`);
+          
+          // Determine payment method based on transaction type
+          let paymentMethod = "GCash";
+          if (transaction.type === "telegram_payment") {
+            paymentMethod = "Telegram";
+          } else if (transaction.type === "manual_payment") {
+            paymentMethod = "Manual Payment";
+          } else if (transaction.type === "qr_payment") {
+            paymentMethod = "GCash QR";
+          }
+          
+          // Send the notification with details from the payment
+          await casino747Api.sendDepositNotification(user.username, {
+            amount: paymentAmount,
+            currency: currency,
+            method: paymentMethod,
+            reference: paymentReference,
+            timestamp: new Date()
+          });
+          
+          console.log(`✅ Deposit notification sent successfully to manager for ${user.username}`);
+        } catch (notificationError) {
+          // Log but don't fail if notification sending fails
+          console.error(`⚠️ Error sending deposit notification:`, notificationError);
+        }
+        
         return res.status(200).json({
           success: true, 
           message: "Payment processed and casino transfer completed successfully",
