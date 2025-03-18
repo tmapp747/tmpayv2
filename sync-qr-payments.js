@@ -7,9 +7,9 @@
  * 3. Validates the database state for QR payments
  */
 
-const { db } = require('./server/db');
-const { qrPayments, transactions } = require('./shared/schema');
-const { sql } = require('drizzle-orm');
+import { db } from './server/db.js';
+import { qrPayments, transactions } from './shared/schema.js';
+import { sql } from 'drizzle-orm';
 
 async function syncQrPayments() {
   try {
