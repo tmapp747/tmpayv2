@@ -117,8 +117,10 @@ export const transactions = pgTable("transactions", {
   fee: numeric("fee", { precision: 10, scale: 2 }).default("0.00"), // Transaction fee if applicable
   netAmount: numeric("net_amount", { precision: 10, scale: 2 }), // Amount after fees (calculated)
 
-  // Status tracking with timestamps for audit
-  status: text("status").notNull(), // 'pending', 'processing', 'completed', 'failed', 'expired', 'refunded', 'disputed'
+  // Status tracking with dual-state for payment and casino processing
+  status: text("status").notNull(), // Overall status: 'pending', 'processing', 'completed', 'failed', 'expired', 'refunded', 'disputed'
+  gcashStatus: text("gcash_status").default("processing"), // GCash payment status: 'processing', 'completed', 'failed'
+  casinoStatus: text("casino_status").default("pending"), // Casino transfer status: 'pending', 'processing', 'completed', 'failed'
   statusHistory: json("status_history"), // Array of status changes with timestamps for audit trail
   statusUpdatedAt: timestamp("status_updated_at"), // When status was last changed
   completedAt: timestamp("completed_at"), // When transaction was completed (if applicable)
