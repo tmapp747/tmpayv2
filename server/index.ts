@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { setupVite, serveStatic, log } from "./vite.js";
 import path from "path";
 import { apiLimiter, authLimiter } from './middleware/rateLimiter';
-import { router } from "./routes/index";
+// Use the original routes file for now while transitioning
+import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
 
 const app = express();
@@ -59,8 +60,8 @@ app.use((req, res, next) => {
   // Setup authentication
   setupAuth(app);
   
-  // Register all our routes
-  app.use('/api', router);
+  // Use the original routes system temporarily
+  await registerRoutes(app);
   
   // Serve static files from the public directory
   app.use(express.static(path.join(process.cwd(), 'public')));

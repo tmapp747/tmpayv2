@@ -134,10 +134,8 @@ const MobileNavigation = () => {
   );
 };
 
-// Removed duplicate MobileNavigation component
-
-import { cn } from "@/lib/utils";
-
+// Helper component that's no longer used
+/* Kept for reference but not exported
 const MobileNavButton = ({ href, icon, label }) => (
   <a 
     href={href}
@@ -151,5 +149,6 @@ const MobileNavButton = ({ href, icon, label }) => (
     <span className="text-xs mt-1">{label}</span>
   </a>
 );
+*/
 
 export default MobileNavigation;
