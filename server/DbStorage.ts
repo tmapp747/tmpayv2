@@ -680,9 +680,31 @@ export class DbStorage implements IStorage {
 
   async createTransaction(transactionData: InsertTransaction): Promise<Transaction> {
     try {
-      const result = await this.dbInstance.insert(transactions).values(transactionData).returning();
-      if (DB_DEBUG) console.log(`[DB] Created new transaction: ${result[0].id}, type: ${transactionData.type}`);
-      return result[0];
+      // Use transaction to ensure consistency
+      return await this.dbInstance.transaction(async (tx) => {
+        // Check for duplicate references
+        if (transactionData.paymentReference) {
+          const existing = await tx.select()
+            .from(transactions)
+            .where(eq(transactions.paymentReference, transactionData.paymentReference));
+          
+          if (existing.length > 0) {
+            throw new Error(`Transaction with reference ${transactionData.paymentReference} already exists`);
+          }
+        }
+
+        // Create transaction
+        const result = await tx.insert(transactions)
+          .values({
+            ...transactionData,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          })
+          .returning();
+
+        if (DB_DEBUG) console.log(`[DB] Created new transaction: ${result[0].id}, type: ${transactionData.type}`);
+        return result[0];
+      });
     } catch (error) {
       console.error(`[DB] Error creating transaction:`, error);
       throw new Error(`Failed to create transaction: ${error instanceof Error ? error.message : String(error)}`);
