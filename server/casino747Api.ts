@@ -208,6 +208,111 @@ export class Casino747Api {
    * @param destinationNetwork The destination network (e.g., "ETH")
    * @param address The destination address
    */
+  /**
+   * Make a GCash deposit request to the casino
+   * @param clientId The client ID making the deposit
+   * @param amount Deposit amount (default 100)
+   * @param currency Currency code (default PHP)
+   */
+  async makeDeposit(clientId: number, amount: number = 100, currency: string = "PHP") {
+    try {
+      console.log(`[CASINO747] Making deposit request for client ${clientId}`);
+      const authToken = await this.getAuthToken('system');
+      
+      const response = await axios.post(`${this.baseUrl}/payments/deposit`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        amount,
+        currency
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      console.log(`[CASINO747] Deposit request response:`, response.data);
+      return response.data.transactionId;
+    } catch (error) {
+      console.error('[CASINO747] Error making deposit:', error);
+      throw new Error('Failed to initiate casino deposit');
+    }
+  }
+
+  /**
+   * Generate a GCash QR code for payment
+   * @param clientId The client ID for payment
+   * @param amount Payment amount 
+   */
+  async generateGcashQR(clientId: number, amount: number = 100) {
+    try {
+      console.log(`[CASINO747] Generating GCash QR for client ${clientId}`);
+      const authToken = await this.getAuthToken('system');
+      
+      const response = await axios.post(`${this.baseUrl}/payments/generate-gcash-qr`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        amount
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      return response.data.qrCodeUrl;
+    } catch (error) {
+      console.error('[CASINO747] Error generating QR:', error);
+      throw new Error('Failed to generate GCash QR code');
+    }
+  }
+
+  /**
+   * Check the status of a GCash payment
+   * @param transactionId The transaction ID to check
+   */
+  async checkGcashPaymentStatus(transactionId: string) {
+    try {
+      console.log(`[CASINO747] Checking payment status for ${transactionId}`);
+      const authToken = await this.getAuthToken('system');
+      
+      const response = await axios.post(`${this.baseUrl}/payments/check-gcash-status`, {
+        authToken,
+        platform: this.defaultPlatform,
+        transactionId
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      return response.data.status;
+    } catch (error) {
+      console.error('[CASINO747] Error checking payment status:', error);
+      throw new Error('Failed to check payment status');
+    }
+  }
+
+  /**
+   * Update the casino deposit status
+   * @param clientId The client ID
+   * @param newStatus The new status to set
+   */
+  async updateCasinoStatus(clientId: number, newStatus: string) {
+    try {
+      console.log(`[CASINO747] Updating casino status for client ${clientId} to ${newStatus}`);
+      const authToken = await this.getAuthToken('system');
+      
+      const response = await axios.post(`${this.baseUrl}/casino/update-status`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        status: newStatus
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('[CASINO747] Error updating casino status:', error);
+      throw new Error('Failed to update casino status');
+    }
+  }
+
   async withdrawFunds(
     clientId: number, 
     amount: number, 
