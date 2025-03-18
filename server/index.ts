@@ -1,6 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic, log } from "./vite.js";
 import path from "path";
 import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 import { router } from "./routes/index";
@@ -96,7 +96,8 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`Server running at http://0.0.0.0:${port}`);
+    log(`API available at http://0.0.0.0:${port}/api`);
   });
   
   return server;
