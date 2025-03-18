@@ -73,8 +73,8 @@ type RegisterData = {
 // Create the auth context
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Session refresh function - using Passport.js sessions
-const refreshSession = async (): Promise<string> => {
+// Session refresh function - enhanced with better recovery for server restarts
+const refreshSession = async (token: string = ''): Promise<string> => {
   try {
     console.log("Attempting to refresh session...");
     
@@ -88,6 +88,7 @@ const refreshSession = async (): Promise<string> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       credentials: 'include', // Include cookies for session auth
     });
@@ -100,6 +101,14 @@ const refreshSession = async (): Promise<string> => {
       if (window.location.pathname !== '/auth') {
         // Clear user data from cache
         queryClient.setQueryData(["/api/user/info"], { user: null });
+        
+        // Redirect non-auth pages to login
+        if (window.location.pathname.startsWith('/mobile')) {
+          console.log("Session expired on protected route, redirecting to auth");
+          setTimeout(() => {
+            window.location.href = '/auth';
+          }, 100);
+        }
       }
       
       // Return empty string without throwing for expected 401s
@@ -123,13 +132,17 @@ const refreshSession = async (): Promise<string> => {
     }
     
     console.log("Session refreshed successfully");
+    
     // Update the query cache with returned user data
     if (data.user) {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
+      
+      // Trigger a refresh of user-dependent data
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
     }
     
-    // Return empty string as we're not using tokens anymore
-    return '';
+    // Return successful token if available, otherwise an empty string
+    return data.accessToken || '';
   } catch (error) {
     console.error("Session refresh failed:", error);
     
@@ -138,8 +151,14 @@ const refreshSession = async (): Promise<string> => {
       // If refresh fails, we need to log the user out
       queryClient.setQueryData(["/api/user/info"], { user: null });
       
-      // Redirect to mobile auth page for unauthorized access
-      window.location.href = '/auth';
+      // Don't redirect if we're on a public page
+      if (window.location.pathname.startsWith('/mobile')) {
+        console.log("Session refresh error on protected route, redirecting to auth");
+        // Redirect to mobile auth page for unauthorized access
+        setTimeout(() => {
+          window.location.href = '/auth';
+        }, 100);
+      }
     }
     
     // Always throw for unexpected errors

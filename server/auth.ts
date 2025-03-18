@@ -58,23 +58,26 @@ export function isPasswordHashed(password: string): boolean {
 }
 
 export function setupAuth(app: Express) {
+  // Use PostgreSQL for session storage to maintain sessions across restarts
   const PgStore = pgSession(session);
   const pgSessionStore = new PgStore({
     pool,
     tableName: 'session',
     createTableIfMissing: true,
+    pruneSessionInterval: 60 * 15 // Prune expired sessions every 15 minutes
   });
 
+  // Configure session with longer expiry and rolling sessions
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
-    rolling: true,
+    rolling: true, // Extends expiry on active use
     store: pgSessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       sameSite: 'lax'
     }
   };
@@ -84,35 +87,110 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Setup authentication middleware with detailed logging
+  app.use((req, res, next) => {
+    const authPath = req.path.startsWith('/api') && !req.path.startsWith('/api/auth/');
+    if (authPath) {
+      console.log('[AUTH MIDDLEWARE] Checking authentication for path:', req.path);
+      
+      // Skip auth for public endpoints
+      if (req.path === '/api/health' || req.path === '/api/version') {
+        return next();
+      }
+      
+      // Check session authentication
+      if (req.isAuthenticated()) {
+        console.log('[AUTH MIDDLEWARE] User authenticated via session');
+        
+        // Validate user exists in database to handle deleted sessions
+        if (req.user && req.user.id) {
+          console.log('[AUTH MIDDLEWARE] Session user validated successfully');
+          return next();
+        } else {
+          console.log('[AUTH MIDDLEWARE] Session user validation failed');
+          return res.status(401).json({
+            success: false,
+            message: "Authentication required. Please log in again."
+          });
+        }
+      }
+      
+      // If no session, check if token auth provided
+      console.log('[AUTH MIDDLEWARE] No session authentication, checking for token');
+      const hasAuthHeader = !!req.headers.authorization;
+      console.log('[AUTH MIDDLEWARE] Authorization header present:', hasAuthHeader);
+      
+      // Skip token auth for this implementation as we're using sessions
+      // But allow extension for future enhancements
+      
+      // Check public endpoints that bypass auth
+      const publicPaths = [
+        '/api/auth/login',
+        '/api/auth/register',
+        '/api/auth/verify-username',
+        '/api/login',
+        '/api/register',
+        '/api/health',
+        '/api/version'
+      ];
+      
+      if (publicPaths.includes(req.path)) {
+        return next();
+      }
+      
+      // Otherwise, authentication failed
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required. Please log in again."
+      });
+    }
+    
+    // Non-API paths or auth paths don't require authentication middleware
+    return next();
+  });
+
+  // Passport local strategy for username/password authentication
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        // Case-insensitive username lookup
         const user = await storage.getUserByUsername(username);
         if (!user) {
+          console.log(`[AUTH] Login attempt for non-existent user: ${username}`);
           return done(null, false, { message: 'Invalid credentials' });
         }
 
         const isValid = await comparePasswords(password, user.password);
         if (!isValid) {
+          console.log(`[AUTH] Failed password attempt for user: ${username}`);
           return done(null, false, { message: 'Invalid credentials' });
         }
 
+        console.log(`[AUTH] Successful login for user: ${username}`);
         return done(null, user);
       } catch (error) {
+        console.error(`[AUTH] Error during authentication for ${username}:`, error);
         return done(error);
       }
     })
   );
 
+  // Serialize only user ID to session
   passport.serializeUser((user: Express.User, done) => {
     done(null, user.id);
   });
 
+  // Deserialize user from database on each request
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
+      if (user) {
+        // Update last login time on successful session retrieval
+        await storage.updateUserLastLogin(id);
+      }
       done(null, user || false);
     } catch (error) {
+      console.error(`[AUTH] Error deserializing user ${id}:`, error);
       done(error);
     }
   });
@@ -147,22 +225,75 @@ export function setupAuth(app: Express) {
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
     const userResponse = { ...req.user } as Partial<SelectUser>;
     delete userResponse.password;
+    
+    // Record login IP
+    if (req.user && req.user.id) {
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      storage.updateUserLastLogin(req.user.id, typeof ip === 'string' ? ip : undefined);
+    }
+    
     res.json({ success: true, user: userResponse });
   });
 
   app.post("/api/logout", (req, res, next) => {
+    if (!req.isAuthenticated()) {
+      return res.json({ success: true, message: 'Not logged in' });
+    }
+    
     req.logout((err) => {
       if (err) return next(err);
       res.json({ success: true });
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user/info", (req, res) => {
     if (!req.isAuthenticated()) {
-      return res.status(401).json({ success: false, message: "Not authenticated" });
+      console.log('[USER INFO] User not authenticated');
+      return res.status(401).json({ 
+        success: false, 
+        message: "Authentication required. Please log in again." 
+      });
     }
+    
+    console.log('[USER INFO] Retrieved user from session:', req.user?.username, '(ID:', req.user?.id, ')');
     const userResponse = { ...req.user } as Partial<SelectUser>;
     delete userResponse.password;
     res.json({ success: true, user: userResponse });
+  });
+  
+  // Session refresh endpoint to provide a way to extend sessions
+  app.post("/api/refresh-token", (req, res) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Authentication required. Please log in again." 
+      });
+    }
+    
+    // User is already authenticated, send back user info to refresh the client state
+    const userResponse = { ...req.user } as Partial<SelectUser>;
+    delete userResponse.password;
+    
+    // Update session expiry by modifying the cookie
+    if (req.session.cookie) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    }
+    
+    // Force session save to update the expiry
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+        return res.status(500).json({ 
+          success: false, 
+          message: "Session refresh failed" 
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Session refreshed successfully",
+        user: userResponse
+      });
+    });
   });
 }
