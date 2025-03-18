@@ -77,7 +77,10 @@ export default function MobileWallet() {
   
   return (
     <div 
-      className="banking-app min-h-screen pb-20 overflow-hidden bg-gradient-to-b from-[#001138] to-[#002D87]"
+      className="banking-app min-h-screen pb-28 overflow-hidden bg-gradient-to-b from-[#001138] to-[#002D87]"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
+      }}
       ref={scrollAreaRef}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}

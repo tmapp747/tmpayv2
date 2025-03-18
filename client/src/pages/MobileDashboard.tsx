@@ -82,7 +82,10 @@ export default function MobileDashboard() {
   
   return (
     <div 
-      className="banking-app min-h-screen pb-20 overflow-hidden"
+      className="banking-app min-h-screen pb-28 overflow-hidden"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
+      }}
       ref={scrollAreaRef}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}

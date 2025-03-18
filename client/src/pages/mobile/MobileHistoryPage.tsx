@@ -26,7 +26,10 @@ export default function MobileHistoryPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen bg-gray-50 pb-28"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
+      }}>
       {/* Header */}
       <div className="bg-white p-4 flex items-center gap-2 shadow-sm">
         <button 

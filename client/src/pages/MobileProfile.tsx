@@ -42,7 +42,10 @@ export default function MobileProfile() {
   }
   
   return (
-    <div className="banking-app min-h-screen pb-20 bg-gradient-to-b from-[#001138] to-[#002D87]">
+    <div className="banking-app min-h-screen pb-28 bg-gradient-to-b from-[#001138] to-[#002D87]"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
+      }}>
       {/* App Header */}
       <header className="p-4 sticky top-0 z-40 backdrop-blur-md bg-[#00174F]/70">
         <div className="flex items-center justify-between">
