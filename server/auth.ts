@@ -30,8 +30,19 @@ export async function hashPassword(password: string) {
 
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
   if (!supplied || !stored) return false;
+  
+  // Check if password is stored as hash or plaintext
+  const isHashed = stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$');
+  
   try {
-    return await bcrypt.compare(supplied, stored);
+    if (isHashed) {
+      // Password is hashed, use bcrypt.compare
+      return await bcrypt.compare(supplied, stored);
+    } else {
+      // Password is stored in plaintext, do direct comparison
+      console.log('Doing plaintext password comparison');
+      return supplied === stored;
+    }
   } catch (error) {
     console.error("Password comparison error:", error);
     return false;
