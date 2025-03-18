@@ -10,14 +10,14 @@ const MobileNavigation = () => {
   const { logoutMutation } = useAuth();
   const { toast } = useToast();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
+
   const navLinks = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/wallet", icon: Wallet, label: "Wallet" },
     { path: "/history", icon: History, label: "History" },
     { path: "/profile", icon: User, label: "Profile" },
   ];
-  
+
   const handleLogout = () => {
     setShowLogoutConfirm(false);
     logoutMutation.mutate();
@@ -40,7 +40,7 @@ const MobileNavigation = () => {
                }}>
             {/* Subtle glow effect */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 rounded-lg z-0"></div>
-            
+
             <div className="relative z-10">
               <h3 className="font-bold text-lg text-white mb-3" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>Confirm Logout</h3>
               <p className="text-white mb-4">Are you sure you want to logout?</p>
@@ -80,7 +80,7 @@ const MobileNavigation = () => {
           </div>
         </div>
       )}
-      
+
       <div className="lg:hidden fixed bottom-0 left-0 w-full bg-[#1a2b47] border-t-2 border-[#3a4c67]/60 z-40 mobile-safe-area"
            style={{
              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -88,7 +88,7 @@ const MobileNavigation = () => {
            }}>
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-70"></div>
-        
+
         <div className="flex items-center justify-around p-2 relative z-10">
           {navLinks.map((link) => {
             const isActive = location === link.path;
@@ -134,22 +134,9 @@ const MobileNavigation = () => {
   );
 };
 
-import { cn } from "@/lib/utils";
+// Removed duplicate MobileNavigation component
 
-const MobileNavigation = () => {
-  return (
-    <nav className={cn(
-      "fixed bottom-0 left-0 right-0 bg-background border-t",
-      "flex items-center justify-around p-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))]",
-      "z-50 backdrop-blur-lg bg-opacity-90"
-    )}>
-      <MobileNavButton href="/mobile" icon="home" label="Home" />
-      <MobileNavButton href="/mobile/wallet" icon="wallet" label="Wallet" />
-      <MobileNavButton href="/mobile/history" icon="history" label="History" />
-      <MobileNavButton href="/mobile/profile" icon="user" label="Profile" />
-    </nav>
-  );
-};
+import { cn } from "@/lib/utils";
 
 const MobileNavButton = ({ href, icon, label }) => (
   <a 

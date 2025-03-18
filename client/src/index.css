@@ -3,6 +3,48 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --app-height: 100vh;
+  }
+  
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-dark text-gray-100 antialiased;
+    height: var(--app-height);
+    overscroll-behavior-y: none;
+  }
+}
+
+@layer components {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .btn-primary {
+    @apply bg-lime-400 text-black font-semibold px-4 py-2 rounded-lg
+    active:scale-95 transition-transform duration-100
+    disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .input-field {
+    @apply bg-dark-navy border border-gray-800 rounded-lg px-4 py-2
+    focus:ring-2 focus:ring-lime-400/50 focus:border-lime-400
+    transition-all duration-200;
+  }
+}
+
+.card-glow {
+  box-shadow: 0 0 20px rgba(170, 255, 0, 0.1);
+}
+
+.balance-card {
+  background: linear-gradient(145deg, rgba(4, 120, 87, 0.9), rgba(5, 150, 105, 0.8));
+}
+
 /* Base styles for both light and dark modes */
 :root {
   --app-height: 100%;
