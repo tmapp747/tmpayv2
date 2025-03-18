@@ -17,7 +17,7 @@ import MobileDashboard from "@/pages/MobileDashboard";
 import MobileWallet from "@/pages/MobileWallet";
 import MobileProfile from "@/pages/MobileProfile";
 import MobileDepositPage from "@/pages/mobile-deposit";
-import MobileTransactionHistory from "@/components/mobile/MobileTransactionHistory";
+import MobileHistoryPage from "@/pages/mobile/MobileHistoryPage";
 import BottomNavBar from "@/components/navigation/BottomNavBar";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -116,26 +116,7 @@ function Router() {
       <ProtectedRoute path="/mobile/wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
-      <ProtectedRoute path="/mobile/history" component={() => {
-        return (
-          <div className="banking-app min-h-screen pb-20 overflow-hidden bg-gradient-to-b from-[#001138] to-[#002D87]">
-            <header className="p-4 sticky top-0 z-40 backdrop-blur-md bg-[#00174F]/70">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-xl font-semibold text-white">Transaction History</h1>
-                  <p className="text-sm text-blue-300">All your transactions</p>
-                </div>
-              </div>
-            </header>
-            
-            <main className="px-4 pb-16">
-              <MobileTransactionHistory />
-            </main>
-            
-            <BottomNavBar />
-          </div>
-        );
-      }} />
+      <ProtectedRoute path="/mobile/history" component={MobileHistoryPage} />
       
       {/* Legacy mobile route patterns for backward compatibility */}
       <ProtectedRoute path="/mobile-wallet" component={() => {

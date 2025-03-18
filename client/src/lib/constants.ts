@@ -81,6 +81,7 @@ export const DEPOSIT_AMOUNTS = [
 export const PAYMENT_STATUS = {
   PENDING: 'pending',
   COMPLETED: 'completed',
+  PAYMENT_COMPLETED: 'payment_completed', // New intermediate state for dual-step process
   FAILED: 'failed',
   EXPIRED: 'expired',
 };

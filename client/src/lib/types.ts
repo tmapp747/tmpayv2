@@ -25,7 +25,7 @@ export interface Transaction {
   type: 'deposit' | 'withdraw' | 'transfer' | 'casino_deposit' | 'casino_withdraw';
   method: 'gcash_qr' | 'bank_transfer' | 'crypto' | 'casino_transfer' | string;
   amount: string | number;
-  status: 'pending' | 'completed' | 'failed' | 'expired';
+  status: 'pending' | 'completed' | 'failed' | 'expired' | 'payment_completed';
   paymentReference?: string;
   transactionId?: string;
   casinoReference?: string;
