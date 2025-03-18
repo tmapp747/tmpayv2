@@ -107,6 +107,23 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
       });
       
       const result = await response.json();
+      
+      // Check for the GCash payment rejection scenario
+      if (response.status === 403 && !result.success) {
+        toast({
+          title: "Automated Payment",
+          description: result.message || "This payment is processed automatically.",
+          variant: "info",
+        });
+        
+        // Switch to QR code tab if available
+        if (qrPayment?.qrCodeData) {
+          setActiveTab("qrcode");
+        }
+        
+        return;
+      }
+      
       if (result.success) {
         toast({
           title: "Success!",
@@ -118,6 +135,13 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
         });
         queryClient.invalidateQueries({
           queryKey: ['/api/transactions'],
+        });
+      } else {
+        // Generic error message if the request was not successful
+        toast({
+          title: "Error",
+          description: result.message || "Failed to mark payment as completed",
+          variant: "destructive",
         });
       }
     } catch (err) {
@@ -423,8 +447,9 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
                   </Alert>
                 )}
                 
-                {/* Manual payment completion button (for users to manually mark as completed) */}
-                {transaction.status === "pending" && (
+                {/* Manual payment completion button (only for non-GCash payments) */}
+                {transaction.status === "pending" && 
+                 (!paymentMethod?.toLowerCase().includes('gcash') && !paymentMethod?.toLowerCase().includes('qr')) && (
                   <Button 
                     variant="outline" 
                     onClick={markAsCompleted}
@@ -433,6 +458,17 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
                     <CheckCircle className="h-4 w-4 mr-2" />
                     I've Completed This Payment
                   </Button>
+                )}
+                
+                {/* Automated payment message for GCash */}
+                {transaction.status === "pending" && 
+                 (paymentMethod?.toLowerCase().includes('gcash') || paymentMethod?.toLowerCase().includes('qr')) && (
+                  <Alert className="bg-blue-950/50 border-blue-700/30 text-blue-200 mt-3">
+                    <AlertCircle className="h-4 w-4 text-blue-400 mr-2" />
+                    <AlertDescription>
+                      GCash payments are processed automatically. Your payment will be confirmed shortly after completion.
+                    </AlertDescription>
+                  </Alert>
                 )}
                 
                 {/* Cancel payment button */}

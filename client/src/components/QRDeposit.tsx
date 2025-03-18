@@ -21,6 +21,7 @@ const QRDeposit = () => {
   const [successData, setSuccessData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<string>("gcash");
   const { toast } = useToast();
   const { user } = useAuth();
   const [, navigate] = useLocation();
