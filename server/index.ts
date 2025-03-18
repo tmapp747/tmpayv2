@@ -2,12 +2,13 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
+import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Rate limiting
+// Rate limiting middleware
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 
