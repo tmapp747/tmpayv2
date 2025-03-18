@@ -202,56 +202,58 @@ export default function MobileDashboard() {
           </div>
           
           {/* Quick Action Buttons */}
-          <div className="flex justify-center gap-2 text-center text-xs px-4 mb-8">
-            <Link href="/mobile/banking">
-              <motion.div 
-                className="flex flex-col items-center space-y-2"
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="banking-btn with-ripple shadow-lg">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6.5C3 4.01472 5.01472 2 7.5 2H16.5C18.9853 2 21 4.01472 21 6.5V17.5C21 19.9853 18.9853 22 16.5 22H7.5C5.01472 22 3 19.9853 3 17.5V6.5Z" stroke="white" strokeWidth="2"/>
-                    <path d="M7 7H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M7 12H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M7 17H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </div>
-                <span>Banking Management</span>
-              </motion.div>
-            </Link>
-            
-            <Link href="/mobile/profile">
-              <motion.div 
-                className="flex flex-col items-center space-y-2"
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="banking-btn with-ripple shadow-lg">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
-                    <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
-                  </svg>
-                </div>
-                <span>User Management</span>
-              </motion.div>
-            </Link>
-            
-            <Link href="/mobile/portals" target="_blank">
-              <motion.div 
-                className="flex flex-col items-center space-y-2"
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="banking-btn with-ripple shadow-lg">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10 6H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M3 12H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M3 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                    <path d="M3 6L7 10L3 6Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M21 18L17 14L21 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </div>
-                <span>Portals</span>
-              </motion.div>
-            </Link>
+          <div className="px-4 pt-2 mb-8">
+            <div className="grid grid-cols-3 gap-3">
+              <Link href="/mobile/banking">
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"
+                >
+                  <div className="bg-white/20 rounded-full w-10 h-10 flex items-center justify-center mb-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 6.5C3 4.01472 5.01472 2 7.5 2H16.5C18.9853 2 21 4.01472 21 6.5V17.5C21 19.9853 18.9853 22 16.5 22H7.5C5.01472 22 3 19.9853 3 17.5V6.5Z" stroke="white" strokeWidth="2"/>
+                      <path d="M7 7H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M7 12H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M7 17H17" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm text-white font-medium">Banking</span>
+                </motion.div>
+              </Link>
+              
+              <Link href="/mobile/profile">
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"
+                >
+                  <div className="bg-white/20 rounded-full w-10 h-10 flex items-center justify-center mb-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
+                      <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm text-white font-medium">Profile</span>
+                </motion.div>
+              </Link>
+              
+              <Link href="/mobile/portals" target="_blank">
+                <motion.div 
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"
+                >
+                  <div className="bg-white/20 rounded-full w-10 h-10 flex items-center justify-center mb-2">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 6H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M3 12H21" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M3 18H14" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M3 6L7 10L3 6Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 18L17 14L21 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm text-white font-medium">Portals</span>
+                </motion.div>
+              </Link>
+            </div>
           </div>
           
           {/* Casino Statistics Section */}
