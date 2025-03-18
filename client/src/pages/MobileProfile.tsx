@@ -48,30 +48,33 @@ export default function MobileProfile() {
   
   // Custom header with 747 logo and settings button
   const headerContent = (
-    <div className="flex items-center justify-between w-full">
+    <div className="flex items-center justify-between w-full px-1">
       {/* 747 Logo with enhanced shining effect on left */}
-      <div className="flex items-center relative">
-        <div className="absolute w-16 h-16 bg-blue-500/20 rounded-full filter blur-xl animate-pulse"></div>
+      <div className="relative">
+        <div className="absolute w-14 h-14 bg-blue-500/20 rounded-full filter blur-xl animate-pulse"></div>
         <motion.div
           animate={{
             boxShadow: [
-              "0 0 20px 3px rgba(255, 255, 255, 0.4)",
-              "0 0 35px 7px rgba(59, 130, 246, 0.6)",
-              "0 0 20px 3px rgba(255, 255, 255, 0.4)",
+              "0 0 15px 2px rgba(255, 255, 255, 0.5)",
+              "0 0 25px 5px rgba(59, 130, 246, 0.7)",
+              "0 0 15px 2px rgba(255, 255, 255, 0.5)",
             ],
           }}
           transition={{
-            duration: 3,
+            duration: 2.5,
             repeat: Infinity,
             repeatType: "reverse",
           }}
-          className="relative z-10 w-12 h-12 flex items-center justify-center"
+          className="relative z-10 w-10 h-10 flex items-center justify-center"
         >
           <img 
             src={sevenLogo} 
             alt="747 Logo" 
-            className="h-10 object-contain drop-shadow-lg" 
-            style={{ filter: 'brightness(1.2) contrast(1.1)' }}
+            className="h-8 object-contain" 
+            style={{ 
+              filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))',
+              mixBlendMode: 'screen'
+            }}
           />
         </motion.div>
       </div>
@@ -81,10 +84,10 @@ export default function MobileProfile() {
         <h2 className="text-xl font-semibold text-white">Profile</h2>
       </div>
       
-      {/* Better visible menu button on right */}
+      {/* Better visible settings button on right */}
       <div className="flex justify-end items-center">
-        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500/30 backdrop-blur-md hover:bg-blue-600/40 transition-colors">
-          <User className="h-5 w-5 text-white" />
+        <button className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600/50 to-indigo-600/50 backdrop-blur-md shadow-md">
+          <Settings className="h-4 w-4 text-white" />
         </button>
       </div>
     </div>
