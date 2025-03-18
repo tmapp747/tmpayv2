@@ -7,6 +7,9 @@ export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
 export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
 export const supportedUserRoles = ['player', 'agent', 'admin'];
 export const supportedUserStatuses = ['active', 'suspended', 'inactive', 'pending_review'];
+export const supportedConversationStatuses = ['active', 'resolved', 'pending', 'closed'];
+export const supportedMessageTypes = ['user', 'assistant', 'system'];
+export const supportedChatTypes = ['ai', 'human'];
 
 // Define available resources and their actions for permissions
 export const resourceActionMap = {
@@ -254,6 +257,38 @@ export const userPaymentMethods = pgTable("user_payment_methods", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Support conversations for AI-assisted and human support
+export const supportConversations = pgTable("support_conversations", {
+  id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
+  userId: integer("user_id").notNull(), // User who started the conversation
+  subject: text("subject").notNull(), // Conversation subject
+  status: text("status").default('active').notNull(), // 'active', 'resolved', 'pending', 'closed'
+  type: text("type").default('ai').notNull(), // 'ai' for AI assistant, 'human' for human agent
+  priority: text("priority").default('normal'), // 'low', 'normal', 'high', 'urgent'
+  assignedToId: integer("assigned_to_id"), // ID of human agent assigned to conversation (if any)
+  lastMessageAt: timestamp("last_message_at").defaultNow(), // When the last message was sent
+  metadata: json("metadata").default({}), // Additional metadata about the conversation
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Messages within support conversations
+export const supportMessages = pgTable("support_messages", {
+  id: serial("id").primaryKey(),
+  uuid: uuid("uuid").defaultRandom().notNull(), // UUID v4 for public API interactions
+  conversationId: integer("conversation_id").notNull(), // ID of the parent conversation
+  userId: integer("user_id"), // User who sent the message (null for system or AI messages)
+  agentId: integer("agent_id"), // ID of agent who sent message (null for user or AI messages)
+  type: text("type").notNull(), // 'user', 'assistant', 'system'
+  content: text("content").notNull(), // Message content
+  attachments: json("attachments").default([]), // Array of attachment URLs or IDs
+  isRead: boolean("is_read").default(false), // Whether message has been read
+  metadata: json("metadata").default({}), // Additional metadata, including AI context
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertQrPaymentSchema = createInsertSchema(qrPayments).omit({
   id: true,
   uuid: true, // UUID will be auto-generated
@@ -424,6 +459,29 @@ export type InsertPaymentMethod = z.infer<typeof insertPaymentMethodSchema>;
 
 export type UserPaymentMethod = typeof userPaymentMethods.$inferSelect;
 export type InsertUserPaymentMethod = z.infer<typeof insertUserPaymentMethodSchema>;
+
+// Support conversations for AI-powered assistant are defined above
+
+export const insertSupportConversationSchema = createInsertSchema(supportConversations).omit({
+  id: true,
+  uuid: true,
+  createdAt: true,
+  updatedAt: true,
+  lastMessageAt: true,
+});
+
+export const insertSupportMessageSchema = createInsertSchema(supportMessages).omit({
+  id: true,
+  uuid: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SupportConversation = typeof supportConversations.$inferSelect;
+export type InsertSupportConversation = z.infer<typeof insertSupportConversationSchema>;
+
+export type SupportMessage = typeof supportMessages.$inferSelect;
+export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
 
 // Add schema for Telegram payment requests
 export const generateTelegramPaymentSchema = z.object({

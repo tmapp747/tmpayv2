@@ -2081,4 +2081,129 @@ export class DbStorage implements IStorage {
       return undefined;
     }
   }
+  
+  // Support conversation methods
+  async createSupportConversation(conversationData: InsertSupportConversation): Promise<SupportConversation> {
+    try {
+      const now = new Date();
+      const result = await this.dbInstance
+        .insert(supportConversations)
+        .values({
+          ...conversationData,
+          lastMessageAt: now,
+          createdAt: now,
+          updatedAt: now
+        })
+        .returning();
+      
+      if (DB_DEBUG) console.log(`[DB] Created support conversation for user ${conversationData.userId}`);
+      return result[0];
+    } catch (error) {
+      console.error('[DB] Error creating support conversation:', error);
+      throw error;
+    }
+  }
+  
+  async getSupportConversation(id: number): Promise<SupportConversation | undefined> {
+    try {
+      const result = await this.dbInstance
+        .select()
+        .from(supportConversations)
+        .where(eq(supportConversations.id, id))
+        .limit(1);
+      
+      if (DB_DEBUG && result.length) console.log(`[DB] Retrieved support conversation ${id}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error retrieving support conversation ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async getSupportConversationsByUserId(userId: number): Promise<SupportConversation[]> {
+    try {
+      const result = await this.dbInstance
+        .select()
+        .from(supportConversations)
+        .where(eq(supportConversations.userId, userId))
+        .orderBy(desc(supportConversations.lastMessageAt));
+      
+      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} support conversations for user ${userId}`);
+      return result;
+    } catch (error) {
+      console.error(`[DB] Error retrieving support conversations for user ${userId}:`, error);
+      return [];
+    }
+  }
+  
+  async updateSupportConversationStatus(id: number, status: string): Promise<SupportConversation> {
+    try {
+      const updatedConversation = await this.dbInstance
+        .update(supportConversations)
+        .set({ 
+          status, 
+          updatedAt: new Date() 
+        })
+        .where(eq(supportConversations.id, id))
+        .returning();
+      
+      if (!updatedConversation.length) {
+        throw new Error(`Support conversation with ID ${id} not found`);
+      }
+      
+      if (DB_DEBUG) console.log(`[DB] Updated support conversation ${id} status to ${status}`);
+      return updatedConversation[0];
+    } catch (error) {
+      console.error(`[DB] Error updating support conversation ${id} status:`, error);
+      throw error;
+    }
+  }
+  
+  async addSupportMessage(messageData: InsertSupportMessage): Promise<SupportMessage> {
+    try {
+      const now = new Date();
+      
+      // Add the message
+      const result = await this.dbInstance
+        .insert(supportMessages)
+        .values({
+          ...messageData,
+          createdAt: now,
+          updatedAt: now
+        })
+        .returning();
+      
+      // Update lastMessageAt in the conversation
+      await this.dbInstance
+        .update(supportConversations)
+        .set({ 
+          lastMessageAt: now,
+          updatedAt: now
+        })
+        .where(eq(supportConversations.id, messageData.conversationId));
+      
+      if (DB_DEBUG) console.log(`[DB] Added support message to conversation ${messageData.conversationId}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error adding support message to conversation ${messageData.conversationId}:`, error);
+      throw error;
+    }
+  }
+  
+  async getSupportMessages(conversationId: number, limit: number = 50): Promise<SupportMessage[]> {
+    try {
+      const result = await this.dbInstance
+        .select()
+        .from(supportMessages)
+        .where(eq(supportMessages.conversationId, conversationId))
+        .orderBy(asc(supportMessages.createdAt))
+        .limit(limit);
+      
+      if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} support messages for conversation ${conversationId}`);
+      return result;
+    } catch (error) {
+      console.error(`[DB] Error retrieving support messages for conversation ${conversationId}:`, error);
+      return [];
+    }
+  }
 }

@@ -65,6 +65,14 @@ export interface IStorage {
   getUserByCasinoUsername(casinoUsername: string): Promise<User | undefined>;
   getUserByCasinoClientId(casinoClientId: number): Promise<User | undefined>;
   
+  // Support & AI assistant operations
+  createSupportConversation(conversationData: InsertSupportConversation): Promise<SupportConversation>;
+  getSupportConversation(id: number): Promise<SupportConversation | undefined>;
+  getSupportConversationsByUserId(userId: number): Promise<SupportConversation[]>;
+  updateSupportConversationStatus(id: number, status: string): Promise<SupportConversation>;
+  addSupportMessage(messageData: InsertSupportMessage): Promise<SupportMessage>;
+  getSupportMessages(conversationId: number, limit?: number): Promise<SupportMessage[]>;
+  
   // Authentication operations
   getUserByAccessToken(token: string): Promise<User | undefined>;
   updateUserAccessToken(id: number, token: string | null | undefined, expiresIn?: number): Promise<User>;
