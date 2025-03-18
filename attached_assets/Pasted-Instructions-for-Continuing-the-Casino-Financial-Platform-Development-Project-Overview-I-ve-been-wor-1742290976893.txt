@@ -1,0 +1,62 @@
+Instructions for Continuing the Casino Financial Platform Development
+Project Overview
+I've been working on restructuring a sophisticated online casino financial management platform with GCash integration, focusing on mobile-first payment solutions. The goal is to create a more maintainable codebase with proper separation of concerns.
+
+Progress So Far
+I've completed the following tasks:
+
+Created a new modular directory structure for routing (/mobile, /admin, /api)
+Established centralized authentication middleware in server/routes/middleware.ts
+Updated the main server/index.ts file to use the new routing system
+Fixed various type and integration issues
+Technical Architecture
+The application is built with:
+
+TypeScript
+Express.js backend with Drizzle ORM and PostgreSQL
+React Query frontend
+Session-based authentication with middleware support
+Support for both API token and session authentication
+Tasks to Continue
+Priority 1: Move Endpoints to New Structure
+Move the existing endpoints from server/routes.ts to the appropriate modules:
+
+/mobile/ - User-facing endpoints (transactions, payments, account management)
+/admin/ - Admin-only endpoints (user management, manual payment approval)
+/api/ - Integration endpoints (webhooks, callbacks, external API)
+Priority 2: Implement Core Mobile Features
+Implement these mobile-focused features:
+
+User account information endpoint
+GCash payment generation and QR code display
+Transaction history and status checking
+Casino balance checking and deposit flow
+Priority 3: Implement Admin Features
+Implement these admin features:
+
+Manual payment approval and processing
+Transaction status monitoring and updating
+User management interface
+Implementation Guidelines
+Use the centralized middleware (auth, roles) from server/routes/middleware.ts
+Each endpoint should follow the pattern in the existing files
+Use proper error handling and validation with Zod schemas
+Keep the separation between payment processing and casino integration
+Store the connection to DirectPay for GCash payments in environment variables
+Use proper logging for tracking payment status changes
+File Structure
+The main files to work with are:
+
+server/index.ts - Main entry point
+server/routes/index.ts - Router registration
+server/routes/mobile/index.ts - Mobile API endpoints
+server/routes/admin/index.ts - Admin API endpoints
+server/routes/api/index.ts - External API/webhook endpoints
+server/routes/middleware.ts - Shared middleware
+server/directPayApi.ts - GCash integration
+Technical Details
+Authentication uses both session and token-based approaches
+Authorization checks user roles ("admin" vs "user") based on userType field
+Casino integration is handled via casino747Api
+Payment processing uses directPayApi for GCash QR codes
+All database operations use the storage interface
