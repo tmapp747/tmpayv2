@@ -86,11 +86,11 @@ export class DbStorage implements IStorage {
         // Get current user to calculate new balance
         const currentUser = await tx.select().from(users).where(eq(users.id, id));
         if (!currentUser.length) throw new Error(`User with ID ${id} not found`);
-        
+
         const user = currentUser[0];
         const currentBalance = parseFloat(user.balance);
         const newBalance = currentBalance + amount;
-        
+
         // Update user with new balance
         return await tx.update(users)
           .set({ 
@@ -100,7 +100,7 @@ export class DbStorage implements IStorage {
           .where(eq(users.id, id))
           .returning();
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated user balance, user ID: ${id}, amount: ${amount}`);
       return result[0];
     } catch (error) {
@@ -116,11 +116,11 @@ export class DbStorage implements IStorage {
         // Get current user to calculate new pending balance
         const currentUser = await tx.select().from(users).where(eq(users.id, id));
         if (!currentUser.length) throw new Error(`User with ID ${id} not found`);
-        
+
         const user = currentUser[0];
         const currentPendingBalance = parseFloat(user.pendingBalance);
         const newPendingBalance = currentPendingBalance + amount;
-        
+
         // Update user with new pending balance
         return await tx.update(users)
           .set({ 
@@ -130,7 +130,7 @@ export class DbStorage implements IStorage {
           .where(eq(users.id, id))
           .returning();
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated user pending balance, user ID: ${id}, amount: ${amount}`);
       return result[0];
     } catch (error) {
@@ -143,13 +143,13 @@ export class DbStorage implements IStorage {
     // For compatibility with the interface, this returns a Map directly
     // Instead of a Promise<Map> which would break the interface contract
     const userMap = new Map<number, User>();
-    
+
     try {
       // Start an async process to populate this map but return immediately
       this.refreshUsersFromDatabase().catch(error => {
         console.error('[DB] Error refreshing users from database:', error);
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Returning user map with initial size: ${userMap.size}`);
       return userMap;
     } catch (error) {
@@ -157,7 +157,7 @@ export class DbStorage implements IStorage {
       return new Map();
     }
   }
-  
+
   /**
    * Private helper to refresh users from the database
    */
@@ -165,11 +165,11 @@ export class DbStorage implements IStorage {
     try {
       const result = await this.dbInstance.select().from(users);
       const userMap = new Map<number, User>();
-      
+
       for (const user of result) {
         userMap.set(user.id, user);
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} users from database`);
     } catch (error) {
       console.error('[DB] Error refreshing users from database:', error);
@@ -186,7 +186,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated casino details for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -202,11 +202,11 @@ export class DbStorage implements IStorage {
         // Get current user to calculate new casino balance
         const currentUser = await tx.select().from(users).where(eq(users.id, id));
         if (!currentUser.length) throw new Error(`User with ID ${id} not found`);
-        
+
         const user = currentUser[0];
         const currentCasinoBalance = user.casinoBalance ? parseFloat(user.casinoBalance.toString()) : 0;
         const newCasinoBalance = currentCasinoBalance + amount;
-        
+
         // Update user with new casino balance
         return await tx.update(users)
           .set({ 
@@ -216,7 +216,7 @@ export class DbStorage implements IStorage {
           .where(eq(users.id, id))
           .returning();
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated user casino balance, user ID: ${id}, amount: ${amount}`);
       return result[0];
     } catch (error) {
@@ -264,7 +264,7 @@ export class DbStorage implements IStorage {
       // Calculate expiry date
       const now = new Date();
       const expiryDate = token ? new Date(now.getTime() + expiresIn * 1000) : null;
-      
+
       const result = await this.dbInstance.update(users)
         .set({ 
           accessToken: token,
@@ -273,7 +273,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated access token for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -298,7 +298,7 @@ export class DbStorage implements IStorage {
       // Calculate expiry date (30 days by default)
       const now = new Date();
       const expiryDate = token ? new Date(now.getTime() + expiresIn * 1000) : null;
-      
+
       const result = await this.dbInstance.update(users)
         .set({ 
           refreshToken: token,
@@ -307,7 +307,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated refresh token for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -321,9 +321,9 @@ export class DbStorage implements IStorage {
       const result = await this.dbInstance.select({
         accessTokenExpiry: users.accessTokenExpiry
       }).from(users).where(eq(users.id, id));
-      
+
       if (!result.length || !result[0].accessTokenExpiry) return true;
-      
+
       const expiryDate = new Date(result[0].accessTokenExpiry);
       return expiryDate < new Date();
     } catch (error) {
@@ -341,7 +341,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated authorization status for user ID: ${id}, status: ${isAuthorized}`);
       return result[0];
     } catch (error) {
@@ -359,7 +359,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated password for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -379,7 +379,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated hierarchy info for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -397,7 +397,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated allowed top managers for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -411,7 +411,7 @@ export class DbStorage implements IStorage {
       const result = await this.dbInstance.select({
         isAuthorized: users.isAuthorized
       }).from(users).where(eq(users.username, username));
-      
+
       if (!result.length) return false;
       return result[0].isAuthorized === true;
     } catch (error) {
@@ -442,7 +442,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated casino auth token for user ID: ${id}`);
       return result[0];
     } catch (error) {
@@ -467,7 +467,7 @@ export class DbStorage implements IStorage {
       const result = await this.dbInstance.select({
         topManager: users.topManager
       }).from(users).where(eq(users.id, userId));
-      
+
       if (!result.length) return undefined;
       return result[0].topManager;
     } catch (error) {
@@ -482,9 +482,9 @@ export class DbStorage implements IStorage {
       const result = await this.dbInstance.select({
         balances: users.balances
       }).from(users).where(eq(users.id, id));
-      
+
       if (!result.length) return "0.00";
-      
+
       const balances = result[0].balances as Record<Currency, string>;
       return balances[currency] || "0.00";
     } catch (error) {
@@ -500,15 +500,15 @@ export class DbStorage implements IStorage {
         // Get current user to update balances
         const currentUser = await tx.select().from(users).where(eq(users.id, id));
         if (!currentUser.length) throw new Error(`User with ID ${id} not found`);
-        
+
         const user = currentUser[0];
         const balances = user.balances as Record<Currency, string> || {};
         const currentBalance = parseFloat(balances[currency] || "0.00");
         const newBalance = currentBalance + amount;
-        
+
         // Update user with new balance
         balances[currency] = newBalance.toFixed(2);
-        
+
         return await tx.update(users)
           .set({ 
             balances,
@@ -517,7 +517,7 @@ export class DbStorage implements IStorage {
           .where(eq(users.id, id))
           .returning();
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated currency balance for user ID: ${id}, currency: ${currency}, amount: ${amount}`);
       return result[0];
     } catch (error) {
@@ -533,26 +533,26 @@ export class DbStorage implements IStorage {
         // Get current user to update balances
         const currentUser = await tx.select().from(users).where(eq(users.id, id));
         if (!currentUser.length) throw new Error(`User with ID ${id} not found`);
-        
+
         const user = currentUser[0];
         const balances = user.balances as Record<Currency, string> || {};
-        
+
         // Check if user has enough balance
         const fromBalance = parseFloat(balances[fromCurrency] || "0.00");
         if (fromBalance < amount) throw new Error(`Insufficient ${fromCurrency} balance`);
-        
+
         // Exchange rate (simplified, in real app would come from external API)
         const exchangeRate = 1.0; // 1:1 for now, implement real rates later
-        
+
         // Calculate new balances
         const newFromBalance = fromBalance - amount;
         const toBalance = parseFloat(balances[toCurrency] || "0.00");
         const newToBalance = toBalance + (amount * exchangeRate);
-        
+
         // Update balances
         balances[fromCurrency] = newFromBalance.toFixed(2);
         balances[toCurrency] = newToBalance.toFixed(2);
-        
+
         return await tx.update(users)
           .set({ 
             balances,
@@ -561,7 +561,7 @@ export class DbStorage implements IStorage {
           .where(eq(users.id, id))
           .returning();
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Exchanged currency for user ID: ${id}, from: ${fromCurrency}, to: ${toCurrency}, amount: ${amount}`);
       return result[0];
     } catch (error) {
@@ -579,7 +579,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(users.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated preferred currency for user ID: ${id}, currency: ${currency}`);
       return result[0];
     } catch (error) {
@@ -614,63 +614,63 @@ export class DbStorage implements IStorage {
   ): Promise<Transaction[]> {
     try {
       console.log(`[DB DEBUG] Fetching transactions for userId: ${userId} with options:`, options);
-      
+
       // Log current transactions in the database
       const allTransactions = await this.dbInstance.select().from(transactions);
       console.log(`[DB DEBUG] Total transactions in database: ${allTransactions.length}`);
       console.log(`[DB DEBUG] Transaction IDs:`, allTransactions.map(t => t.id));
       console.log(`[DB DEBUG] Transaction user IDs:`, allTransactions.map(t => t.userId));
-      
+
       // Build the query
       let query = this.dbInstance
         .select()
         .from(transactions)
         .where(eq(transactions.userId, userId));
-      
+
       // Apply filters if provided
       if (options?.type) {
         query = query.where(eq(transactions.type, options.type));
       }
-      
+
       if (options?.method) {
         query = query.where(eq(transactions.method, options.method));
       }
-      
+
       if (options?.status) {
         query = query.where(eq(transactions.status, options.status));
       }
-      
+
       if (options?.startDate) {
         query = query.where(gte(transactions.createdAt, options.startDate));
       }
-      
+
       if (options?.endDate) {
         query = query.where(lte(transactions.createdAt, options.endDate));
       }
-      
+
       // Order by creation date, newest first
       query = query.orderBy(desc(transactions.createdAt));
-      
+
       // Apply pagination if provided
       if (options?.limit) {
         query = query.limit(options.limit);
       }
-      
+
       if (options?.offset) {
         query = query.offset(options.offset);
       }
-      
+
       // Convert query to SQL for debugging
       const { sql, params } = query.toSQL();
       console.log(`[DB DEBUG] SQL query for transactions: ${sql}`);
       console.log(`[DB DEBUG] SQL params:`, params);
-      
+
       const result = await query;
       console.log(`[DB DEBUG] Retrieved ${result.length} transactions for user ID: ${userId}`);
       if (result.length > 0) {
         console.log(`[DB DEBUG] First transaction:`, result[0]);
       }
-      
+
       return result;
     } catch (error) {
       console.error(`[DB] Error retrieving transactions for user ID ${userId}:`, error);
@@ -687,7 +687,7 @@ export class DbStorage implements IStorage {
           const existing = await tx.select()
             .from(transactions)
             .where(eq(transactions.paymentReference, transactionData.paymentReference));
-          
+
           if (existing.length > 0) {
             throw new Error(`Transaction with reference ${transactionData.paymentReference} already exists`);
           }
@@ -715,64 +715,61 @@ export class DbStorage implements IStorage {
     try {
       // Use transaction to ensure atomic update
       return await this.dbInstance.transaction(async (tx) => {
-        // Get current transaction with financial data
+        // Get current transaction with all fields
         const currentTransaction = await tx
           .select()
           .from(transactions)
           .where(eq(transactions.id, id))
           .forUpdate();
-          
-        if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
-        
+
+        if (!currentTransaction.length) {
+          throw new Error(`Transaction ${id} not found`);
+        }
+
         const transaction = currentTransaction[0];
-        const existingHistory = transaction.statusHistory || [];
-        const currentMetadata = transaction.metadata || {};
-        
-        // Create new history entry
+        const now = new Date();
+
+        // Create history entry
         const historyEntry = {
           status,
-          timestamp: new Date().toISOString(),
-          note: `Status updated to ${status}`,
-          previousStatus: transaction.status
+          timestamp: now.toISOString(),
+          previousStatus: transaction.status,
+          note: `Status changed from ${transaction.status} to ${status}`
         };
 
-        // Update both places that track history
-        const updatedHistory = [...existingHistory, historyEntry];
-        const updatedMetadata = {
-          ...currentMetadata,
-          statusHistory: currentMetadata.statusHistory ? 
-            [...currentMetadata.statusHistory, historyEntry] : 
-            [historyEntry]
+        // Update status history
+        const statusHistory = transaction.statusHistory || [];
+        statusHistory.push(historyEntry);
+
+        // Prepare update data
+        const updateData: Partial<Transaction> = {
+          status,
+          statusHistory: JSON.stringify(statusHistory), //Added JSON.stringify
+          statusUpdatedAt: now,
+          updatedAt: now
         };
-      
-      // Prepare update data
-      const updateData: Partial<Transaction> = {
-        status,
-        statusHistory,
-        statusUpdatedAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      // Update reference if provided
-      if (reference) {
-        updateData.paymentReference = reference;
-      }
-      
-      // Update metadata if provided
-      if (metadata) {
-        updateData.metadata = {
-          ...(transaction.metadata || {}),
-          ...metadata
-        };
-      }
-      
-      const result = await this.dbInstance.update(transactions)
-        .set(updateData)
-        .where(eq(transactions.id, id))
-        .returning();
-      
-      if (DB_DEBUG) console.log(`[DB] Updated transaction status: ${id}, status: ${status}`);
-      return result[0];
+
+        // Update reference if provided
+        if (reference) {
+          updateData.paymentReference = reference;
+        }
+
+        // Update metadata if provided
+        if (metadata) {
+          updateData.metadata = {
+            ...(transaction.metadata || {}),
+            ...metadata
+          };
+        }
+
+        const result = await this.dbInstance.update(transactions)
+          .set(updateData)
+          .where(eq(transactions.id, id))
+          .returning();
+
+        if (DB_DEBUG) console.log(`[DB] Updated transaction status: ${id}, status: ${status}`);
+        return result[0];
+      });
     } catch (error) {
       console.error(`[DB] Error updating transaction status for ID ${id}:`, error);
       throw new Error(`Failed to update transaction status: ${error instanceof Error ? error.message : String(error)}`);
@@ -784,25 +781,25 @@ export class DbStorage implements IStorage {
       // Get current transaction to update
       const currentTransaction = await this.dbInstance.select().from(transactions).where(eq(transactions.id, id));
       if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
-      
+
       const transaction = currentTransaction[0];
       const statusHistory = transaction.statusHistory || [];
-      
+
       // Add new status history entry
       statusHistory.push({
         status,
         timestamp: new Date().toISOString(),
         note: note || `Status updated to ${status}`
       });
-      
+
       const result = await this.dbInstance.update(transactions)
         .set({
-          statusHistory,
+          statusHistory: JSON.stringify(statusHistory), //Added JSON.stringify
           updatedAt: new Date()
         })
         .where(eq(transactions.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Added status history entry to transaction: ${id}, status: ${status}`);
       return result[0];
     } catch (error) {
@@ -816,26 +813,26 @@ export class DbStorage implements IStorage {
       // Get current transaction to update
       const currentTransaction = await this.dbInstance.select().from(transactions).where(eq(transactions.id, id));
       if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
-      
+
       const transaction = currentTransaction[0];
       const statusHistory = transaction.statusHistory || [];
-      
+
       // Add completed status history entry
       statusHistory.push({
         status: 'completed',
         timestamp: new Date().toISOString(),
         note: 'Transaction completed successfully'
       });
-      
+
       // Prepare update data
       const updateData: Partial<Transaction> = {
         status: 'completed',
-        statusHistory,
+        statusHistory: JSON.stringify(statusHistory), //Added JSON.stringify
         completedAt: new Date(),
         statusUpdatedAt: new Date(),
         updatedAt: new Date()
       };
-      
+
       // Update metadata if provided
       if (metadata) {
         updateData.metadata = {
@@ -843,12 +840,12 @@ export class DbStorage implements IStorage {
           ...metadata
         };
       }
-      
+
       const result = await this.dbInstance.update(transactions)
         .set(updateData)
         .where(eq(transactions.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Completed transaction: ${id}`);
       return result[0];
     } catch (error) {
@@ -864,16 +861,16 @@ export class DbStorage implements IStorage {
         balanceAfter: balanceAfter.toFixed(2),
         updatedAt: new Date()
       };
-      
+
       if (fee !== undefined) {
         updateData.fee = fee.toFixed(2);
       }
-      
+
       const result = await this.dbInstance.update(transactions)
         .set(updateData)
         .where(eq(transactions.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Recorded financials for transaction: ${id}`);
       return result[0];
     } catch (error) {
@@ -887,15 +884,15 @@ export class DbStorage implements IStorage {
       // Get current transaction to update
       const currentTransaction = await this.dbInstance.select().from(transactions).where(eq(transactions.id, id));
       if (!currentTransaction.length) throw new Error(`Transaction with ID ${id} not found`);
-      
+
       const transaction = currentTransaction[0];
-      
+
       // Merge metadata
       const updatedMetadata = {
         ...(transaction.metadata || {}),
         ...metadata
       };
-      
+
       const result = await this.dbInstance.update(transactions)
         .set({
           metadata: updatedMetadata,
@@ -903,7 +900,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(transactions.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated metadata for transaction: ${id}`);
       return result[0];
     } catch (error) {
@@ -921,7 +918,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(transactions.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Set nonce for transaction: ${id}, nonce: ${nonce}`);
       return result[0];
     } catch (error) {
@@ -961,27 +958,27 @@ export class DbStorage implements IStorage {
             lte(transactions.createdAt, endDate)
           )
         );
-      
+
       // Apply filters if provided
       if (options?.userId) {
         query = query.where(eq(transactions.userId, options.userId));
       }
-      
+
       if (options?.type) {
         query = query.where(eq(transactions.type, options.type));
       }
-      
+
       if (options?.method) {
         query = query.where(eq(transactions.method, options.method));
       }
-      
+
       if (options?.status) {
         query = query.where(eq(transactions.status, options.status));
       }
-      
+
       // Order by creation date, newest first
       query = query.orderBy(desc(transactions.createdAt));
-      
+
       const result = await query;
       if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} transactions for date range`);
       return result;
@@ -1009,48 +1006,48 @@ export class DbStorage implements IStorage {
   }> {
     try {
       let filters = [] as any[];
-      
+
       // Build filters
       if (options?.userId) {
         filters.push(eq(transactions.userId, options.userId));
       }
-      
+
       if (options?.type) {
         filters.push(eq(transactions.type, options.type));
       }
-      
+
       if (options?.method) {
         filters.push(eq(transactions.method, options.method));
       }
-      
+
       if (options?.startDate) {
         filters.push(gte(transactions.createdAt, options.startDate));
       }
-      
+
       if (options?.endDate) {
         filters.push(lte(transactions.createdAt, options.endDate));
       }
-      
+
       // Get all relevant transactions
       const query = this.dbInstance.select().from(transactions);
-      
+
       // Apply filters if any
       if (filters.length > 0) {
         query.where(and(...filters));
       }
-      
+
       const result = await query;
-      
+
       // Calculate summary
       let totalAmount = 0;
       let successfulAmount = 0;
       let pendingAmount = 0;
       let failedAmount = 0;
-      
+
       for (const tx of result) {
         const amount = parseFloat(tx.amount.toString());
         totalAmount += amount;
-        
+
         if (tx.status === 'completed') {
           successfulAmount += amount;
         } else if (tx.status === 'pending') {
@@ -1059,9 +1056,9 @@ export class DbStorage implements IStorage {
           failedAmount += amount;
         }
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Generated transaction summary with ${result.length} transactions`);
-      
+
       return {
         count: result.length,
         totalAmount,
@@ -1126,24 +1123,24 @@ export class DbStorage implements IStorage {
             )
           )
         );
-      
+
       // Apply type filter if provided
       if (type) {
         query = query.where(eq(transactions.type, type));
       }
-      
+
       // Order by creation date, newest first
       query = query.orderBy(desc(transactions.createdAt));
-      
+
       // Apply pagination if provided
       if (options?.limit) {
         query = query.limit(options.limit);
       }
-      
+
       if (options?.offset) {
         query = query.offset(options.offset);
       }
-      
+
       const result = await query;
       if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} casino transactions for user ID: ${userId}`);
       return result;
@@ -1196,7 +1193,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(qrPayments.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated QR payment status: ${id}, status: ${status}`);
       return result[0];
     } catch (error) {
@@ -1218,7 +1215,7 @@ export class DbStorage implements IStorage {
         )
         .orderBy(desc(qrPayments.createdAt))
         .limit(1);
-      
+
       if (DB_DEBUG && result.length) console.log(`[DB] Retrieved active QR payment for user ID: ${userId}`);
       return result[0];
     } catch (error) {
@@ -1231,13 +1228,13 @@ export class DbStorage implements IStorage {
     // For compatibility with the interface, this returns a Map directly
     // Instead of a Promise<Map> which would break the interface contract
     const qrPaymentMap = new Map<number, QrPayment>();
-    
+
     try {
       // Start an async process to populate this map but return immediately
       this.refreshQrPaymentsFromDatabase().catch(error => {
         console.error('[DB] Error refreshing QR payments from database:', error);
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Returning QR payment map with initial size: ${qrPaymentMap.size}`);
       return qrPaymentMap;
     } catch (error) {
@@ -1245,7 +1242,7 @@ export class DbStorage implements IStorage {
       return new Map();
     }
   }
-  
+
   /**
    * Private helper to refresh QR payments from the database
    */
@@ -1253,11 +1250,11 @@ export class DbStorage implements IStorage {
     try {
       const result = await this.dbInstance.select().from(qrPayments);
       const qrPaymentMap = new Map<number, QrPayment>();
-      
+
       for (const payment of result) {
         qrPaymentMap.set(payment.id, payment);
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} QR payments from database`);
     } catch (error) {
       console.error('[DB] Error refreshing QR payments from database:', error);
@@ -1318,7 +1315,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(telegramPayments.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated Telegram payment status: ${id}, status: ${status}`);
       return result[0];
     } catch (error) {
@@ -1340,7 +1337,7 @@ export class DbStorage implements IStorage {
         )
         .orderBy(desc(telegramPayments.createdAt))
         .limit(1);
-      
+
       if (DB_DEBUG && result.length) console.log(`[DB] Retrieved active Telegram payment for user ID: ${userId}`);
       return result[0];
     } catch (error) {
@@ -1353,13 +1350,13 @@ export class DbStorage implements IStorage {
     // For compatibility with the interface, this returns a Map directly
     // Instead of a Promise<Map> which would break the interface contract
     const telegramPaymentMap = new Map<number, TelegramPayment>();
-    
+
     try {
       // Start an async process to populate this map but return immediately
       this.refreshTelegramPaymentsFromDatabase().catch(error => {
         console.error('[DB] Error refreshing Telegram payments from database:', error);
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Returning Telegram payment map with initial size: ${telegramPaymentMap.size}`);
       return telegramPaymentMap;
     } catch (error) {
@@ -1367,7 +1364,7 @@ export class DbStorage implements IStorage {
       return new Map();
     }
   }
-  
+
   /**
    * Private helper to refresh Telegram payments from the database
    */
@@ -1375,11 +1372,11 @@ export class DbStorage implements IStorage {
     try {
       const result = await this.dbInstance.select().from(telegramPayments);
       const telegramPaymentMap = new Map<number, TelegramPayment>();
-      
+
       for (const payment of result) {
         telegramPaymentMap.set(payment.id, payment);
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} Telegram payments from database`);
     } catch (error) {
       console.error('[DB] Error refreshing Telegram payments from database:', error);
@@ -1429,7 +1426,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(manualPayments.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated manual payment status: ${id}, status: ${status}`);
       return result[0];
     } catch (error) {
@@ -1447,7 +1444,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(manualPayments.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Uploaded receipt for manual payment: ${id}`);
       return result[0];
     } catch (error) {
@@ -1469,7 +1466,7 @@ export class DbStorage implements IStorage {
         )
         .orderBy(desc(manualPayments.createdAt))
         .limit(1);
-      
+
       if (DB_DEBUG && result.length) console.log(`[DB] Retrieved active manual payment for user ID: ${userId}`);
       return result[0];
     } catch (error) {
@@ -1485,12 +1482,12 @@ export class DbStorage implements IStorage {
         ...updates,
         updatedAt: new Date()
       };
-      
+
       const result = await this.dbInstance.update(manualPayments)
         .set(updateData)
         .where(eq(manualPayments.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated manual payment: ${id}`);
       return result[0];
     } catch (error) {
@@ -1503,13 +1500,13 @@ export class DbStorage implements IStorage {
     // For compatibility with the interface, this returns a Map directly
     // Instead of a Promise<Map> which would break the interface contract
     const manualPaymentMap = new Map<number, ManualPayment>();
-    
+
     try {
       // Start an async process to populate this map but return immediately
       this.refreshManualPaymentsFromDatabase().catch(error => {
         console.error('[DB] Error refreshing manual payments from database:', error);
       });
-      
+
       if (DB_DEBUG) console.log(`[DB] Returning manual payment map with initial size: ${manualPaymentMap.size}`);
       return manualPaymentMap;
     } catch (error) {
@@ -1517,7 +1514,7 @@ export class DbStorage implements IStorage {
       return new Map();
     }
   }
-  
+
   /**
    * Private helper to refresh manual payments from the database
    */
@@ -1525,11 +1522,11 @@ export class DbStorage implements IStorage {
     try {
       const result = await this.dbInstance.select().from(manualPayments);
       const manualPaymentMap = new Map<number, ManualPayment>();
-      
+
       for (const payment of result) {
         manualPaymentMap.set(payment.id, payment);
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Refreshed ${result.length} manual payments from database`);
     } catch (error) {
       console.error('[DB] Error refreshing manual payments from database:', error);
@@ -1559,7 +1556,7 @@ export class DbStorage implements IStorage {
             eq(userPreferences.key, key)
           )
         );
-      
+
       if (DB_DEBUG && result.length) console.log(`[DB] Retrieved user preference: ${key} for user ID: ${userId}`);
       return result[0];
     } catch (error) {
@@ -1572,7 +1569,7 @@ export class DbStorage implements IStorage {
     try {
       // Check if preference exists
       const existingPreference = await this.getUserPreference(userId, key);
-      
+
       if (!existingPreference) {
         // Create new preference if it doesn't exist
         console.log(`Creating new user preference in database: userId=${userId}, key=${key}`);
@@ -1584,7 +1581,7 @@ export class DbStorage implements IStorage {
           updatedAt: new Date()
         });
       }
-      
+
       // Update existing preference
       console.log(`Updated existing user preference in database: userId=${userId}, key=${key}`);
       const result = await this.dbInstance.update(userPreferences)
@@ -1599,7 +1596,7 @@ export class DbStorage implements IStorage {
           )
         )
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated user preference: ${key} for user ID: ${userId}`);
       return result[0];
     } catch (error) {
@@ -1618,7 +1615,7 @@ export class DbStorage implements IStorage {
           )
         )
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Deleted user preference: ${key} for user ID: ${userId}`);
       return result.length > 0;
     } catch (error) {
@@ -1633,7 +1630,7 @@ export class DbStorage implements IStorage {
         .select()
         .from(userPreferences)
         .where(eq(userPreferences.userId, userId));
-      
+
       if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} preferences for user ID: ${userId}`);
       return result;
     } catch (error) {
@@ -1683,12 +1680,12 @@ export class DbStorage implements IStorage {
         ...updates,
         updatedAt: new Date()
       };
-      
+
       const result = await this.dbInstance.update(paymentMethods)
         .set(updateData)
         .where(eq(paymentMethods.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated payment method: ${id}`);
       return result[0];
     } catch (error) {
@@ -1707,7 +1704,7 @@ export class DbStorage implements IStorage {
         })
         .where(eq(paymentMethods.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Marked payment method as inactive: ${id}`);
       return result.length > 0;
     } catch (error) {
@@ -1719,19 +1716,19 @@ export class DbStorage implements IStorage {
   async getPaymentMethods(type?: string, isActive?: boolean): Promise<PaymentMethod[]> {
     try {
       let query = this.dbInstance.select().from(paymentMethods);
-      
+
       // Apply filters if provided
       if (type) {
         query = query.where(eq(paymentMethods.type, type));
       }
-      
+
       if (isActive !== undefined) {
         query = query.where(eq(paymentMethods.isActive, isActive));
       }
-      
+
       // Order by sort order, then name
       query = query.orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.name));
-      
+
       const result = await query;
       if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} payment methods`);
       return result;
@@ -1746,19 +1743,19 @@ export class DbStorage implements IStorage {
     try {
       // If this is the first payment method for this user, set as default
       let isDefault = false;
-      
+
       const existingMethods = await this.getUserPaymentMethodsByUserId(methodData.userId);
       if (!existingMethods.length) {
         isDefault = true;
       }
-      
+
       const result = await this.dbInstance.insert(userPaymentMethods)
         .values({
           ...methodData,
           isDefault
         })
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Created new user payment method: ${result[0].id} for user: ${methodData.userId}`);
       return result[0];
     } catch (error) {
@@ -1781,15 +1778,15 @@ export class DbStorage implements IStorage {
   async getUserPaymentMethodsByUserId(userId: number, type?: string): Promise<UserPaymentMethod[]> {
     try {
       let query = this.dbInstance.select().from(userPaymentMethods).where(eq(userPaymentMethods.userId, userId));
-      
+
       // Apply type filter if provided
       if (type) {
         query = query.where(eq(userPaymentMethods.type, type));
       }
-      
+
       // Order by default first, then creation date (newest first)
       query = query.orderBy(desc(userPaymentMethods.isDefault), desc(userPaymentMethods.createdAt));
-      
+
       const result = await query;
       if (DB_DEBUG) console.log(`[DB] Retrieved ${result.length} user payment methods for user ID: ${userId}`);
       return result;
@@ -1806,12 +1803,12 @@ export class DbStorage implements IStorage {
         ...updates,
         updatedAt: new Date()
       };
-      
+
       const result = await this.dbInstance.update(userPaymentMethods)
         .set(updateData)
         .where(eq(userPaymentMethods.id, id))
         .returning();
-      
+
       if (DB_DEBUG) console.log(`[DB] Updated user payment method: ${id}`);
       return result[0];
     } catch (error) {
@@ -1825,14 +1822,14 @@ export class DbStorage implements IStorage {
       // Get the method first to check if it's default
       const method = await this.getUserPaymentMethod(id);
       if (!method) return false;
-      
+
       // Delete the method
       const deleteResult = await this.dbInstance.delete(userPaymentMethods)
         .where(eq(userPaymentMethods.id, id))
         .returning();
-      
+
       if (deleteResult.length === 0) return false;
-      
+
       // If deleted method was the default, set a new default if there are other methods
       if (method.isDefault) {
         const otherMethods = await this.getUserPaymentMethodsByUserId(method.userId);
@@ -1845,7 +1842,7 @@ export class DbStorage implements IStorage {
             .where(eq(userPaymentMethods.id, otherMethods[0].id));
         }
       }
-      
+
       if (DB_DEBUG) console.log(`[DB] Deleted user payment method: ${id}`);
       return true;
     } catch (error) {
@@ -1865,7 +1862,7 @@ export class DbStorage implements IStorage {
             updatedAt: new Date()
           })
           .where(eq(userPaymentMethods.userId, userId));
-        
+
         // Then set new default
         const result = await tx.update(userPaymentMethods)
           .set({
@@ -1879,14 +1876,36 @@ export class DbStorage implements IStorage {
             )
           )
           .returning();
-        
+
         if (!result.length) throw new Error(`Payment method with ID ${methodId} not found for user ${userId}`);
-        
+
         return result[0];
       });
     } catch (error) {
       console.error(`[DB] Error setting default payment method ID ${methodId} for user ID ${userId}:`, error);
       throw new Error(`Failed to set default payment method: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getTransactionByReference(reference: string): Promise<Transaction | undefined> {
+    try {
+      // Check all possible reference fields
+      const result = await this.dbInstance
+        .select()
+        .from(transactions)
+        .where(
+          or(
+            eq(transactions.paymentReference, reference),
+            eq(transactions.transactionId, reference),
+            eq(transactions.casinoReference, reference),
+            eq(transactions.uniqueId, reference)
+          )
+        );
+      if (DB_DEBUG && result.length) console.log(`[DB] Retrieved transaction by reference: ${reference}`);
+      return result[0];
+    } catch (error) {
+      console.error(`[DB] Error retrieving transaction by reference ${reference}:`, error);
+      return undefined;
     }
   }
 }
