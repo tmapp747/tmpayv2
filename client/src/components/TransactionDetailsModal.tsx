@@ -92,8 +92,18 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   // Handle manual payment completion
   const markAsCompleted = async () => {
     try {
+      const reference = transaction?.paymentReference || transaction?.reference;
+      if (!reference) {
+        toast({
+          title: "Error",
+          description: "No valid payment reference found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const response = await apiRequest('POST', '/api/payments/mark-as-completed', {
-        paymentReference: transaction?.reference
+        paymentReference: reference
       });
       
       const result = await response.json();
@@ -123,7 +133,17 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   // Handle transaction cancellation
   const cancelTransaction = async () => {
     try {
-      const response = await apiRequest('POST', `/api/payments/cancel/${transaction?.reference}`);
+      const reference = transaction?.paymentReference || transaction?.reference;
+      if (!reference) {
+        toast({
+          title: "Error",
+          description: "No valid payment reference found",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const response = await apiRequest('POST', `/api/payments/cancel/${reference}`);
       
       const result = await response.json();
       if (result.success) {
@@ -257,13 +277,14 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
                 <div>
                   <p className="text-xs text-emerald-400 mb-1">Reference</p>
                   <p className="text-sm font-medium text-emerald-100 flex items-center">
-                    {transaction.reference.substring(0, 12)}... 
+                    {(transaction.paymentReference || transaction.reference || "").substring(0, 12)}... 
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       className="h-6 w-6 ml-1 hover:bg-emerald-800/50"
                       onClick={() => {
-                        navigator.clipboard.writeText(transaction.reference);
+                        const referenceValue = transaction.paymentReference || transaction.reference || "";
+                        navigator.clipboard.writeText(referenceValue);
                         toast({
                           title: "Copied!",
                           description: "Reference copied to clipboard",
