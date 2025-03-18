@@ -364,16 +364,32 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
               <div className="bg-emerald-900/40 rounded-lg p-4 border border-emerald-700/30">
                 <p className="text-xs text-emerald-400 mb-2">Transaction Status</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* GCash Status */}
+                  {/* GCash Status - derived from status history or metadata */}
                   <div>
                     <p className="text-xs text-emerald-400 mb-1">GCash Payment</p>
-                    <StatusBadge status={transaction.gcashStatus || 'pending'} />
+                    {/* Check status history for payment_completed or metadata */}
+                    {statusHistory.some(entry => entry.status === "payment_completed" || 
+                                               entry.note?.includes("Payment completed")) ? (
+                      <StatusBadge status="gcash_completed" />
+                    ) : transaction.status === "completed" ? (
+                      <StatusBadge status="gcash_completed" />
+                    ) : (
+                      <StatusBadge status={transaction.gcashStatus || 'pending'} />
+                    )}
                   </div>
                   
-                  {/* Casino Status */}
+                  {/* Casino Status - derived from status history or metadata */}
                   <div>
                     <p className="text-xs text-emerald-400 mb-1">Casino Transfer</p>
-                    <StatusBadge status={transaction.casinoStatus || 'pending'} />
+                    {/* Check status history for casino_transfer_completed */}
+                    {statusHistory.some(entry => entry.status === "casino_transfer_completed" || 
+                                               entry.note?.includes("Casino transfer completed")) ? (
+                      <StatusBadge status="casino_completed" />
+                    ) : transaction.status === "completed" ? (
+                      <StatusBadge status="casino_completed" />
+                    ) : (
+                      <StatusBadge status={transaction.casinoStatus || 'pending'} />
+                    )}
                   </div>
                 </div>
               </div>
