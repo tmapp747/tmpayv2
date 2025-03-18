@@ -2,8 +2,8 @@ import { pgTable, text, serial, integer, timestamp, boolean, numeric, json, date
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Currency definition - only supporting PHP (fiat), PHPT and USDT (crypto)
-export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
+// Currency definition - only supporting PHP (fiat)
+export const supportedCurrencies = ['PHP'];
 export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
 export const supportedUserRoles = ['player', 'agent', 'admin'];
 export const supportedUserStatuses = ['active', 'suspended', 'inactive', 'pending_review'];
@@ -57,8 +57,7 @@ export const users = pgTable("users", {
   balance: numeric("balance", { precision: 10, scale: 2 }).default("0").notNull(),
   pendingBalance: numeric("pending_balance", { precision: 10, scale: 2 }).default("0").notNull(),
   
-  // Multi-currency support
-  balances: json("balances").default({}).notNull(), // JSON object with currency as key and balance as value
+  // Single currency (PHP) support
   preferredCurrency: text("preferred_currency").default("PHP").notNull(),
   
   // Casino integration
@@ -353,24 +352,12 @@ export const updateBalanceSchema = z.object({
   transactionId: z.string()
 });
 
-// Multi-currency schemas
-export const currencySchema = z.enum(['PHP', 'PHPT', 'USDT']);
+// Currency schema - supporting only PHP
+export const currencySchema = z.enum(['PHP']);
 
 export const updatePreferredCurrencySchema = z.object({
   userId: z.number(),
   currency: currencySchema
-});
-
-export const getCurrencyBalanceSchema = z.object({
-  userId: z.number(),
-  currency: currencySchema
-});
-
-export const exchangeCurrencySchema = z.object({
-  userId: z.number(), 
-  fromCurrency: currencySchema,
-  toCurrency: currencySchema,
-  amount: z.number().positive()
 });
 
 // 747 Casino-specific API request schemas
@@ -505,12 +492,9 @@ export type GenerateTelegramPaymentRequest = z.infer<typeof generateTelegramPaym
 export type VerifyPaymentRequest = z.infer<typeof verifyPaymentSchema>;
 export type UpdateBalanceRequest = z.infer<typeof updateBalanceSchema>;
 
-// Multi-currency types
+// Currency type
 export type Currency = z.infer<typeof currencySchema>;
 export type UpdatePreferredCurrencyRequest = z.infer<typeof updatePreferredCurrencySchema>;
-export type GetCurrencyBalanceRequest = z.infer<typeof getCurrencyBalanceSchema>;
-export type ExchangeCurrencyRequest = z.infer<typeof exchangeCurrencySchema>;
-export type CurrencyBalances = Record<Currency, string>;
 
 // 747 Casino-specific types
 export type CasinoDepositRequest = z.infer<typeof casinoDepositSchema>;

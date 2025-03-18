@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import NewBalanceCard from '@/components/NewBalanceCard';
+import MobileBalanceCard from '@/components/mobile/MobileBalanceCard';
 import MobileLayout from '@/components/MobileLayout';
 import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, CreditCard, CheckCircle2, BarChart3 } from 'lucide-react';
 import { Link } from 'wouter';
@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@/lib/types';
 import MobileTransactionsList from '@/components/mobile/MobileTransactionsList';
 import MobileCasinoStats from '@/components/mobile/MobileCasinoStats';
-import teamMarcLogo from "../assets/Logo teammarc.png";
 
 export default function MobileDashboard() {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -190,13 +189,13 @@ export default function MobileDashboard() {
               }}
             >
               <div className="min-w-full">
-                <NewBalanceCard />
+                <MobileBalanceCard />
               </div>
               <div className="min-w-full">
-                <NewBalanceCard />
+                <MobileBalanceCard />
               </div>
               <div className="min-w-full">
-                <NewBalanceCard />
+                <MobileBalanceCard />
               </div>
             </motion.div>
             

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useLocation, useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 
 interface PageHeaderProps {
@@ -18,8 +18,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   children,
   className = '',
 }) => {
-  const navigate = useNavigate();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   const handleBack = () => {
     if (backPath) {

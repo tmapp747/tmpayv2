@@ -21,8 +21,6 @@ import {
   Currency,
   User,
   updatePreferredCurrencySchema,
-  getCurrencyBalanceSchema,
-  exchangeCurrencySchema,
   generateTelegramPaymentSchema
 } from "@shared/schema";
 import {

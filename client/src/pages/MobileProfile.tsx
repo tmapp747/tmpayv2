@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 
 const MobileProfile: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -50,11 +50,12 @@ const MobileProfile: React.FC = () => {
         </div>
         
         <Button 
-          onClick={() => logout()}
+          onClick={() => logoutMutation.mutate()}
           variant="destructive"
           className="w-full"
+          disabled={logoutMutation.isPending}
         >
-          Logout
+          {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
         </Button>
       </div>
     </div>

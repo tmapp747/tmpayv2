@@ -20,7 +20,7 @@ const MobileWallet: React.FC = () => {
         <div className="rounded-lg border border-border p-4 mb-4 bg-card">
           <h2 className="text-xl font-semibold mb-2">Balance</h2>
           <div className="text-3xl font-bold">
-            ₱{user ? parseFloat(user.balance).toLocaleString() : '0.00'}
+            ₱{user ? (typeof user.balance === 'string' ? parseFloat(user.balance) : user.balance).toLocaleString() : '0.00'}
           </div>
         </div>
       </div>

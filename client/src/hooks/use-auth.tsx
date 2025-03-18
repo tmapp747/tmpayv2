@@ -138,7 +138,7 @@ const refreshSession = async (): Promise<string> => {
       // If refresh fails, we need to log the user out
       queryClient.setQueryData(["/api/user/info"], { user: null });
       
-      // Redirect to login page for unauthorized access
+      // Redirect to mobile auth page for unauthorized access
       window.location.href = '/auth';
     }
     
