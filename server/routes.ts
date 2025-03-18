@@ -177,7 +177,8 @@ async function paygramGeneratePayment(userId: string, amount: number, currency: 
   }
 }
 
-async function casino747CompleteTopup(casinoId: string, amount: number, reference: string) {
+// Export this function to make it testable
+export async function casino747CompleteTopup(casinoId: string, amount: number, reference: string) {
   try {
     console.log(`🎰 Casino747: Completing topup for casino ID ${casinoId} with amount ${amount} and reference ${reference}`);
     
