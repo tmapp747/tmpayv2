@@ -134,4 +134,35 @@ const MobileNavigation = () => {
   );
 };
 
+import { cn } from "@/lib/utils";
+
+const MobileNavigation = () => {
+  return (
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 bg-background border-t",
+      "flex items-center justify-around p-2 pb-[calc(0.5rem_+_env(safe-area-inset-bottom))]",
+      "z-50 backdrop-blur-lg bg-opacity-90"
+    )}>
+      <MobileNavButton href="/mobile" icon="home" label="Home" />
+      <MobileNavButton href="/mobile/wallet" icon="wallet" label="Wallet" />
+      <MobileNavButton href="/mobile/history" icon="history" label="History" />
+      <MobileNavButton href="/mobile/profile" icon="user" label="Profile" />
+    </nav>
+  );
+};
+
+const MobileNavButton = ({ href, icon, label }) => (
+  <a 
+    href={href}
+    className={cn(
+      "flex flex-col items-center justify-center",
+      "w-16 h-16 rounded-lg mobile-clickable",
+      "text-muted-foreground hover:text-primary"
+    )}
+  >
+    <i className={`icon-${icon} text-xl`} />
+    <span className="text-xs mt-1">{label}</span>
+  </a>
+);
+
 export default MobileNavigation;

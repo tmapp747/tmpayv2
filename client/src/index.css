@@ -225,7 +225,7 @@ button {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Fix container width on mobile */
+/* Mobile-first container */
 .container {
   width: 100%;
   max-width: 100%;
@@ -234,6 +234,15 @@ button {
   margin-left: auto;
   margin-right: auto;
   overflow-x: hidden;
+  min-height: var(--app-height, 100vh);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-container {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Responsive tables that don't overflow on mobile */
