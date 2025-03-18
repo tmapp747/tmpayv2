@@ -230,7 +230,35 @@ export function setupAuth(app: Express) {
     }
   });
 
-  app.post("/api/register", async (req, res, next) => {
+  // Admin registration endpoint
+app.post("/api/admin/register", async (req, res, next) => {
+  try {
+    const { username, password, email } = req.body;
+    
+    // Check if admin already exists
+    const existingAdmin = await storage.getUserByUsername(username);
+    if (existingAdmin) {
+      return res.status(400).json({ success: false, message: "Admin username already exists" });
+    }
+
+    // Create admin user
+    const hashedPassword = await hashPassword(password);
+    const admin = await storage.createUser({
+      username,
+      password: hashedPassword,
+      email,
+      role: 'admin',
+      isAuthorized: true,
+      casinoId: 'admin',
+    });
+
+    res.status(201).json({ success: true, message: "Admin account created successfully" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post("/api/register", async (req, res, next) => {
     try {
       // Validate registration data using insertUserSchema
       const registrationData = insertUserSchema.parse(req.body);

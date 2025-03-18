@@ -37,6 +37,7 @@ export const users = pgTable("users", {
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
   hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
   allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
+  role: text("role").default('user'), //Added role field
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -61,43 +62,43 @@ export const transactions = pgTable("transactions", {
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   fee: numeric("fee", { precision: 10, scale: 2 }).default("0.00"), // Transaction fee if applicable
   netAmount: numeric("net_amount", { precision: 10, scale: 2 }), // Amount after fees (calculated)
-  
+
   // Status tracking with timestamps for audit
   status: text("status").notNull(), // 'pending', 'processing', 'completed', 'failed', 'expired', 'refunded', 'disputed'
   statusHistory: json("status_history"), // Array of status changes with timestamps for audit trail
   statusUpdatedAt: timestamp("status_updated_at"), // When status was last changed
   completedAt: timestamp("completed_at"), // When transaction was completed (if applicable)
-  
+
   // References and IDs across systems
   paymentReference: text("payment_reference"), // DirectPay or other payment reference
   transactionId: text("transaction_id"), // Internal or external transaction ID
   casinoReference: text("casino_reference"), // 747 Casino reference
   nonce: text("nonce"), // Unique transaction nonce for reconciliation and duplicate prevention
-  
+
   // 747 Casino-specific fields
   casinoClientId: integer("casino_client_id"),
   casinoUsername: text("casino_username"),
   destinationAddress: text("destination_address"), // For crypto withdrawals
   destinationNetwork: text("destination_network"), // For crypto withdrawals
   uniqueId: text("unique_id"), // For casino transactions
-  
+
   // Financial tracking
   currency: text("currency").default("PHP"), // Default to PHP for DirectPay GCash
   exchangeRate: numeric("exchange_rate", { precision: 10, scale: 6 }), // Exchange rate if currency conversion involved
   balanceBefore: numeric("balance_before", { precision: 10, scale: 2 }), // User balance before transaction
   balanceAfter: numeric("balance_after", { precision: 10, scale: 2 }), // User balance after transaction
-  
+
   // Source and destination for transfers
   sourceUserId: integer("source_user_id"), // For transfer: who sent the money
   destinationUserId: integer("destination_user_id"), // For transfer: who received the money
-  
+
   // Additional data and metadata
   description: text("description"), // Human-readable description of transaction
   notes: text("notes"), // Admin or system notes
   ipAddress: text("ip_address"), // IP address of user when transaction was initiated
   userAgent: text("user_agent"), // User agent of client when transaction was initiated
   metadata: json("metadata"), // Extended transaction metadata (nonce, error details, etc.)
-  
+
   // Temporal data
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -346,6 +347,8 @@ export const getUserPreferenceSchema = z.object({
 });
 
 // Type definitions
+export type UserRole = 'user' | 'admin';
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
