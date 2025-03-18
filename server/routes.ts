@@ -25,6 +25,12 @@ import {
   exchangeCurrencySchema,
   generateTelegramPaymentSchema
 } from "@shared/schema";
+import {
+  mapDirectPayStatusToGcashStatus,
+  mapCasinoTransferStatusToCasinoStatus,
+  determineTransactionStatus,
+  generateTransactionTimeline
+} from "@shared/api-mapping";
 import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
@@ -1810,6 +1816,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       console.log(`[TRANSACTION] Created QR payment ID: ${qrPayment.id} for transaction ID: ${transaction.id}`);
+      
+      // Update transaction with dual status tracking
+      await storage.updateTransactionMetadata(transaction.id, {
+        gcashStatus: mapDirectPayStatusToGcashStatus("pending"),
+        casinoStatus: mapCasinoTransferStatusToCasinoStatus("pending"),
+        statusTimeline: generateTransactionTimeline({
+          gcashStatus: mapDirectPayStatusToGcashStatus("pending"),
+          casinoStatus: mapCasinoTransferStatusToCasinoStatus("pending"),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+      });
       
       // Verify transactions in database before responding to ensure they're visible immediately
 
