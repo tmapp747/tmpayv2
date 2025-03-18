@@ -5,6 +5,17 @@ import { z } from "zod";
 // Currency definition - only supporting PHP (fiat), PHPT and USDT (crypto)
 export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
 export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
+export const supportedUserRoles = ['player', 'agent', 'admin'];
+export const supportedUserStatuses = ['active', 'suspended', 'inactive', 'pending_review'];
+
+// Role Permissions schema - Defines what each role can do
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  role: text("role").notNull(),
+  permission: text("permission").notNull(), // Format: resource:action (e.g., users:read, transactions:create)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 // User schema
 export const users = pgTable("users", {
@@ -12,32 +23,52 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email").notNull(), // Email is now required
+  
+  // Role and status management
+  role: text("role").default('player').notNull(), // player, agent, admin
+  status: text("status").default('active').notNull(), // active, suspended, inactive, pending_review
+  lastLoginAt: timestamp("last_login_at"),
+  lastLoginIp: text("last_login_ip"),
+  statusReason: text("status_reason"), // Reason for current status (e.g., why suspended)
+  
   // Primary balance in PHP (Philippine Peso) for DirectPay transactions
   balance: numeric("balance", { precision: 10, scale: 2 }).default("0").notNull(),
   pendingBalance: numeric("pending_balance", { precision: 10, scale: 2 }).default("0").notNull(),
+  
   // Multi-currency support
   balances: json("balances").default({}).notNull(), // JSON object with currency as key and balance as value
   preferredCurrency: text("preferred_currency").default("PHP").notNull(),
+  
+  // User attributes
   isVip: boolean("is_vip").default(false),
+  vipLevel: integer("vip_level").default(0),
+  vipSince: timestamp("vip_since"),
+  referredBy: integer("referred_by"), // ID of user who referred this user
+  referralCode: text("referral_code"), // Unique referral code for this user
+  
+  // Casino integration
   casinoId: text("casino_id").notNull(),
-  // 747 Casino-specific fields
   casinoUsername: text("casino_username"),
   casinoClientId: integer("casino_client_id"),
   topManager: text("top_manager"),
   immediateManager: text("immediate_manager"),
   casinoUserType: text("casino_user_type"),
   casinoBalance: numeric("casino_balance", { precision: 10, scale: 2 }).default("0"),
-  // Auth and hierarchy fields
+  
+  // Auth and tokens
   accessToken: text("access_token"), // Each user has a unique token for transfers
   accessTokenExpiry: timestamp("access_token_expiry"), // When the access token expires
   refreshToken: text("refresh_token"), // Token used to refresh the access token
   refreshTokenExpiry: timestamp("refresh_token_expiry"), // When the refresh token expires
   casinoAuthToken: text("casino_auth_token"), // Casino API auth token (typically from top manager)
   casinoAuthTokenExpiry: timestamp("casino_auth_token_expiry"), // When the casino auth token expires
+  
+  // Authorization and hierarchy management
   isAuthorized: boolean("is_authorized").default(false), // If user is allowed to use the system
   hierarchyLevel: integer("hierarchy_level").default(0), // 0=player, 1=agent, 2=manager, 3=top manager
   allowedTopManagers: text("allowed_top_managers").array(), // List of top managers this user is allowed under
-  role: text("role").default('user'), //Added role field
+  
+  // Audit and timestamps
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -346,8 +377,27 @@ export const getUserPreferenceSchema = z.object({
   key: z.string()
 });
 
-// Type definitions
-export type UserRole = 'user' | 'admin';
+// Type definitions for the role management system
+export type UserRole = 'player' | 'agent' | 'admin';
+export type UserStatus = 'active' | 'suspended' | 'inactive' | 'pending_review';
+
+// Role permissions schema with predefined resources and actions
+export const resourceActionMap = {
+  users: ['read', 'create', 'update', 'delete', 'manage'],
+  transactions: ['read', 'create', 'update', 'delete', 'approve', 'reject'],
+  deposits: ['create', 'read', 'update', 'approve', 'reject', 'manage'],
+  withdrawals: ['create', 'read', 'update', 'approve', 'reject', 'manage'],
+  reports: ['read', 'create', 'export'],
+  settings: ['read', 'update'],
+  casino: ['connect', 'transfer', 'sync', 'manage']
+};
+
+// Insert schema for role permissions
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -3,6 +3,7 @@ import { roleAuthMiddleware } from "../middleware";
 import { storage } from "../../storage";
 import { z } from "zod";
 import { randomUUID } from "crypto";
+import { resourceActionMap, supportedUserRoles, supportedUserStatuses } from "@shared/schema";
 
 // Create admin router for administrative features
 const router = Router();
@@ -10,6 +11,92 @@ const router = Router();
 // Test endpoint
 router.get("/test", roleAuthMiddleware(['admin']), (req, res) => {
   res.json({ success: true, message: "Admin API working" });
+});
+
+// Get available resources and actions for role permissions
+router.get("/role-management/resources", roleAuthMiddleware(['admin']), (req, res) => {
+  try {
+    return res.json({ 
+      success: true, 
+      resources: resourceActionMap,
+      roles: supportedUserRoles,
+      statuses: supportedUserStatuses
+    });
+  } catch (error) {
+    console.error('Error fetching role resources:', error);
+    return res.status(500).json({ success: false, message: "Failed to fetch role resources" });
+  }
+});
+
+// Get permissions for a specific role
+router.get("/role-management/permissions/:role", roleAuthMiddleware(['admin']), async (req, res) => {
+  try {
+    const { role } = req.params;
+    
+    if (!supportedUserRoles.includes(role)) {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+    
+    const permissions = await storage.getRolePermissions(role);
+    return res.json({ success: true, permissions });
+  } catch (error) {
+    console.error('Error fetching role permissions:', error);
+    return res.status(500).json({ success: false, message: "Failed to fetch role permissions" });
+  }
+});
+
+// Update permissions for a specific role
+router.post("/role-management/permissions/:role", roleAuthMiddleware(['admin']), async (req, res) => {
+  try {
+    const { role } = req.params;
+    const { permissions } = req.body;
+    
+    if (!supportedUserRoles.includes(role)) {
+      return res.status(400).json({ success: false, message: "Invalid role" });
+    }
+    
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({ success: false, message: "Permissions must be an array" });
+    }
+    
+    // Validate each permission format (resource:action)
+    for (const permission of permissions) {
+      const [resource, action] = permission.split(':');
+      
+      if (!resource || !action) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid permission format: ${permission}. Must be resource:action`
+        });
+      }
+      
+      if (!resourceActionMap[resource]) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid resource: ${resource}`
+        });
+      }
+      
+      if (!resourceActionMap[resource].includes(action)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Invalid action: ${action} for resource: ${resource}`
+        });
+      }
+    }
+    
+    // Update the permissions
+    await storage.updateRolePermissions(role, permissions);
+    
+    return res.json({ 
+      success: true, 
+      message: `Updated permissions for role: ${role}`,
+      permissions
+    });
+  } catch (error) {
+    console.error('Error updating role permissions:', error);
+    return res.status(500).json({ success: false, message: "Failed to update role permissions" });
+  }
 });
 
 // Get all users (admin only)
