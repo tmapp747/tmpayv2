@@ -325,7 +325,16 @@ export function setupAuth(app: Express) {
       });
 
       req.login(newUser, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error('Login error:', err);
+          return next(err);
+        }
+
+        // Set session expiry to 24 hours
+        if (req.session) {
+          req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
+        }
+
         // Remove password from the response
         const userResponse = { ...newUser } as Partial<SelectUser>;
         if (userResponse.password) {
