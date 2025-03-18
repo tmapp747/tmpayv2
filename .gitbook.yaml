@@ -1,9 +1,11 @@
 root: ./docs/
+
 structure:
   readme: README.md
   summary: SUMMARY.md
+
 redirects:
-  deposit-flow: ./deposit-flow.md
-  api-reference: ./api-documentation.md
-  architecture: ./technical-architecture.md
-  integration: ./integration-guide.md
+  api/: api-documentation.md
+  deposit-flow/: deposit-flow.md
+  architecture/: technical-architecture.md
+  manager-notifications/: manager-notifications.md

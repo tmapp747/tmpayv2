@@ -1,0 +1,36 @@
+{
+  "title": "TMPay Documentation",
+  "description": "Complete documentation for the TMPay 747 Casino E-Wallet Platform",
+  "author": "TMPay Development Team",
+  "language": "en",
+  "plugins": [
+    "search",
+    "theme-default",
+    "insert-logo",
+    "expandable-chapters",
+    "copy-code-button",
+    "back-to-top-button",
+    "code",
+    "hints",
+    "swagger"
+  ],
+  "pluginsConfig": {
+    "insert-logo": {
+      "url": "/assets/logo.png",
+      "style": "background: none; max-height: 50px;"
+    },
+    "theme-default": {
+      "showLevel": false,
+      "styles": {
+        "website": "styles/website.css"
+      }
+    }
+  },
+  "structure": {
+    "readme": "README.md",
+    "summary": "SUMMARY.md"
+  },
+  "styles": {
+    "website": "styles/website.css"
+  }
+}

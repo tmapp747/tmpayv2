@@ -1,0 +1,219 @@
+/* TMPay Documentation Theme */
+
+/* Global styles */
+:root {
+  --brand-primary: #2c3e50;
+  --brand-secondary: #3498db;
+  --text-color: #333;
+  --light-bg: #f8f9fa;
+  --border-color: #eaeaea;
+  --success-color: #27ae60;
+  --warning-color: #f39c12;
+  --danger-color: #e74c3c;
+  --border-radius: 6px;
+}
+
+/* Base typography */
+body {
+  font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: var(--text-color);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+/* Headers */
+.book-header {
+  background: linear-gradient(135deg, var(--brand-primary), #1a252f);
+  color: white;
+  padding: 10px;
+}
+
+.book-header h1 {
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+
+/* Custom header styles */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--brand-primary);
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+h1 {
+  border-bottom: 2px solid var(--brand-secondary);
+  padding-bottom: 10px;
+  font-size: 2.2rem;
+}
+
+h2 {
+  font-size: 1.8rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 5px;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+/* Links */
+a {
+  color: var(--brand-secondary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Code blocks */
+pre, code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: var(--light-bg);
+  border-radius: var(--border-radius);
+}
+
+pre {
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  overflow: auto;
+}
+
+code {
+  padding: 2px 5px;
+  color: var(--brand-primary);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+table th {
+  background-color: var(--brand-primary);
+  color: white;
+  padding: 10px;
+  text-align: left;
+}
+
+table td {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+}
+
+table tr:nth-child(even) {
+  background-color: var(--light-bg);
+}
+
+/* Blockquotes */
+blockquote {
+  border-left: 4px solid var(--brand-secondary);
+  padding: 10px 15px;
+  color: #666;
+  background-color: var(--light-bg);
+  margin: 20px 0;
+}
+
+/* Navigation */
+.book-summary {
+  background-color: var(--light-bg);
+  border-right: 1px solid var(--border-color);
+}
+
+.book-summary ul.summary li a {
+  padding: 10px 15px;
+  color: var(--text-color);
+  font-weight: 400;
+}
+
+.book-summary ul.summary li.active > a {
+  color: var(--brand-secondary);
+  font-weight: 600;
+  border-left: 4px solid var(--brand-secondary);
+}
+
+/* Custom classes for API documentation */
+.api-endpoint {
+  background-color: #f8f9fa;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.api-endpoint .method {
+  font-weight: bold;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.api-endpoint .method.get {
+  background-color: #61affe;
+}
+
+.api-endpoint .method.post {
+  background-color: #49cc90;
+}
+
+.api-endpoint .method.put {
+  background-color: #fca130;
+}
+
+.api-endpoint .method.delete {
+  background-color: #f93e3e;
+}
+
+.api-endpoint .path {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+/* Manager notification section styling */
+.manager-notification {
+  background-color: #f5f8fa;
+  border: 1px solid #e1e8ed;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.manager-notification h3 {
+  color: var(--brand-primary);
+  margin-top: 0;
+}
+
+.notification-sample {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.notification-sample .card-header {
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.notification-sample .card-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+  color: var(--brand-primary);
+}
+
+.notification-sample .amount {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--success-color);
+  text-align: center;
+  margin: 15px 0;
+}

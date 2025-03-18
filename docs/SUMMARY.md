@@ -35,6 +35,14 @@
   - [Scalability and Performance](#scalability-and-performance)
   - [Development and Deployment](#development-and-deployment)
 
+- [Manager Notifications](manager-notifications.md)
+  - [Overview](#overview)
+  - [Notification System](#notification-system)
+  - [HTML Email Templates](#html-email-templates)
+  - [Message Delivery](#message-delivery)
+  - [Configuration Options](#configuration-options)
+  - [Troubleshooting](#troubleshooting)
+
 - [Integration Guide](integration-guide.md)
   - [Integration Architecture](#integration-architecture)
   - [747 Casino Integration](#747-casino-integration)
