@@ -49,19 +49,15 @@ export default function MobileProfile() {
   // Custom header with 747 logo and settings button
   const headerContent = (
     <div className="flex items-center justify-between w-full">
-      <div className="flex-1">
-        {/* Empty div for spacing */}
-      </div>
-      
-      {/* 747 Logo with shining effect in center */}
-      <div className="flex-1 flex justify-center items-center relative">
-        <div className="absolute w-16 h-16 bg-blue-500/30 rounded-full filter blur-xl animate-pulse"></div>
+      {/* 747 Logo with enhanced shining effect on left */}
+      <div className="flex items-center relative">
+        <div className="absolute w-16 h-16 bg-blue-500/20 rounded-full filter blur-xl animate-pulse"></div>
         <motion.div
           animate={{
             boxShadow: [
-              "0 0 20px 2px rgba(255, 255, 255, 0.3)",
-              "0 0 30px 5px rgba(59, 130, 246, 0.5)",
-              "0 0 20px 2px rgba(255, 255, 255, 0.3)",
+              "0 0 20px 3px rgba(255, 255, 255, 0.4)",
+              "0 0 35px 7px rgba(59, 130, 246, 0.6)",
+              "0 0 20px 3px rgba(255, 255, 255, 0.4)",
             ],
           }}
           transition={{
@@ -71,14 +67,24 @@ export default function MobileProfile() {
           }}
           className="relative z-10 w-12 h-12 flex items-center justify-center"
         >
-          <img src={sevenLogo} alt="747 Logo" className="h-10 object-contain" />
+          <img 
+            src={sevenLogo} 
+            alt="747 Logo" 
+            className="h-10 object-contain drop-shadow-lg" 
+            style={{ filter: 'brightness(1.2) contrast(1.1)' }}
+          />
         </motion.div>
       </div>
       
-      {/* Settings button on right */}
-      <div className="flex-1 flex justify-end items-center">
-        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
-          <Settings className="h-5 w-5 text-white" />
+      {/* Title in center */}
+      <div className="flex-1 flex justify-center items-center">
+        <h2 className="text-xl font-semibold text-white">Profile</h2>
+      </div>
+      
+      {/* Better visible menu button on right */}
+      <div className="flex justify-end items-center">
+        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-500/30 backdrop-blur-md hover:bg-blue-600/40 transition-colors">
+          <User className="h-5 w-5 text-white" />
         </button>
       </div>
     </div>
