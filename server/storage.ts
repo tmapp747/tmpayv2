@@ -1341,9 +1341,8 @@ export class MemStorage implements IStorage {
         reference: manualPayment.reference
       });
 
-      // Insert into the database
+      // Insert into the database - omit the ID to let PostgreSQL auto-increment
       const inserted = await this.dbInstance.insert(manualPayments).values({
-        id: manualPayment.id,
         userId: manualPayment.userId,
         transactionId: manualPayment.transactionId,
         amount: manualPayment.amount,
@@ -3045,9 +3044,8 @@ export class DbStorage extends MemStorage {
         reference: qrPayment.directPayReference
       });
 
-      // Insert into the database
+      // Insert into the database - omit the ID to let PostgreSQL auto-increment
       const inserted = await this.dbInstance.insert(qrPayments).values({
-        id: qrPayment.id,
         userId: qrPayment.userId,
         transactionId: qrPayment.transactionId,
         qrCodeData: qrPayment.qrCodeData,
@@ -3184,9 +3182,8 @@ export class DbStorage extends MemStorage {
         reference: telegramPayment.telegramReference
       });
 
-      // Insert into the database
+      // Insert into the database - omit the ID to let PostgreSQL auto-increment
       const inserted = await this.dbInstance.insert(telegramPayments).values({
-        id: telegramPayment.id,
         userId: telegramPayment.userId,
         transactionId: telegramPayment.transactionId,
         payUrl: telegramPayment.payUrl,
