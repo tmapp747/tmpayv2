@@ -39,7 +39,7 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
   }>({
     queryKey: [`/api/transactions/${transactionId}`, transactionId],
     queryFn: async () => {
-      if (!transactionId) return null;
+      if (!transactionId) return { success: false, transaction: null, statusHistory: [] };
       const response = await apiRequest(`/api/transactions/${transactionId}`);
       return response as any;
     },

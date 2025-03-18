@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Transaction } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { TRANSACTION_TYPES, PAYMENT_STATUS } from '@/lib/constants';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import TransactionStatusTimeline from '../TransactionStatusTimeline';
+import { TransactionDetailsModal } from '../TransactionDetailsModal';
 
 interface MobileTransactionHistoryProps {
   transactions: Transaction[];
@@ -38,6 +39,8 @@ export const MobileTransactionHistory = ({
 };
 
 const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const {
     id,
     type,
@@ -69,31 +72,43 @@ const TransactionItem = ({ transaction }: { transaction: Transaction }) => {
   const statusLabel = PAYMENT_STATUS[status as keyof typeof PAYMENT_STATUS] || status;
   
   return (
-    <div className="p-4 flex flex-col space-y-2">
-      <div className="flex justify-between items-start">
-        <div>
-          <h4 className="font-medium text-sm">{typeLabel}</h4>
-          <p className="text-xs text-gray-500">{relativeTime}</p>
+    <>
+      <div 
+        className="p-4 flex flex-col space-y-2 active:bg-blue-50 transition-colors cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <h4 className="font-medium text-sm">{typeLabel}</h4>
+            <p className="text-xs text-gray-500">{relativeTime}</p>
+          </div>
+          <span className={`font-semibold ${type.includes('deposit') ? 'text-green-600' : 'text-red-600'}`}>
+            {formattedAmount}
+          </span>
         </div>
-        <span className={`font-semibold ${type.includes('deposit') ? 'text-green-600' : 'text-red-600'}`}>
-          {formattedAmount}
-        </span>
+        
+        <div className="flex justify-between items-center">
+          <Badge className={`text-xs ${statusColor}`}>
+            {statusLabel}
+          </Badge>
+          <span className="text-xs text-gray-500">
+            via {method.toUpperCase()}
+          </span>
+        </div>
+        
+        {/* Show the timeline for payment_completed and completed statuses */}
+        {(status === 'payment_completed' || (status === 'completed' && transaction.metadata?.casinoTransferStatus)) && (
+          <TransactionStatusTimeline transaction={transaction} />
+        )}
       </div>
       
-      <div className="flex justify-between items-center">
-        <Badge className={`text-xs ${statusColor}`}>
-          {statusLabel}
-        </Badge>
-        <span className="text-xs text-gray-500">
-          via {method.toUpperCase()}
-        </span>
-      </div>
-      
-      {/* Show the timeline for payment_completed and completed statuses */}
-      {(status === 'payment_completed' || (status === 'completed' && transaction.metadata?.casinoTransferStatus)) && (
-        <TransactionStatusTimeline transaction={transaction} />
-      )}
-    </div>
+      {/* Transaction Details Modal */}
+      <TransactionDetailsModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        transactionId={id} 
+      />
+    </>
   );
 };
 
