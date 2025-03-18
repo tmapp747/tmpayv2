@@ -1433,6 +1433,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get detailed transaction information with associated payment data
+  app.get("/api/transactions/:id", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const userId = (req.session as any).user.id;
+      const transactionId = parseInt(req.params.id);
+      
+      if (isNaN(transactionId)) {
+        return res.status(400).json({ success: false, message: 'Invalid transaction ID' });
+      }
+      
+      // Get transaction details
+      const transaction = await storage.getTransaction(transactionId);
+      
+      if (!transaction) {
+        return res.status(404).json({ success: false, message: 'Transaction not found' });
+      }
+      
+      // Security check: Ensure user can only access their own transactions
+      if (transaction.userId !== userId) {
+        return res.status(403).json({ success: false, message: 'Not authorized to view this transaction' });
+      }
+      
+      // Initialize response object
+      const response: any = { 
+        success: true, 
+        transaction,
+      };
+      
+      // If this is a GCash QR payment, fetch the associated QR payment data
+      if (transaction.method === 'gcash' && transaction.paymentReference) {
+        const qrPayment = await storage.getQrPaymentByReference(transaction.paymentReference);
+        if (qrPayment) {
+          response.qrPayment = qrPayment;
+        }
+      }
+      
+      // If this is a Telegram payment, fetch the associated Telegram payment data
+      if (transaction.method === 'telegram' && transaction.paymentReference) {
+        const telegramPayment = await storage.getTelegramPaymentByReference(transaction.paymentReference);
+        if (telegramPayment) {
+          response.telegramPayment = telegramPayment;
+        }
+      }
+      
+      // If this is a manual payment, fetch the associated manual payment data
+      if (transaction.method === 'manual' && transaction.paymentReference) {
+        const manualPayment = await storage.getManualPaymentByReference(transaction.paymentReference);
+        if (manualPayment) {
+          response.manualPayment = manualPayment;
+        }
+      }
+      
+      return res.json(response);
+    } catch (error) {
+      console.error('Error getting transaction details:', error);
+      return res.status(500).json({ success: false, message: 'Failed to get transaction details' });
+    }
+  });
+  
   // Generate QR code for deposit
   // Endpoint to generate a PHPT payment URL using Paygram
   app.post("/api/payments/paygram/generate", authMiddleware, async (req: Request, res: Response) => {
