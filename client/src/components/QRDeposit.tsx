@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, QrCode, LogIn } from "lucide-react";
+import { Loader2, QrCode, LogIn, CreditCard, Wallet, Building, ArrowDownCircle, LandmarkIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 const QRDeposit = () => {
   const [amount, setAmount] = useState("");
@@ -260,16 +262,63 @@ const QRDeposit = () => {
 
   const presetAmounts = [100, 200, 500, 1000, 5000];
 
+  // Payment method options
+  const paymentMethods = [
+    { id: "gcash", name: "GCash", icon: <CreditCard className="h-4 w-4" />, description: "Pay with GCash wallet", automatic: true },
+    { id: "paymaya", name: "PayMaya", icon: <Wallet className="h-4 w-4" />, description: "Pay with PayMaya wallet", automatic: false },
+    { id: "bank", name: "Bank Transfer", icon: <Building className="h-4 w-4" />, description: "Pay via bank transfer", automatic: false },
+    { id: "remittance", name: "Remittance", icon: <LandmarkIcon className="h-4 w-4" />, description: "Pay via remittance centers", automatic: false },
+    { id: "other", name: "Other", icon: <ArrowDownCircle className="h-4 w-4" />, description: "Other payment methods", automatic: false }
+  ];
+
+  // Get the current payment method details
+  const currentPaymentMethod = paymentMethods.find(method => method.id === paymentMethod) || paymentMethods[0];
+
   return (
     <div className="bg-primary rounded-xl shadow-lg overflow-hidden mb-6 border border-secondary/30">
       <div className="p-5">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-medium text-white">
-            Deposit via GCash
+            Deposit via {currentPaymentMethod.name}
           </h2>
           <div className="bg-accent/20 text-accent px-3 py-1 rounded-full text-sm font-medium">
-            Instant
+            {currentPaymentMethod.automatic ? "Instant" : "Manual"}
           </div>
+        </div>
+        
+        {/* Payment Method Selector */}
+        <div className="mb-4">
+          <Label htmlFor="payment-method" className="block text-gray-300 mb-2">
+            Payment Method
+          </Label>
+          <Select
+            value={paymentMethod}
+            onValueChange={setPaymentMethod}
+          >
+            <SelectTrigger className="w-full border-secondary/50 bg-secondary/10 text-white">
+              <SelectValue placeholder="Select payment method" />
+            </SelectTrigger>
+            <SelectContent className="bg-primary border-secondary/50">
+              {paymentMethods.map((method) => (
+                <SelectItem 
+                  key={method.id} 
+                  value={method.id}
+                  className="text-white hover:bg-secondary/20 focus:bg-secondary/20 cursor-pointer"
+                >
+                  <div className="flex items-center">
+                    <span className="mr-2">{method.icon}</span>
+                    <span>{method.name}</span>
+                    <span className="ml-2 text-xs text-gray-400">
+                      {method.automatic ? "(Automatic)" : "(Manual)"}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-gray-400 mt-1">
+            {currentPaymentMethod.description}
+          </p>
         </div>
         
         {/* Always show the deposit form, even if not logged in - authentication will be handled on the server side */}
@@ -324,12 +373,16 @@ const QRDeposit = () => {
           {generateQrMutation.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating QR...
+              {currentPaymentMethod.automatic ? "Generating QR..." : "Processing..."}
             </>
           ) : (
             <>
-              <QrCode className="mr-2 h-4 w-4" />
-              Pay with GCash
+              {currentPaymentMethod.icon}
+              <span className="ml-2">
+                {currentPaymentMethod.automatic 
+                  ? `Pay with ${currentPaymentMethod.name}` 
+                  : `Continue with ${currentPaymentMethod.name}`}
+              </span>
             </>
           )}
         </Button>
