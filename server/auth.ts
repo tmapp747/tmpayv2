@@ -161,8 +161,8 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
-        // Look up the user - use case-insensitive search
-        const user = await storage.getUserByUsername(username.toLowerCase());
+        // Look up the user - use case-insensitive search (now handled by storage.getUserByUsername)
+        const user = await storage.getUserByUsername(username);
 
         if (!user) {
           console.log(`Login failed: no user found with username "${username}"`);
@@ -271,8 +271,8 @@ export function setupAuth(app: Express) {
       // Validate registration data using insertUserSchema
       const registrationData = insertUserSchema.parse(req.body);
 
-      // Check if username already exists
-      const existingUser = await storage.getUserByUsername(registrationData.username.toLowerCase());
+      // Check if username already exists (case-insensitive)
+      const existingUser = await storage.getUserByUsername(registrationData.username);
       if (existingUser) {
         return res.status(400).json({ success: false, message: "Username already exists" });
       }
