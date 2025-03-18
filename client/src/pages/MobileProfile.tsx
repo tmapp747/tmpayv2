@@ -199,18 +199,25 @@ export default function MobileProfile() {
           <h3 className="text-white font-medium text-lg">Preferences</h3>
           
           <div className="space-y-2">
-            <motion.div 
-              className="bg-white/5 backdrop-blur-md rounded-xl p-3 flex items-center justify-between"
+            <motion.button 
+              className="w-full bg-white/5 backdrop-blur-md rounded-xl p-3 flex items-center justify-between"
               whileTap={{ scale: 0.98 }}
+              onClick={() => setShowThemeModal(true)}
             >
               <div className="flex items-center">
                 <div className="w-9 h-9 rounded-full bg-indigo-600/30 flex items-center justify-center mr-3">
-                  <Moon className="h-5 w-5 text-indigo-400" />
+                  {theme === 'dark' ? 
+                    <Moon className="h-5 w-5 text-indigo-400" /> : 
+                    <Sun className="h-5 w-5 text-amber-400" />
+                  }
                 </div>
                 <span className="text-white">Appearance</span>
               </div>
-              <ChevronRight className="h-5 w-5 text-white/50" />
-            </motion.div>
+              <div className="flex items-center">
+                <span className="text-white/50 mr-2 text-sm capitalize">{theme} Mode</span>
+                <ChevronRight className="h-5 w-5 text-white/50" />
+              </div>
+            </motion.button>
             
             <motion.div 
               className="bg-white/5 backdrop-blur-md rounded-xl p-3 flex items-center justify-between"
@@ -274,6 +281,68 @@ export default function MobileProfile() {
                 >
                   {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
                 </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Theme Modal */}
+      <AnimatePresence>
+        {showThemeModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#001138] border border-white/10 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+            >
+              <h3 className="text-xl font-semibold text-white mb-2">Appearance</h3>
+              <p className="text-white/70 mb-6">Choose your preferred theme mode</p>
+              
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-yellow-600/20 flex items-center justify-center mr-4">
+                      <Sun className="h-5 w-5 text-yellow-400" />
+                    </div>
+                    <span className="text-white text-lg">Light Mode</span>
+                  </div>
+                  <Switch 
+                    checked={theme === 'light'}
+                    onCheckedChange={() => setTheme('light')}
+                    className="data-[state=checked]:bg-yellow-600"
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-600/20 flex items-center justify-center mr-4">
+                      <Moon className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <span className="text-white text-lg">Dark Mode</span>
+                  </div>
+                  <Switch 
+                    checked={theme === 'dark'}
+                    onCheckedChange={() => setTheme('dark')}
+                    className="data-[state=checked]:bg-blue-600"
+                  />
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => setShowThemeModal(false)}
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
