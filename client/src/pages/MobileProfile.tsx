@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from '@/hooks/use-theme';
 import MobileLayout from '@/components/MobileLayout';
+// Add 747 logo for the header
+import sevenLogo from '../assets/logos/747-logo.png';
 
 export default function MobileProfile() {
   const { user, logoutMutation } = useAuth();
@@ -44,12 +46,41 @@ export default function MobileProfile() {
     );
   }
   
-  // Custom header with settings button
+  // Custom header with 747 logo and settings button
   const headerContent = (
-    <div className="flex items-center space-x-2">
-      <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
-        <Settings className="h-5 w-5 text-white" />
-      </button>
+    <div className="flex items-center justify-between w-full">
+      <div className="flex-1">
+        {/* Empty div for spacing */}
+      </div>
+      
+      {/* 747 Logo with shining effect in center */}
+      <div className="flex-1 flex justify-center items-center relative">
+        <div className="absolute w-16 h-16 bg-blue-500/30 rounded-full filter blur-xl animate-pulse"></div>
+        <motion.div
+          animate={{
+            boxShadow: [
+              "0 0 20px 2px rgba(255, 255, 255, 0.3)",
+              "0 0 30px 5px rgba(59, 130, 246, 0.5)",
+              "0 0 20px 2px rgba(255, 255, 255, 0.3)",
+            ],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+          className="relative z-10 w-12 h-12 flex items-center justify-center"
+        >
+          <img src={sevenLogo} alt="747 Logo" className="h-10 object-contain" />
+        </motion.div>
+      </div>
+      
+      {/* Settings button on right */}
+      <div className="flex-1 flex justify-end items-center">
+        <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
+          <Settings className="h-5 w-5 text-white" />
+        </button>
+      </div>
     </div>
   );
   
