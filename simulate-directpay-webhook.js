@@ -3,14 +3,14 @@
  * This emulates the official DirectPay webhook format to test automatic payment processing
  * 
  * Usage: node simulate-directpay-webhook.js [referenceId] [status]
- * Example: node simulate-directpay-webhook.js ref_11b21e4de1a33b1d SUCCESS
+ * Example: node simulate-directpay-webhook.js ref_c6eb4249fe7eefde SUCCESS
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 const baseUrl = 'http://localhost:5000';
 
 // Use command line arguments or defaults
-const referenceId = process.argv[2] || 'ref_11b21e4de1a33b1d';
+const referenceId = process.argv[2] || 'ref_c6eb4249fe7eefde';
 const status = process.argv[3] || 'SUCCESS';
 
 async function simulateDirectPayWebhook() {
