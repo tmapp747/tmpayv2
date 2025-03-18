@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'wouter';
+import { useLocation } from 'wouter';
 import { 
   User, LogOut, Settings, ChevronRight, Bell, 
   Moon, HelpCircle, Shield, CreditCard, ShieldCheck
 } from 'lucide-react';
-import BottomNavBar from '@/components/navigation/BottomNavBar';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import MobileLayout from '@/components/MobileLayout';
 
 export default function MobileProfile() {
   const { user, logoutMutation } = useAuth();
@@ -41,28 +40,22 @@ export default function MobileProfile() {
     );
   }
   
+  // Custom header with settings button
+  const headerContent = (
+    <div className="flex items-center space-x-2">
+      <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
+        <Settings className="h-5 w-5 text-white" />
+      </button>
+    </div>
+  );
+  
   return (
-    <div className="banking-app min-h-screen pb-28 bg-gradient-to-b from-[#001138] to-[#002D87]"
-      style={{
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
-      }}>
-      {/* App Header */}
-      <header className="p-4 sticky top-0 z-40 backdrop-blur-md bg-[#00174F]/70">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-semibold text-white">Profile</h1>
-            <p className="text-sm text-blue-300">Manage your account</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-md">
-              <Settings className="h-5 w-5 text-white" />
-            </button>
-          </div>
-        </div>
-      </header>
-      
-      {/* Main Content */}
-      <main className="space-y-6 px-4 pt-5">
+    <MobileLayout
+      title="Profile"
+      headerContent={headerContent}
+      showNav={true}
+    >
+      <div className="space-y-6 pt-5">
         {/* Profile Card */}
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
@@ -242,7 +235,7 @@ export default function MobileProfile() {
             </motion.button>
           </div>
         </motion.div>
-      </main>
+      </div>
       
       {/* Logout Confirmation Modal */}
       <AnimatePresence>
@@ -282,9 +275,6 @@ export default function MobileProfile() {
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {/* Bottom Navigation */}
-      <BottomNavBar />
-    </div>
+    </MobileLayout>
   );
 }

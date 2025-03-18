@@ -1,19 +1,12 @@
-import React, { useEffect } from "react";
-import { useLocation, Redirect } from "wouter";
+import React from "react";
+import { Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { initMobileEnhancements } from "@/lib/mobile-utils";
 import MobileGCashDeposit from "@/components/mobile/MobileGCashDeposit";
-import BottomNavBar from "@/components/navigation/BottomNavBar";
+import MobileLayout from "@/components/MobileLayout";
 import { Loader2 } from "lucide-react";
 
 export default function MobileDepositPage() {
   const { user, isLoading } = useAuth();
-  const [location, navigate] = useLocation();
-
-  // Initialize mobile enhancements
-  useEffect(() => {
-    initMobileEnhancements();
-  }, []);
 
   // Show loading state
   if (isLoading) {
@@ -30,12 +23,8 @@ export default function MobileDepositPage() {
   }
 
   return (
-    <div className="mobile-app-container min-h-screen pb-28"
-      style={{
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)', // Added safe bottom padding for mobile
-      }}>
+    <MobileLayout title="Deposit" showNav={true}>
       <MobileGCashDeposit />
-      <BottomNavBar />
-    </div>
+    </MobileLayout>
   );
 }
