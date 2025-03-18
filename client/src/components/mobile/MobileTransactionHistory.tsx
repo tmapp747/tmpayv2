@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw, Ban, AlertCircle } from "lucide-react";
+import { Check, X, Clock, ArrowUp, ArrowDown, Loader2, RefreshCcw, Ban, AlertCircle, CheckCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatCurrency, formatDate, getStatusColor, getTimeAgo } from "@/lib/utils";
 import { Transaction } from "@/lib/types";
@@ -39,6 +39,22 @@ export default function MobileTransactionHistory() {
       const response = await apiRequest(
         'POST',
         `/api/payments/cancel/${referenceId}`
+      );
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate transactions query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
+    },
+  });
+  
+  // Mark payment as completed mutation
+  const markAsCompletedMutation = useMutation({
+    mutationFn: async (paymentReference: string) => {
+      const response = await apiRequest(
+        'POST',
+        '/api/payments/mark-as-completed',
+        { paymentReference }
       );
       return response.json();
     },
@@ -300,48 +316,96 @@ export default function MobileTransactionHistory() {
                    transaction.method?.toLowerCase().includes('gcash') && 
                    transaction.paymentReference && (
                     <div className="mt-2 border-t border-white/10 pt-2">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <button 
-                            className="w-full py-1.5 px-3 bg-red-500/10 text-red-400 rounded-md text-xs flex items-center justify-center"
-                            aria-label="Cancel payment"
-                          >
-                            <Ban size={12} className="mr-1" />
-                            Cancel Payment
-                          </button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-[#001138] border border-blue-900/50 text-white">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Cancel GCash Payment?</AlertDialogTitle>
-                            <AlertDialogDescription className="text-blue-200">
-                              Are you sure you want to cancel this pending GCash payment of ₱{formatCurrency(Number(transaction.amount), '')}?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="mt-4">
-                            <AlertDialogCancel className="bg-blue-950/50 text-white border-blue-900/50 hover:bg-blue-900/30">
-                              Keep Payment
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => {
-                                if (transaction.paymentReference) {
-                                  cancelPaymentMutation.mutate(transaction.paymentReference);
-                                }
-                              }}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                              disabled={cancelPaymentMutation.isPending}
+                      <div className="flex space-x-2">
+                        {/* Cancel Payment Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button 
+                              className="flex-1 py-1.5 px-3 bg-red-500/10 text-red-400 rounded-md text-xs flex items-center justify-center"
+                              aria-label="Cancel payment"
                             >
-                              {cancelPaymentMutation.isPending ? (
-                                <div className="flex items-center">
-                                  <Loader2 size={14} className="animate-spin mr-1" />
-                                  Canceling...
-                                </div>
-                              ) : (
-                                "Yes, Cancel"
-                              )}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Ban size={12} className="mr-1" />
+                              Cancel Payment
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-[#001138] border border-blue-900/50 text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel GCash Payment?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-blue-200">
+                                Are you sure you want to cancel this pending GCash payment of ₱{formatCurrency(Number(transaction.amount), '')}?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                              <AlertDialogCancel className="bg-blue-950/50 text-white border-blue-900/50 hover:bg-blue-900/30">
+                                Keep Payment
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  if (transaction.paymentReference) {
+                                    cancelPaymentMutation.mutate(transaction.paymentReference);
+                                  }
+                                }}
+                                className="bg-red-600 hover:bg-red-700 text-white"
+                                disabled={cancelPaymentMutation.isPending}
+                              >
+                                {cancelPaymentMutation.isPending ? (
+                                  <div className="flex items-center">
+                                    <Loader2 size={14} className="animate-spin mr-1" />
+                                    Canceling...
+                                  </div>
+                                ) : (
+                                  "Yes, Cancel"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        
+                        {/* Mark as Completed Button */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button 
+                              className="flex-1 py-1.5 px-3 bg-green-500/10 text-green-400 rounded-md text-xs flex items-center justify-center"
+                              aria-label="Mark as completed"
+                            >
+                              <CheckCircle size={12} className="mr-1" />
+                              Mark as Completed
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-[#001138] border border-blue-900/50 text-white">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Mark Payment as Completed?</AlertDialogTitle>
+                              <AlertDialogDescription className="text-blue-200">
+                                This will mark this GCash payment of ₱{formatCurrency(Number(transaction.amount), '')} as completed. 
+                                Only use this if you've confirmed that the payment was successful but is still showing as pending.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="mt-4">
+                              <AlertDialogCancel className="bg-blue-950/50 text-white border-blue-900/50 hover:bg-blue-900/30">
+                                Cancel
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  if (transaction.paymentReference) {
+                                    markAsCompletedMutation.mutate(transaction.paymentReference);
+                                  }
+                                }}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                disabled={markAsCompletedMutation.isPending}
+                              >
+                                {markAsCompletedMutation.isPending ? (
+                                  <div className="flex items-center">
+                                    <Loader2 size={14} className="animate-spin mr-1" />
+                                    Processing...
+                                  </div>
+                                ) : (
+                                  "Yes, Complete It"
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -367,6 +431,27 @@ export default function MobileTransactionHistory() {
             {cancelPaymentMutation.error instanceof Error 
               ? cancelPaymentMutation.error.message 
               : "Failed to cancel payment"}
+          </div>
+        </div>
+      )}
+      
+      {/* Show status message when marking payments as completed */}
+      {markAsCompletedMutation.isSuccess && (
+        <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
+          <div className="bg-green-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
+            <Check size={16} className="mr-2" />
+            Payment marked as completed
+          </div>
+        </div>
+      )}
+      
+      {markAsCompletedMutation.isError && (
+        <div className="fixed bottom-20 left-0 right-0 flex justify-center px-4 z-50">
+          <div className="bg-red-500/90 text-white py-2 px-4 rounded-full shadow-lg flex items-center">
+            <AlertCircle size={16} className="mr-2" />
+            {markAsCompletedMutation.error instanceof Error 
+              ? markAsCompletedMutation.error.message 
+              : "Failed to mark payment as completed"}
           </div>
         </div>
       )}
