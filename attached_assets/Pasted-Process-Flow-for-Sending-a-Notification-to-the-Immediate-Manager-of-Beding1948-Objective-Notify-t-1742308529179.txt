@@ -1,0 +1,49 @@
+Process Flow for Sending a Notification to the Immediate Manager of Beding1948
+
+Objective:
+
+Notify the immediate manager, Platalyn, that the player Beding1948 has successfully completed a deposit using 747 eLoading Wallet via Direct GCash Payment and that the chips have been transferred to the casino wallet.
+
+⸻
+
+Step-by-Step Process:
+
+Step 1: Retrieve User Information
+	•	Call the API to fetch the details of the player Beding1948.
+	•	Extract the necessary fields:
+	•	isAgent → false (Beding1948 is a player)
+	•	topManager → Marcthepogi
+	•	immediateManager → platalyn@gmail.com
+
+Step 2: Determine the Correct Recipient
+	•	Since Beding1948 is a player and not an agent, the message cannot be sent directly to them.
+	•	Instead, the message must be redirected to their immediate manager, Platalyn, who is responsible for relaying the information.
+
+Step 3: Identify the Correct Authentication Token
+	•	The topManager field is Marcthepogi.
+	•	According to the predefined tokens, the correct authToken for this account is:
+	•	e726f734-0b50-4ca2-b8d7-bca385955acf
+
+Step 4: Compose the Message
+	•	Format the message using the structured HTML template for clarity and professionalism.
+	•	The message includes:
+	•	Confirmation of a successful deposit.
+	•	Payment method: 747 eLoading Wallet via Direct GCash Payment.
+	•	Assurance that chips have been transferred to the player’s wallet.
+	•	A call to action directing the manager to the casino dashboard for further actions.
+
+Step 5: Send the Message
+	•	The message is sent to Platalyn using the sendMessage API, ensuring the correct formatting and authentication token.
+	•	The API call was successful (status 0 returned).
+
+⸻
+
+Summary of Execution:
+
+✅ User details retrieved for Beding1948.
+✅ Identified immediate manager as Platalyn.
+✅ Selected the correct authentication token for messaging.
+✅ Crafted a structured, professional message.
+✅ Sent the notification to Platalyn.
+
+The immediate manager is now informed and can take any necessary actions, ensuring seamless communication within the casino platform.

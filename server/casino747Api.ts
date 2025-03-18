@@ -533,9 +533,14 @@ export class Casino747Api {
 
   /**
    * Send a message to a user or their manager
+   * 
+   * This method handles sending various types of messages through the 747 Casino messaging system.
+   * For players, messages are automatically redirected to their immediate manager.
+   * 
    * @param username The username of the recipient (or player's manager)
    * @param subject The subject of the message
-   * @param message The message content
+   * @param message The message content (can be plain text or HTML)
+   * @returns The API response data
    */
   async sendMessage(username: string, subject: string, message: string) {
     try {
@@ -566,7 +571,7 @@ export class Casino747Api {
         }
       });
       
-      console.log(`[CASINO747] Message send response:`, response.data);
+      console.log(`[CASINO747] Message sent successfully to ${recipientUsername}`);
       
       return response.data;
     } catch (error) {
@@ -588,6 +593,150 @@ export class Casino747Api {
       }
       
       throw new Error('Failed to send message using 747 Casino API');
+    }
+  }
+  
+  /**
+   * Send a deposit notification to a player's manager with formatted HTML content
+   * 
+   * This method creates a beautifully formatted HTML notification about a completed deposit
+   * transaction and sends it to the appropriate manager (usually the immediate manager).
+   * 
+   * @param playerUsername The username of the player who made the deposit
+   * @param transactionDetails Object containing transaction details
+   * @param transactionDetails.amount The amount deposited
+   * @param transactionDetails.currency The currency code (default: PHP)
+   * @param transactionDetails.method The payment method used (e.g., "GCash QR", "Direct GCash")
+   * @param transactionDetails.reference The transaction reference ID
+   * @param transactionDetails.timestamp The timestamp of the transaction
+   * @returns The API response data
+   */
+  async sendDepositNotification(
+    playerUsername: string, 
+    transactionDetails: {
+      amount: number | string;
+      currency?: string;
+      method?: string;
+      reference?: string;
+      timestamp?: Date | string;
+    }
+  ) {
+    try {
+      // Format details for the notification
+      const {
+        amount,
+        currency = "PHP",
+        method = "GCash",
+        reference = "",
+        timestamp = new Date()
+      } = transactionDetails;
+      
+      // Format the date string
+      const formattedDate = typeof timestamp === 'string' 
+        ? new Date(timestamp).toLocaleString() 
+        : timestamp.toLocaleString();
+      
+      // Format the amount with commas and decimal places
+      const formattedAmount = typeof amount === 'number'
+        ? amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        : amount;
+      
+      // Create an HTML message with a card-style layout
+      const htmlMessage = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit Notification - 747 eWallet</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2c3e50, #1a252f); color: white; padding: 20px; text-align: center; }
+        .logo { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+        .content { padding: 20px; }
+        .card { border: 1px solid #eaeaea; border-radius: 6px; padding: 15px; margin-bottom: 20px; }
+        .card-header { border-bottom: 1px solid #eaeaea; padding-bottom: 10px; margin-bottom: 15px; }
+        .card-title { font-size: 18px; font-weight: bold; margin: 0; color: #2c3e50; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .detail-label { color: #7f8c8d; font-size: 14px; }
+        .detail-value { font-weight: bold; color: #2c3e50; font-size: 14px; }
+        .amount { font-size: 24px; font-weight: bold; color: #27ae60; text-align: center; margin: 15px 0; }
+        .status { display: inline-block; background-color: #27ae60; color: white; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
+        .footer { background-color: #f9f9f9; padding: 15px; text-align: center; font-size: 12px; color: #95a5a6; }
+        .button { display: inline-block; background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">747 E-LOADING WALLET</div>
+            <div>Deposit Notification</div>
+        </div>
+        
+        <div class="content">
+            <p>Dear Manager,</p>
+            
+            <p>A player under your management has successfully completed a deposit transaction. The funds have been transferred to their casino wallet.</p>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Transaction Details</h2>
+                </div>
+                
+                <div class="amount">${currency} ${formattedAmount}</div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Player Username:</span>
+                    <span class="detail-value">${playerUsername}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Payment Method:</span>
+                    <span class="detail-value">${method}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Reference ID:</span>
+                    <span class="detail-value">${reference}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Timestamp:</span>
+                    <span class="detail-value">${formattedDate}</span>
+                </div>
+                
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="status">COMPLETED</span>
+                </div>
+            </div>
+            
+            <p>Please visit the casino dashboard to view more details about this transaction or to assist the player if needed.</p>
+            
+            <div style="text-align: center;">
+                <a href="https://bridge.747lc.com/dashboard" class="button">View Dashboard</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from the 747 E-Loading Wallet system. Please do not reply to this message.</p>
+            <p>© ${new Date().getFullYear()} 747 Casino. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+      `;
+      
+      // Create the subject line
+      const subject = `Deposit Notification for Player ${playerUsername}`;
+      
+      // Send the HTML notification
+      return await this.sendMessage(playerUsername, subject, htmlMessage);
+      
+    } catch (error) {
+      console.error('[CASINO747] Error sending deposit notification:', error);
+      throw new Error('Failed to send deposit notification');
     }
   }
   
