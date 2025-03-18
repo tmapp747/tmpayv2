@@ -1,53 +1,66 @@
 import { Request, Response, NextFunction } from "express";
 import { storage } from "../storage";
-import { User } from "@shared/schema";
+import type { User } from "@shared/schema";
+import { SessionData } from "express-session";
+
+// Extend SessionData interface to include userId
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+  }
+}
 
 /**
  * Authentication middleware for protecting routes
  * Checks if user is authenticated via session or token
  */
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  console.log("[AUTH MIDDLEWARE] Checking authentication for path:", req.path);
-  
-  const sessionUserId = req.session.userId;
-  const token = req.headers.authorization?.split(" ")[1];
-  let user: User | undefined;
-  
-  // First check session authentication
-  if (sessionUserId) {
-    console.log("[AUTH MIDDLEWARE] User authenticated via session");
-    user = await storage.getUser(sessionUserId);
-    
-    if (user) {
+  try {
+    // First check for session-based authentication
+    if (req.session && req.session.userId) {
+      console.log(`[AUTH MIDDLEWARE] Checking authentication for path: ${req.path}`);
+      console.log("[AUTH MIDDLEWARE] User authenticated via session");
+      
+      // Validate that the user still exists in the database
+      const user = await storage.getUser(req.session.userId as number);
+      if (!user) {
+        req.session.destroy((err) => {
+          if (err) console.error("Error destroying session:", err);
+        });
+        return res.status(401).json({ success: false, message: "Authentication failed" });
+      }
+      
       console.log("[AUTH MIDDLEWARE] Session user validated successfully");
       req.user = user;
       return next();
-    } else {
-      console.log("[AUTH MIDDLEWARE] Session user no longer exists, clearing session");
-      req.session.destroy(() => {});
     }
-  }
-  
-  // Then check token authentication
-  console.log("[AUTH MIDDLEWARE] No session authentication, checking for token");
-  console.log("[AUTH MIDDLEWARE] Authorization header present:", !!token);
-  
-  if (token) {
-    user = await storage.getUserByAccessToken(token);
     
-    if (user) {
-      console.log("[AUTH MIDDLEWARE] Token authentication successful");
-      req.user = user;
-      return next();
+    // Then check for token-based authentication
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
     }
+    
+    const token = authHeader.split(" ")[1];
+    const user = await storage.getUserByAccessToken(token);
+    
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+    
+    // Check if token is expired
+    const isExpired = await storage.isTokenExpired(user.id);
+    if (isExpired) {
+      return res.status(401).json({ success: false, message: "Token expired" });
+    }
+    
+    console.log("[AUTH MIDDLEWARE] User authenticated via token");
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("[AUTH MIDDLEWARE ERROR]", error);
+    res.status(500).json({ success: false, message: "Authentication error" });
   }
-  
-  // If no valid authentication found
-  console.log("[AUTH MIDDLEWARE] Authentication failed");
-  return res.status(401).json({
-    success: false,
-    message: "Authentication required"
-  });
 }
 
 /**
@@ -58,23 +71,38 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
  */
 export function roleAuthMiddleware(allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    // First ensure user is authenticated
-    await authMiddleware(req, res, (err?: any) => {
-      if (err) return next(err);
-      
-      const user = req.user as User;
-      
-      // Admin users have access to everything
-      if (user.isVip || allowedRoles.includes(user.casinoUserType || "")) {
-        return next();
-      }
-      
-      // Otherwise check if user has one of the allowed roles
-      console.log("[ROLE AUTH] User does not have required role:", allowedRoles);
-      return res.status(403).json({
-        success: false,
-        message: "Forbidden: Insufficient permissions"
+    try {
+      // First authenticate the user
+      await authMiddleware(req, res, () => {
+        // Then check if user has the required role
+        if (!req.user) {
+          return res.status(401).json({ success: false, message: "Authentication required" });
+        }
+        
+        const user = req.user as User;
+        // Default to 'user' role if not specified
+        const userType = user.userType || user.casinoUserType || 'user';
+        const userRole = userType === 'admin' ? 'admin' : 'user';
+        
+        if (!allowedRoles.includes(userRole)) {
+          return res.status(403).json({ success: false, message: "Access forbidden" });
+        }
+        
+        console.log(`[ROLE AUTH] User ${user.username} authorized with role: ${userRole}`);
+        next();
       });
-    });
+    } catch (error) {
+      console.error("[ROLE AUTH ERROR]", error);
+      res.status(500).json({ success: false, message: "Authorization error" });
+    }
   };
+}
+
+// Add user type to Express Request interface
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
 }

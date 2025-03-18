@@ -1,8 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import { createServer, type Server } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import { apiLimiter, authLimiter } from './middleware/rateLimiter';
+import { router } from "./routes/index";
+import { setupAuth } from "./auth";
 
 const app = express();
 app.use(express.json());
@@ -51,8 +53,15 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
-
+  // Create HTTP server
+  const server = createServer(app);
+  
+  // Setup authentication
+  setupAuth(app);
+  
+  // Register all our routes
+  app.use('/api', router);
+  
   // Serve static files from the public directory
   app.use(express.static(path.join(process.cwd(), 'public')));
 
@@ -89,4 +98,6 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+  
+  return server;
 })();
