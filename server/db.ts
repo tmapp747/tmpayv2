@@ -25,13 +25,18 @@ const createIndexes = async () => {
 
 export async function testConnection() {
   try {
-    // Try to connect to check if DB is accessible
     const client = await pool.connect();
-    console.log('Database connection successful');
+    await client.query('SELECT 1'); // Verify query execution
+    console.log('Database connection and query successful');
     client.release();
     return true;
   } catch (error) {
     console.error('Database connection failed:', error);
-    return false;
+    throw new Error(`Database connection error: ${error.message}`);
   }
 }
+
+// Initialize connection pool with better error handling
+pool.on('error', (err) => {
+  console.error('Unexpected database pool error:', err);
+});
