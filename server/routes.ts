@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
@@ -586,7 +586,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth and user management routes
-  app.post("/api/auth/login", async (req: Request, res: Response) => {
+  // This route adapter forwards the /api/auth/login requests to the Passport.js login endpoint
+  app.post("/api/auth/login", (req: Request, res: Response, next: NextFunction) => {
+    console.log("Route adapter: Forwarding /api/auth/login to /api/login (Passport)");
+    req.url = "/api/login"; // Change the URL to the one Passport expects
+    next(); // Forward to next matching route
+  });
+  
+  // Original login implementation - now will also match redirected requests from /api/auth/login
+  app.post("/api/login", async (req: Request, res: Response) => {
     try {
       console.log("[LOGIN] Login attempt with data:", JSON.stringify(req.body, null, 2));
       
@@ -763,7 +771,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Token refresh endpoint
   // Modified to use session-based authentication
-  app.post("/api/auth/refresh-token", async (req: Request, res: Response) => {
+  // Route adapter to forward /api/auth/refresh-token to Passport's expected endpoint
+  app.post("/api/auth/refresh-token", (req: Request, res: Response, next: Function) => {
+    console.log("Route adapter: Forwarding /api/auth/refresh-token to /api/refresh-token (Passport)");
+    req.url = "/api/refresh-token"; // Change the URL to the one Passport expects
+    next(); // Forward to next matching route
+  });
+  
+  // Original refresh token implementation
+  app.post("/api/refresh-token", async (req: Request, res: Response) => {
     try {
       // Get the user from the session
       const user = (req as any).user;

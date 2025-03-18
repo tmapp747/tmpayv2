@@ -8,6 +8,13 @@ import { getQueryFn, queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/api-client"; 
 import { useToast } from "@/hooks/use-toast";
 
+// Auth route mapping - directly defined here to avoid circular dependencies
+const AUTH_ROUTE_MAPPING: Record<string, string> = {
+  '/api/auth/login': '/api/login',
+  '/api/auth/logout': '/api/logout',
+  '/api/auth/refresh-token': '/api/refresh-token',
+};
+
 // Types for user data
 interface User {
   id: number;
@@ -70,7 +77,14 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const refreshSession = async (): Promise<string> => {
   try {
     console.log("Attempting to refresh session...");
-    const res = await fetch("/api/auth/refresh-token", {
+    
+    // Use mapped endpoint
+    const refreshEndpoint = '/api/auth/refresh-token';
+    const mappedEndpoint = AUTH_ROUTE_MAPPING[refreshEndpoint] || refreshEndpoint;
+    
+    console.log(`Refreshing session at ${mappedEndpoint}`);
+    
+    const res = await fetch(mappedEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -351,14 +365,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook to use auth context
-function useAuth() {
+// Create a reusable hook to access auth context
+const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};
 
 // Export components and hooks
 export { AuthProvider, useAuth };

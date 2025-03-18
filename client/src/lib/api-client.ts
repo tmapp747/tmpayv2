@@ -11,6 +11,7 @@ let refreshPromise: Promise<string> | null = null;
 const AUTH_ROUTE_MAPPING: Record<string, string> = {
   '/api/auth/login': '/api/login',       // Map client /auth/login to server /login
   '/api/auth/logout': '/api/logout',     // Map client /auth/logout to server /logout
+  '/api/auth/refresh-token': '/api/refresh-token', // Map client refresh token to server endpoint
 };
 
 /**
