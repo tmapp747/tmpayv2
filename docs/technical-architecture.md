@@ -149,6 +149,8 @@ The integration layer handles communication with external systems and third-part
   - Email notifications
   - In-app notifications
   - Push notifications (for future mobile app)
+  - HTML-formatted manager notifications
+  - Automatic transaction status notifications
 
 ### 5. Data Storage Layer
 

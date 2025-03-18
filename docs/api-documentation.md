@@ -700,6 +700,47 @@ Response:
 }
 ```
 
+## Manager Notification System
+
+The system includes an automated manager notification feature that sends HTML-formatted notifications to the immediate manager of a player when important transactions occur.
+
+### Notification Features
+
+- **Automatic Manager Notification**: Sends HTML-formatted deposit notifications to player managers when transactions complete
+- **Integrated into Transaction Flow**: Notifications are sent at key points in the deposit flow (webhook handlers and transfer completion)
+- **Responsive Design**: Card-style layout with 747 Casino branding, optimized for both mobile and desktop
+- **Error Handling**: Graceful error recovery ensures transaction completion even if notification fails
+- **Transaction Details**: Complete information including amount, payment method, timestamp, and reference IDs
+
+### Notification Content
+
+HTML-formatted notification includes:
+- Player username
+- Transaction amount with currency
+- Payment method (GCash QR, Direct GCash, Manual payment, etc.)
+- Transaction reference ID
+- Timestamp
+- Status badge
+- Link to casino dashboard
+
+### Implementation
+
+While there is no direct API endpoint to trigger notifications (they're sent automatically), they're integrated at these points:
+- DirectPay webhook handler - when payment is confirmed successful
+- `casino747CompleteTopup` function - after funds are transferred to casino
+
+### Example Notification Structure
+
+```json
+{
+  "recipient": "manager_username", 
+  "subject": "Deposit Notification for Player example_user",
+  "message": "<HTML content with card-style transaction details>",
+  "sentAt": "2024-03-18T13:45:22Z",
+  "status": "success"
+}
+```
+
 ## WebSocket Events
 
 ### Payment Updates

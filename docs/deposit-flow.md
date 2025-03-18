@@ -51,12 +51,39 @@ Our system interprets this as a successful transfer and:
 - Updates the user's balance
 - Records the transaction details for future reference
 
+## Manager Notification System
+
+When a deposit is successfully completed, the system automatically sends an HTML-formatted notification to the player's immediate manager:
+
+1. The notification is triggered in two places:
+   - In the `casino747CompleteTopup` function after the funds transfer succeeds
+   - In the DirectPay webhook handler after confirming a successful payment
+
+2. The notification includes detailed transaction information:
+   - Player username
+   - Deposit amount and currency
+   - Payment method used (GCash QR, Direct GCash, Manual, etc.)
+   - Transaction reference ID
+   - Timestamp of the transaction
+   - Status (COMPLETED)
+
+3. The notification is sent using the `sendDepositNotification` method in `Casino747Api`:
+   - Creates a beautifully formatted HTML email with card-style layout
+   - Uses 747 Casino branding and styling
+   - Includes a link to the casino dashboard for easy access
+
+4. Error handling for notifications:
+   - Notification errors are caught and logged but don't affect the transaction flow
+   - This ensures that even if a notification fails, the transaction still completes
+   - Detailed error logs are created for troubleshooting
+
 ## Error Handling
 
 The system includes robust error handling:
 - Multiple retry attempts for Casino API calls
 - Detailed logging at each step of the process
 - Fallback mechanisms if tokens expire or are not found
+- Graceful recovery from notification failures
 
 ## Testing
 
