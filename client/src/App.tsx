@@ -18,6 +18,7 @@ import MobileWallet from "@/pages/MobileWallet";
 import MobileProfile from "@/pages/MobileProfile";
 import MobileDepositPage from "@/pages/mobile-deposit";
 import MobileHistoryPage from "@/pages/mobile/MobileHistoryPage";
+import MobileThankYouPage from "@/pages/mobile/MobileThankYouPage";
 import BottomNavBar from "@/components/navigation/BottomNavBar";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -103,6 +104,7 @@ function Router() {
       )} />
       {/* Payment routes */}
       <Route path="/payment/thank-you" component={PaymentThankYou} />
+      <Route path="/mobile/thank-you/:status/:amount/:transactionId?" component={MobileThankYouPage} />
       
       {/* Color comparison route */}
       <Route path="/color-comparison" component={() => (

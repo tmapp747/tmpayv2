@@ -9,6 +9,8 @@ import SuccessNotificationModal from "./SuccessNotificationModal";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const QRDeposit = () => {
   const [amount, setAmount] = useState("");
@@ -21,6 +23,8 @@ const QRDeposit = () => {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const isMobile = useIsMobile();
   
   // Verify authentication state on component mount
   useEffect(() => {
