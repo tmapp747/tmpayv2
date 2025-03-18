@@ -1,0 +1,161 @@
+Here’s a detailed prompt you can use with the Replit Agent to modify and enhance your existing 747 Casino API integration:
+
+⸻
+
+🔧 Prompt for Replit Agent
+
+Objective:
+
+Modify the existing Casino747 API to integrate GCash deposit payments, ensure real-time payment status updates, and synchronize deposit statuses with the casino platform.
+
+⸻
+
+🔹 Modifications & Enhancements Required
+
+1️⃣ Implement Deposit Request to Initiate a GCash Payment
+	•	Create a new function makeDeposit() that:
+	•	Uses an auth token to authenticate.
+	•	Sends a deposit request to the casino API for 100 PHP (default parameter).
+	•	Returns a transaction ID for tracking.
+
+Example:
+
+async makeDeposit(clientId: number, amount: number = 100, currency: string = "PHP") {
+    const authToken = await this.getAuthToken("athan45");
+    const response = await axios.post(`${this.baseUrl}/payments/deposit`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        amount,
+        currency
+    }, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    return response.data.transactionId; // Capture transaction ID
+}
+
+
+
+⸻
+
+2️⃣ Generate a GCash QR Code for Payment
+	•	Implement a function generateGcashQR() that:
+	•	Calls the payment provider’s API to generate a GCash QR code.
+	•	Returns the payment URL for user processing.
+
+Example:
+
+async generateGcashQR(clientId: number, amount: number = 100) {
+    const authToken = await this.getAuthToken("athan45");
+    const response = await axios.post(`${this.baseUrl}/payments/generate-gcash-qr`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        amount
+    }, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    return response.data.qrCodeUrl;
+}
+
+Expected Response:
+
+{
+  "qrCodeUrl": "https://gcash.com/payment/abc123"
+}
+
+	•	This URL will be provided to the user for completing the payment.
+
+⸻
+
+3️⃣ Monitor Payment Status in Real-Time
+	•	Implement a checkGcashPaymentStatus() function that:
+	•	Queries the payment provider for the current status of a transaction.
+	•	Returns values like:
+	•	"pending": Waiting for payment.
+	•	"complete": Payment successful.
+	•	"failed": Payment failed.
+
+Example:
+
+async checkGcashPaymentStatus(transactionId: string) {
+    const authToken = await this.getAuthToken("athan45");
+    const response = await axios.post(`${this.baseUrl}/payments/check-gcash-status`, {
+        authToken,
+        platform: this.defaultPlatform,
+        transactionId
+    }, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    return response.data.status; // Expected: "pending", "complete", "failed"
+}
+
+	•	Call this function every few seconds until the status updates.
+
+⸻
+
+4️⃣ Update Casino API Status Upon Payment Completion
+	•	Implement updateCasinoStatus() to:
+	•	Mark the casino deposit as “processing” when the GCash payment is confirmed.
+	•	Update to “deposit process completed” once the casino credits the user.
+
+Example:
+
+async updateCasinoStatus(clientId: number, newStatus: string) {
+    const authToken = await this.getAuthToken("athan45");
+    const response = await axios.post(`${this.baseUrl}/casino/update-status`, {
+        authToken,
+        platform: this.defaultPlatform,
+        clientId,
+        status: newStatus
+    }, {
+        headers: { 'Content-Type': 'application/json' }
+    });
+
+    return response.data;
+}
+
+
+
+⸻
+
+🔹 Full Process Flow
+	1.	Initiate Deposit: Call makeDeposit(), which returns a transactionId.
+	2.	Generate QR Code: Call generateGcashQR() to retrieve a GCash payment link.
+	3.	Monitor Payment: Use checkGcashPaymentStatus() in a loop until the payment status is "complete".
+	4.	Update Casino Status:
+	•	If "complete", call updateCasinoStatus() with "processing".
+	•	Once the casino processes the deposit, update the status to "deposit process completed".
+
+⸻
+
+🔹 Expected Real-Time Status Transitions
+
+Step	GCash Status	Casino Status
+Initiate Deposit	Pending	Pending
+Payment Completed	Complete	Processing
+Funds Credited	N/A	Deposit Process Completed
+
+
+
+⸻
+
+🚀 Next Steps
+	1.	Implement the new functions in Casino747Api.
+	2.	Test the end-to-end flow:
+	•	Run generateGcashQR(), complete the payment, and observe updates.
+	3.	Ensure real-time updates using polling or webhooks.
+
+⸻
+
+🔹 Final Notes
+	•	Ensure proper error handling (e.g., expired QR codes, failed payments).
+	•	Log all requests to monitor potential issues.
+	•	Consider caching transaction statuses to reduce API calls.
+
+⸻
+
+This prompt provides detailed technical instructions for Replit Agent to execute the modifications efficiently. Let me know if you want any refinements before submitting it!
