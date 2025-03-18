@@ -59,13 +59,13 @@ export async function comparePasswords(supplied: string, stored: string): Promis
   console.log(`- Supplied password length: ${supplied ? supplied.length : 0}`);
   console.log(`- Stored password type: ${stored ? (isPasswordHashed(stored) ? 'bcrypt hash' : 'plaintext') : 'missing'}`);
   console.log(`- Stored password preview: ${stored ? stored.substring(0, 3) + '...' + stored.substring(stored.length - 3) : 'none'}`);
-  
+
   // Immediately fail if either value is missing
   if (!supplied || !stored) {
     console.warn("Password comparison failed: Missing password input");
     return false;
   }
-  
+
   // If the stored password appears to be a bcrypt hash, use bcrypt.compare
   if (isPasswordHashed(stored)) {
     try {
@@ -79,22 +79,22 @@ export async function comparePasswords(supplied: string, stored: string): Promis
       return false;
     }
   }
-  
+
   // Special case for legacy accounts with plaintext passwords that need migration
   console.warn("⚠️ SECURITY NOTICE: Plaintext password detected. Password migration required.");
   console.log("Comparing plaintext password for legacy account");
-  
+
   // Use a constant-time comparison for plaintext to mitigate timing attacks
   let result = true;
   const suppliedBuffer = Buffer.from(supplied);
   const storedBuffer = Buffer.from(stored);
-  
+
   // If lengths differ, result will be false, but continue to prevent timing attacks
   if (suppliedBuffer.length !== storedBuffer.length) {
     console.log(`Password length mismatch: ${suppliedBuffer.length} vs ${storedBuffer.length}`);
     result = false;
   }
-  
+
   // Constant-time comparison
   let differences = 0;
   for (let i = 0; i < Math.min(suppliedBuffer.length, storedBuffer.length); i++) {
@@ -103,9 +103,9 @@ export async function comparePasswords(supplied: string, stored: string): Promis
       result = false;
     }
   }
-  
+
   console.log(`Legacy password comparison result: ${result ? 'Success' : `Failed with ${differences} differences`}`);
-  
+
   // Log a prominent warning about password migration
   if (result) {
     console.warn("==================================================");
@@ -113,37 +113,37 @@ export async function comparePasswords(supplied: string, stored: string): Promis
     console.warn("Password migration should be performed immediately");
     console.warn("==================================================");
   }
-  
+
   return result;
 }
 
 export function setupAuth(app: Express) {
   // Create PostgreSQL session store
   const PgStore = pgSession(session);
-  
+
   // Setup PostgreSQL session store with the connection pool
   const pgSessionStore = new PgStore({
     pool,
     tableName: 'session', // Use default table name
     createTableIfMissing: true, // Auto-create the session table if it doesn't exist
   });
-  
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" 
-      ? randomBytes(32).toString('hex') // Generate a secure random secret in production
+      ? randomBytes(32).toString('hex')
       : "casino747_dev_session_secret"),
-    resave: false,
+    resave: false, 
     saveUninitialized: false,
-    store: pgSessionStore, // Use PostgreSQL session store instead of memory store
+    rolling: true, // Extends session on activity
+    store: pgSessionStore,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      sameSite: 'none', // Allow cross-site requests to support SPA frontend
-      path: '/' // Ensure cookie is sent for all paths
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax'
     }
   };
-  
+
   // Log a warning if using default session secret in production
   if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
     console.warn("WARNING: Using auto-generated session secret in production. Set SESSION_SECRET env variable for persistent sessions.");
@@ -153,7 +153,7 @@ export function setupAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
-  
+
   // Log session initialization
   console.log("Session middleware initialized with PostgreSQL store");
   console.log("Passport.js initialized for authentication");
@@ -163,20 +163,20 @@ export function setupAuth(app: Express) {
       try {
         // Look up the user - use case-insensitive search
         const user = await storage.getUserByUsername(username.toLowerCase());
-        
+
         if (!user) {
           console.log(`Login failed: no user found with username "${username}"`);
           return done(null, false);
         }
-        
+
         // Compare passwords using our enhanced function that handles both hashed and plaintext passwords
         const isPasswordValid = await comparePasswords(password, user.password);
-        
+
         if (!isPasswordValid) {
           console.log(`Login failed: invalid password for user "${username}"`);
           return done(null, false);
         }
-        
+
         // If login successful and password is not hashed (plaintext), perform automatic migration
         if (!isPasswordHashed(user.password)) {
           console.log(`Automatically migrating plaintext password to bcrypt hash for user "${username}"`);
@@ -185,7 +185,7 @@ export function setupAuth(app: Express) {
             const hashedPassword = await hashPassword(password);
             await storage.updateUserPassword(user.id, hashedPassword);
             console.log(`Password migration completed successfully for user "${username}"`);
-            
+
             // Get the updated user with the new hashed password
             const updatedUser = await storage.getUser(user.id);
             if (updatedUser) {
@@ -196,7 +196,7 @@ export function setupAuth(app: Express) {
             // Continue with login even if migration fails - we can try again next time
           }
         }
-        
+
         return done(null, user);
       } catch (error) {
         console.error("Authentication error:", error);
@@ -210,18 +210,18 @@ export function setupAuth(app: Express) {
     console.log(`Serializing user: ${user.username} (ID: ${user.id})`);
     done(null, user.id);
   });
-  
+
   // Enhanced deserializer that retrieves the full user info from storage
   passport.deserializeUser(async (id: number, done) => {
     try {
       console.log(`Deserializing user with ID: ${id}`);
       const user = await storage.getUser(id);
-      
+
       if (!user) {
         console.error(`Failed to deserialize user with ID: ${id} - User not found`);
         return done(null, false);
       }
-      
+
       console.log(`Successfully deserialized user: ${user.username}`);
       done(null, user);
     } catch (error) {
@@ -271,7 +271,7 @@ export function setupAuth(app: Express) {
         if (userResponse.password) {
           delete userResponse.password;
         }
-        
+
         res.status(201).json({ success: true, user: userResponse, message: "User registered successfully" });
       });
     } catch (error) {
@@ -286,23 +286,23 @@ export function setupAuth(app: Express) {
     try {
       // Get the authenticated user from request
       const user = req.user as SelectUser;
-      
+
       // If the user has a casino username, try to fetch the hierarchy info
       if (user && user.casinoUsername) {
         // Determine if the user is an agent based on their stored user type
         const isAgent = user.casinoUserType === 'agent';
-        
+
         try {
           // Fetch user hierarchy from casino API
           const hierarchyData = await casino747Api.getUserHierarchy(user.casinoUsername, isAgent);
-          
+
           if (hierarchyData.hierarchy && hierarchyData.hierarchy.length >= 3) {
             // Get top manager (3rd element, index 2)
             const topManager = hierarchyData.hierarchy[2]?.username;
-            
+
             // Find immediate manager by finding parent
             let immediateManager = '';
-            
+
             // Find the immediate manager by matching parentClientId
             for (const agent of hierarchyData.hierarchy) {
               if (agent.clientId === hierarchyData.user.parentClientId) {
@@ -310,7 +310,7 @@ export function setupAuth(app: Express) {
                 break;
               }
             }
-            
+
             // Update user with hierarchy info from API
             await storage.updateUserHierarchyInfo(
               user.id, 
@@ -318,7 +318,7 @@ export function setupAuth(app: Express) {
               immediateManager || user.immediateManager || "", 
               user.casinoUserType || (isAgent ? 'agent' : 'player')
             );
-            
+
             // Get updated user
             const updatedUser = await storage.getUser(user.id);
             if (updatedUser) {
@@ -330,13 +330,13 @@ export function setupAuth(app: Express) {
           // Don't fail the login if we can't get hierarchy, just continue with existing data
         }
       }
-      
+
       // Remove password from the response
       const userResponse = { ...req.user } as Partial<SelectUser>;
       if (userResponse.password) {
         delete userResponse.password;
       }
-      
+
       res.status(200).json({ success: true, user: userResponse, message: "Login successful" });
     } catch (error) {
       console.error("Error in login endpoint:", error);
@@ -355,13 +355,13 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ success: false, message: "Not authenticated" });
     }
-    
+
     // Remove password from the response
     const userResponse = { ...req.user } as Partial<SelectUser>;
     if (userResponse.password) {
       delete userResponse.password;
     }
-    
+
     res.json({ success: true, user: userResponse });
   });
 }
