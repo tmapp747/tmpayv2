@@ -37,8 +37,8 @@ import { sql } from "drizzle-orm";
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
   try {
-    // Configure the webhook and redirect URLs
-    const baseUrl = process.env.BASE_URL || 'https://747casino.replit.app';
+    // Use dynamic host detection for proper redirection
+    const baseUrl = process.env.BASE_URL || `https://${process.env.REPLIT_HOSTNAME || 'localhost:5000'}`;
     const webhook = `${baseUrl}/api/webhook/directpay/payment`;
     // Updated to a more comprehensive thank you page with transaction details
     const redirectUrl = `${baseUrl}/payment/thank-you?reference=${reference}&amount=${amount}&username=${encodeURIComponent(username)}`;
