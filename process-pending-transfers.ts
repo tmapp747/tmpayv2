@@ -34,7 +34,7 @@ async function processPendingCasinoTransfers() {
     // Process each transaction with payment_completed status
     for (const transaction of completedPayments) {
       // Check if the casino transfer is still pending
-      const metadata = transaction.metadata || {};
+      const metadata = transaction.metadata as Record<string, any> || {};
       const casinoTransferStatus = metadata.casinoTransferStatus || 'pending';
       
       if (casinoTransferStatus === 'pending') {
@@ -93,12 +93,8 @@ async function processPendingCasinoTransfers() {
             }
           );
           
-          // Add a success entry to status history
-          await storage.addStatusHistoryEntry(
-            transaction.id,
-            'casino_transfer_completed',
-            `Casino transfer completed with ID ${transferResult.transactionId}`
-          );
+          // Success entry is added through the transaction status update
+          console.log(`Casino transfer completed with ID ${transferResult.transactionId}`);
           
           // Update user balance records if needed
           // This depends on when the balance was updated (at payment completion or should be at casino transfer)
@@ -119,12 +115,8 @@ async function processPendingCasinoTransfers() {
             }
           );
           
-          // Add a failure entry to status history
-          await storage.addStatusHistoryEntry(
-            transaction.id,
-            'casino_transfer_failed',
-            `Casino transfer failed: ${error instanceof Error ? error.message : String(error)}`
-          );
+          // Failure entry is recorded through transaction status update
+          console.log(`Casino transfer failed: ${error instanceof Error ? error.message : String(error)}`);
           
           failed++;
         }

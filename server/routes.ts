@@ -3820,17 +3820,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log("✅ DirectPay webhook received:", JSON.stringify(payload));
     
     // Extract payment details from the webhook payload
-    // This is the same logic as in the webhook endpoint
     const { 
       reference, status, state, payment_status, 
       amount, transactionId, transaction_id, 
       payment_reference
     } = payload;
     
-    // Process the webhook as needed
-    // This is a simplified version of the webhook endpoint logic
+    // Determine the actual reference value from possible fields
+    const paymentReference = reference || payment_reference || payload.ref;
     
-    return { success: true };
+    if (!paymentReference) {
+      console.warn("❌ Payment reference is missing in webhook:", payload);
+      return { 
+        success: false, 
+        message: "Payment reference is required" 
+      };
+    }
+    
+    // Find the QR payment by reference
+    const qrPayment = await storage.getQrPaymentByReference(paymentReference);
+    if (!qrPayment) {
+      console.warn(`QR Payment not found for reference: ${paymentReference}`);
+      return { 
+        success: false, 
+        message: "Payment not found" 
+      };
+    }
+    
+    // Avoid processing the same payment multiple times
+    if (qrPayment.status !== "pending") {
+      console.log(`Payment ${paymentReference} already processed with status: ${qrPayment.status}`);
+      return { 
+        success: true, 
+        message: `Payment already ${qrPayment.status}` 
+      };
+    }
+    
+    // Find the transaction
+    const transaction = await storage.getTransaction(qrPayment.transactionId);
+    if (!transaction) {
+      console.error(`Transaction not found for QR payment ID: ${qrPayment.id}`);
+      return { 
+        success: false, 
+        message: "Transaction not found" 
+      };
+    }
+    
+    // Find the user
+    const user = await storage.getUser(qrPayment.userId);
+    if (!user) {
+      console.error(`User not found for QR payment user ID: ${qrPayment.userId}`);
+      return { 
+        success: false, 
+        message: "User not found" 
+      };
+    }
+    
+    // Determine the payment status from various possible fields
+    const paymentStatus = status || state || payment_status || '';
+    const txId = transactionId || transaction_id || Date.now().toString();
+    
+    // Normalize the payment status to handle different formats
+    const normalizedStatus = paymentStatus.toLowerCase().trim();
+    
+    // Process based on payment status with more comprehensive status matching
+    if (
+      ['success', 'completed', 'paid', 'successful', 'approved', 'settled', 'confirmed'].includes(normalizedStatus)
+    ) {
+      console.log(`Payment status confirmed as completed (normalized: ${normalizedStatus})`);
+      
+      // Update QR payment status
+      await storage.updateQrPaymentStatus(qrPayment.id, "completed");
+      
+      // Update transaction status to payment_completed first
+      await storage.updateTransactionStatus(
+        transaction.id,
+        "payment_completed",
+        txId,
+        { 
+          ...(transaction.metadata as Record<string, any> || {}),
+          paymentCompletedAt: new Date().toISOString(),
+          casinoTransferStatus: 'pending'
+        }
+      );
+      
+      // Add status history entry for payment completion
+      await storage.addStatusHistoryEntry(
+        transaction.id,
+        'payment_completed',
+        `Payment completed with DirectPay transaction ID: ${txId}`
+      );
+      
+      // Update user's balance (GCash payments are in PHP)
+      const paymentAmount = parseFloat(qrPayment.amount.toString());
+      const currency = transaction.currency || 'PHP';
+      await storage.updateUserCurrencyBalance(user.id, currency as Currency, paymentAmount);
+      
+      console.log(`User balance updated for ${user.username}, added ${paymentAmount} ${currency}`);
+      
+      // Now attempt the casino transfer
+      try {
+        if (!user.casinoId || !user.casinoUsername) {
+          throw new Error(`User ${user.username} is missing casino details (ID: ${user.casinoId}, Username: ${user.casinoUsername})`);
+        }
+        
+        // Generate a unique nonce for this transaction
+        const nonce = `nonce_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        
+        // Create a detailed comment with nonce and payment reference
+        const comment = `An amount of ${paymentAmount} ${currency} has been deposited. Nonce: ${nonce}. TMPay Web App Transaction.`;
+        
+        // Get the top manager for this user (use stored value or default to first allowed top manager)
+        const topManager = user.topManager || 'Marcthepogi';
+        
+        console.log(`Attempting casino transfer for user: ${user.username} (Casino ID: ${user.casinoId})`);
+        console.log(`Amount: ${paymentAmount} ${currency}, Top Manager: ${topManager}`);
+        
+        // Call casino API to transfer funds
+        const transferResult = await casino747Api.transferFunds(
+          paymentAmount,
+          parseInt(user.casinoId),
+          user.casinoUsername,
+          "PHP",
+          topManager,
+          comment
+        );
+        
+        console.log(`Casino transfer successful:`, transferResult);
+        
+        // Update transaction status to fully completed
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "completed",
+          transferResult.transactionId || txId,
+          { 
+            nonce,
+            casinoTransactionId: transferResult.transactionId,
+            casinoTransferStatus: 'completed',
+            casinoTransferCompletedAt: new Date().toISOString()
+          }
+        );
+        
+        // Add a success entry to status history
+        await storage.addStatusHistoryEntry(
+          transaction.id,
+          'casino_transfer_completed',
+          `Casino transfer completed with ID ${transferResult.transactionId}`
+        );
+        
+        return { 
+          success: true, 
+          message: "Payment processed and casino transfer completed successfully",
+          paymentReference,
+          transactionId: transaction.id,
+          casinoTransactionId: transferResult.transactionId
+        };
+      } catch (casinoError) {
+        console.error("Error completing casino transfer:", casinoError);
+        
+        // Update transaction metadata to reflect the error but keep payment_completed status
+        await storage.updateTransactionStatus(
+          transaction.id,
+          "payment_completed", // Keep payment_completed status
+          txId,
+          { 
+            casinoTransferStatus: 'failed',
+            casinoTransferError: casinoError instanceof Error ? casinoError.message : String(casinoError),
+            casinoTransferAttemptedAt: new Date().toISOString()
+          }
+        );
+        
+        // Add a failure entry to status history
+        await storage.addStatusHistoryEntry(
+          transaction.id,
+          'casino_transfer_failed',
+          `Casino transfer failed: ${casinoError instanceof Error ? casinoError.message : String(casinoError)}`
+        );
+        
+        return { 
+          success: true, 
+          message: "Payment processed but casino transfer failed. Will retry later.",
+          paymentReference,
+          error: casinoError instanceof Error ? casinoError.message : String(casinoError)
+        };
+      }
+    } else if (
+      ['failed', 'cancelled', 'declined', 'rejected', 'expired'].includes(normalizedStatus)
+    ) {
+      // Update QR payment and transaction status
+      await storage.updateQrPaymentStatus(qrPayment.id, "failed");
+      await storage.updateTransactionStatus(
+        transaction.id, 
+        "failed",
+        undefined,
+        { failedAt: new Date().toISOString() }
+      );
+      
+      // Add status history entry for payment failure
+      await storage.addStatusHistoryEntry(
+        transaction.id,
+        'payment_failed',
+        `Payment failed with status: ${paymentStatus}`
+      );
+      
+      console.log("Payment failed via webhook:", { 
+        reference: paymentReference, 
+        userId: user.id,
+        status: paymentStatus
+      });
+      
+      return { 
+        success: true, 
+        message: "Payment failure recorded successfully",
+        status: "failed"
+      };
+    } else {
+      // Unknown status, log but don't change anything
+      console.log(`Unknown payment status received: ${paymentStatus} for reference ${paymentReference}`);
+      
+      return { 
+        success: false, 
+        message: `Unknown payment status: ${paymentStatus}` 
+      };
+    }
   }
   
   // DirectPay webhook endpoint for payment notifications
@@ -3838,206 +4050,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("✅ DirectPay webhook received:", JSON.stringify(req.body));
       
-      // Extract payment details from the webhook payload
-      // DirectPay might send different structured data, so we handle common formats
-      const { 
-        reference, status, state, payment_status, 
-        amount, transactionId, transaction_id, 
-        payment_reference
-      } = req.body;
+      // Process the webhook using our comprehensive helper function
+      const result = await handleDirectPayWebhook(req.body);
       
-      // Log all possible reference and status fields for debugging
-      console.log("DirectPay webhook field analysis:", {
-        possibleReferences: {
-          reference,
-          payment_reference,
-          ref: req.body.ref
-        },
-        possibleStatuses: {
-          status,
-          state,
-          payment_status
-        },
-        possibleTransactionIds: {
-          transactionId,
-          transaction_id
-        }
-      });
-      
-      // Determine the actual reference value from possible fields
-      const paymentReference = reference || payment_reference || req.body.ref;
-      
-      if (!paymentReference) {
-        console.warn("❌ Payment reference is missing in webhook:", req.body);
-        return res.status(200).json({ 
-          success: false, 
-          message: "Payment reference is required, but webhook acknowledged" 
-        });
-      }
-      
-      // Find the QR payment by reference
-      const qrPayment = await storage.getQrPaymentByReference(paymentReference);
-      if (!qrPayment) {
-        console.warn(`QR Payment not found for reference: ${paymentReference}`);
-        return res.status(200).json({ 
-          success: false, 
-          message: "Payment not found, but webhook acknowledged" 
-        });
-      }
-      
-      // Avoid processing the same payment multiple times
-      if (qrPayment.status !== "pending") {
-        console.log(`Payment ${paymentReference} already processed with status: ${qrPayment.status}`);
-        return res.status(200).json({ 
-          success: true, 
-          message: `Payment already ${qrPayment.status}, webhook acknowledged` 
-        });
-      }
-      
-      // Find the transaction
-      const transaction = await storage.getTransaction(qrPayment.transactionId);
-      if (!transaction) {
-        console.error(`Transaction not found for QR payment ID: ${qrPayment.id}`);
-        return res.status(200).json({ 
-          success: false, 
-          message: "Transaction not found, but webhook acknowledged" 
-        });
-      }
-      
-      // Find the user
-      const user = await storage.getUser(qrPayment.userId);
-      if (!user) {
-        console.error(`User not found for QR payment user ID: ${qrPayment.userId}`);
-        return res.status(200).json({ 
-          success: false, 
-          message: "User not found, but webhook acknowledged" 
-        });
-      }
-      
-      // Determine the payment status from various possible fields
-      const paymentStatus = status || state || payment_status || '';
-      const txId = transactionId || transaction_id || Date.now().toString();
-      
-      // Normalize the payment status to handle different formats
-      const normalizedStatus = paymentStatus.toLowerCase().trim();
-      
-      // Process based on payment status with more comprehensive status matching
-      if (
-        ['success', 'completed', 'paid', 'successful', 'approved', 'settled', 'confirmed'].includes(normalizedStatus)
-      ) {
-        console.log(`Payment status confirmed as completed (normalized: ${normalizedStatus})`);
-        
-        // Update QR payment status
-        await storage.updateQrPaymentStatus(qrPayment.id, "completed");
-        console.log(`QR payment status updated to completed for ID: ${qrPayment.id}`);
-        
-        // Check if this was an anonymous/auto-login payment
-        let isAnonymousPayment = false;
-        if (transaction.metadata && typeof transaction.metadata === 'object' && 'autoLogin' in transaction.metadata) {
-          isAnonymousPayment = true;
-          console.log(`This payment was initiated anonymously with auto-login flag. User ID: ${user.id}, Casino ID: ${user.casinoId}`);
-        }
-        
-        // Update transaction status and add DirectPay transaction ID
-        await storage.updateTransactionStatus(
-          transaction.id,
-          "completed",
-          txId,
-          { 
-            ...(transaction.metadata as Record<string, any> || {}),
-            completedAt: new Date().toISOString(),
-            isAnonymousPayment
-          }
-        );
-        console.log(`Transaction status updated to completed for ID: ${transaction.id} with txId: ${txId}`);
-        
-        // Call 747 Casino API to complete the topup
-        const paymentAmount = parseFloat(qrPayment.amount.toString());
-        try {
-          console.log(`Attempting to credit ${paymentAmount} PHP to casino account for user ${user.casinoUsername} (ID: ${user.casinoId})`);
-          
-          const casinoResult = await casino747CompleteTopup(
-            user.casinoId,
-            paymentAmount,
-            transaction.paymentReference || paymentReference || txId
-          );
-          
-          // Update user's balance in PHP (default for GCash payments)
-          // In a production system, this currency would be stored with the transaction
-          const currency = transaction.currency || 'PHP';
-          await storage.updateUserCurrencyBalance(user.id, currency as Currency, paymentAmount);
-          
-          // Get the updated currency balance
-          const updatedBalance = await storage.getUserCurrencyBalance(user.id, currency as Currency);
-          
-          // Update the transaction with the unique nonce for reconciliation
-          await storage.updateTransactionStatus(
-            transaction.id,
-            "completed",
-            txId,
-            { nonce: casinoResult.nonce }
-          );
-          
-          console.log("Payment completed successfully via webhook:", {
-            reference: paymentReference,
-            userId: user.id,
-            username: user.username,
-            casinoUsername: user.casinoUsername,
-            casinoId: user.casinoId,
-            amount: paymentAmount,
-            currency,
-            newBalance: updatedBalance,
-            nonce: casinoResult.nonce,
-            casinoTransactionId: casinoResult.transactionId,
-            directPayTransactionId: txId
-          });
-        } catch (casinoError) {
-          console.error("Error completing casino topup:", casinoError);
-          
-          // Log detailed error for troubleshooting
-          console.error({
-            error: casinoError instanceof Error ? casinoError.message : String(casinoError),
-            user: user.username,
-            casinoUsername: user.casinoUsername,
-            casinoId: user.casinoId,
-            amount: paymentAmount,
-            reference: paymentReference
-          });
-          
-          // We still mark the payment as completed but log the casino error
-          // A manual reconciliation may be needed
-          
-          // Add error information to the transaction for reconciliation
-          await storage.updateTransactionStatus(
-            transaction.id,
-            "completed",
-            txId,
-            { casinoError: casinoError instanceof Error ? casinoError.message : String(casinoError) }
-          );
-        }
-      } else if (
-        paymentStatus.toLowerCase() === 'failed' || 
-        paymentStatus.toLowerCase() === 'cancelled' || 
-        paymentStatus.toLowerCase() === 'declined'
-      ) {
-        // Update QR payment and transaction status
-        await storage.updateQrPaymentStatus(qrPayment.id, "failed");
-        await storage.updateTransactionStatus(transaction.id, "failed");
-        
-        console.log("Payment failed via webhook:", { 
-          reference: paymentReference, 
-          userId: user.id,
-          status: paymentStatus
-        });
-      } else {
-        // Unknown status, log but don't change anything
-        console.log(`Unknown payment status received: ${paymentStatus} for reference ${paymentReference}`);
-      }
-      
-      // Return a 200 OK to acknowledge receipt of the webhook
-      return res.status(200).json({ 
-        success: true, 
-        message: "Webhook processed successfully" 
+      // Return a 200 OK response with the result
+      // Important: Always return 200 status for webhooks to prevent retries
+      return res.status(200).json({
+        ...result,
+        webhookReceived: true
       });
     } catch (error) {
       console.error("DirectPay webhook processing error:", error);
@@ -4045,7 +4065,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Even in case of error, return a 200 OK to prevent repeated webhook attempts
       return res.status(200).json({ 
         success: false, 
-        message: "Error processing webhook, but acknowledged" 
+        message: "Error processing webhook, but acknowledged",
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
