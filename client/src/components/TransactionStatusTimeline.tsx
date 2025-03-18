@@ -1,111 +1,217 @@
 import React from 'react';
-import { Check, ArrowRight, X, Clock, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Check, Clock, X, ArrowRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface TransactionStatusTimelineProps {
   paymentStatus: 'pending' | 'completed' | 'failed';
-  casinoTransferStatus?: 'pending' | 'completed' | 'failed' | 'not_started';
+  casinoTransferStatus: 'pending' | 'completed' | 'failed';
   paymentCompletedAt?: string;
   casinoTransferCompletedAt?: string;
-  className?: string;
+  interactive?: boolean; // Enable interactive features
 }
 
-export function TransactionStatusTimeline({
-  paymentStatus,
-  casinoTransferStatus = 'not_started',
-  paymentCompletedAt,
+export function TransactionStatusTimeline({ 
+  paymentStatus, 
+  casinoTransferStatus, 
+  paymentCompletedAt, 
   casinoTransferCompletedAt,
-  className
+  interactive = false
 }: TransactionStatusTimelineProps) {
   
-  // Format time to show only HH:MM
-  const formatTime = (dateString?: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  // Format the timestamps
+  const formattedPaymentTime = paymentCompletedAt 
+    ? format(new Date(paymentCompletedAt), 'h:mm a')
+    : null;
+    
+  const formattedCasinoTime = casinoTransferCompletedAt 
+    ? format(new Date(casinoTransferCompletedAt), 'h:mm a')
+    : null;
 
-  // Get status icon
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Check size={14} className="text-green-500" />;
-      case 'pending':
-        return <Clock size={14} className="text-yellow-500 animate-pulse" />;
-      case 'failed':
-        return <X size={14} className="text-red-500" />;
-      case 'not_started':
-        return <Clock size={14} className="text-gray-400" />;
-      default:
-        return <Clock size={14} className="text-gray-400" />;
-    }
-  };
+  // Interactive states for tooltips
+  const [isPaymentHovered, setIsPaymentHovered] = React.useState(false);
+  const [isCasinoHovered, setIsCasinoHovered] = React.useState(false);
 
-  // Get status color
+  // Helper function to get status color
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'failed':
-        return 'bg-red-500';
-      case 'not_started':
-      default:
-        return 'bg-gray-300';
+    switch(status) {
+      case 'completed': return 'bg-green-500';
+      case 'failed': return 'bg-red-500';
+      case 'pending': return 'bg-yellow-500';
+      default: return 'bg-gray-400';
     }
   };
 
-  // Get line color
-  const getLineColor = () => {
-    if (paymentStatus === 'failed') return 'bg-red-300';
-    if (paymentStatus === 'completed' && casinoTransferStatus === 'failed') return 'bg-gradient-to-r from-green-400 to-red-400';
-    if (paymentStatus === 'completed' && casinoTransferStatus === 'pending') return 'bg-gradient-to-r from-green-400 to-yellow-400';
-    if (paymentStatus === 'completed' && casinoTransferStatus === 'completed') return 'bg-green-400';
-    return 'bg-gray-300';
+  // Helper function to get status icon
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'completed': return <Check size={12} className="text-white" />;
+      case 'failed': return <X size={12} className="text-white" />;
+      case 'pending': return <Clock size={12} className="text-white" />;
+      default: return <Clock size={12} className="text-white" />;
+    }
+  };
+  
+  // Tooltip content for each step
+  const paymentTooltip = () => {
+    if (paymentStatus === 'completed') {
+      return `Payment verified at ${formattedPaymentTime || 'unknown time'}`;
+    } else if (paymentStatus === 'failed') {
+      return 'Payment verification failed';
+    } else {
+      return 'Payment verification in progress';
+    }
+  };
+  
+  const casinoTooltip = () => {
+    if (casinoTransferStatus === 'completed') {
+      return `Casino transfer completed at ${formattedCasinoTime || 'unknown time'}`;
+    } else if (casinoTransferStatus === 'failed') {
+      return 'Casino transfer failed - contact support';
+    } else {
+      return 'Casino transfer in progress';
+    }
   };
 
   return (
-    <div className={cn("flex items-center w-full", className)}>
-      {/* Payment Step */}
-      <div className="flex flex-col items-center">
-        <div className={cn("w-5 h-5 rounded-full flex items-center justify-center", 
-          paymentStatus === 'completed' ? 'bg-green-100 border border-green-500' : 
-          paymentStatus === 'pending' ? 'bg-yellow-100 border border-yellow-500' :
-          'bg-red-100 border border-red-500'
-        )}>
-          {getStatusIcon(paymentStatus)}
+    <div className="w-full flex flex-col">
+      {/* Timeline container */}
+      <div className="relative flex items-center justify-between w-full px-2 py-1">
+        {/* Step 1: Payment Verification */}
+        <div 
+          className={`relative z-10 ${interactive ? 'cursor-pointer' : ''}`}
+          onMouseEnter={interactive ? () => setIsPaymentHovered(true) : undefined}
+          onMouseLeave={interactive ? () => setIsPaymentHovered(false) : undefined}
+        >
+          <div 
+            className={`w-6 h-6 rounded-full flex items-center justify-center ${getStatusColor(paymentStatus)}`}
+          >
+            {getStatusIcon(paymentStatus)}
+          </div>
+          
+          {/* Payment step label */}
+          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <span className="text-[10px] text-blue-300">Payment</span>
+          </div>
+          
+          {/* Interactive tooltip */}
+          {interactive && isPaymentHovered && (
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-950 text-white text-xs py-1 px-2 rounded shadow-lg"
+            >
+              {paymentTooltip()}
+            </motion.div>
+          )}
+          
+          {/* Always show time for completed steps */}
+          {paymentStatus === 'completed' && formattedPaymentTime && (
+            <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              <span className="text-[9px] text-green-300">{formattedPaymentTime}</span>
+            </div>
+          )}
         </div>
-        <div className="text-xs mt-1 font-medium">Payment</div>
-        {paymentCompletedAt && (
-          <div className="text-[10px] text-blue-400">{formatTime(paymentCompletedAt)}</div>
+        
+        {/* Connecting line */}
+        <div className="flex-1 h-[2px] mx-1 relative">
+          <div className={`absolute inset-0 ${
+            paymentStatus === 'completed' 
+              ? casinoTransferStatus === 'completed' 
+                ? 'bg-green-500' 
+                : casinoTransferStatus === 'failed'
+                  ? 'bg-gradient-to-r from-green-500 to-red-500'
+                  : 'bg-gradient-to-r from-green-500 to-yellow-500'
+              : 'bg-gray-600'
+          }`}></div>
+          
+          {/* Arrow for progress indication */}
+          {paymentStatus === 'completed' && casinoTransferStatus === 'pending' && (
+            <motion.div 
+              className="absolute top-1/2 transform -translate-y-1/2"
+              initial={{ left: '0%' }}
+              animate={{ left: ['30%', '60%', '30%'] }}
+              transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
+            >
+              <ArrowRight size={10} className="text-yellow-400" />
+            </motion.div>
+          )}
+        </div>
+        
+        {/* Step 2: Casino Transfer */}
+        <div 
+          className={`relative z-10 ${interactive ? 'cursor-pointer' : ''}`}
+          onMouseEnter={interactive ? () => setIsCasinoHovered(true) : undefined}
+          onMouseLeave={interactive ? () => setIsCasinoHovered(false) : undefined}
+        >
+          <div 
+            className={`w-6 h-6 rounded-full flex items-center justify-center ${
+              paymentStatus === 'completed' 
+                ? getStatusColor(casinoTransferStatus) 
+                : 'bg-gray-600'
+            }`}
+          >
+            {paymentStatus === 'completed' 
+              ? getStatusIcon(casinoTransferStatus) 
+              : <Clock size={12} className="text-gray-300" />}
+          </div>
+          
+          {/* Casino step label */}
+          <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+            <span className="text-[10px] text-blue-300">Casino</span>
+          </div>
+          
+          {/* Interactive tooltip */}
+          {interactive && isCasinoHovered && (
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-950 text-white text-xs py-1 px-2 rounded shadow-lg"
+            >
+              {casinoTooltip()}
+            </motion.div>
+          )}
+          
+          {/* Always show time for completed steps */}
+          {casinoTransferStatus === 'completed' && formattedCasinoTime && (
+            <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+              <span className="text-[9px] text-green-300">{formattedCasinoTime}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Status indicator for overall process */}
+      <div className="mt-3 text-center">
+        {paymentStatus === 'completed' && casinoTransferStatus === 'completed' && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-[10px] text-green-400"
+          >
+            Transaction complete
+          </motion.span>
         )}
-      </div>
-
-      {/* Connecting Line */}
-      <div className={cn("h-0.5 flex-1 mx-1", getLineColor())}></div>
-
-      {/* Arrow Icon */}
-      <div className="mx-1">
-        <ArrowRight size={12} className="text-blue-400" />
-      </div>
-
-      {/* Connecting Line */}
-      <div className={cn("h-0.5 flex-1 mx-1", getLineColor())}></div>
-
-      {/* Casino Transfer Step */}
-      <div className="flex flex-col items-center">
-        <div className={cn("w-5 h-5 rounded-full flex items-center justify-center",
-          casinoTransferStatus === 'completed' ? 'bg-green-100 border border-green-500' : 
-          casinoTransferStatus === 'pending' ? 'bg-yellow-100 border border-yellow-500' :
-          casinoTransferStatus === 'failed' ? 'bg-red-100 border border-red-500' :
-          'bg-gray-100 border border-gray-300'
-        )}>
-          {getStatusIcon(casinoTransferStatus)}
-        </div>
-        <div className="text-xs mt-1 font-medium">Casino</div>
-        {casinoTransferCompletedAt && (
-          <div className="text-[10px] text-blue-400">{formatTime(casinoTransferCompletedAt)}</div>
+        {paymentStatus === 'completed' && casinoTransferStatus === 'pending' && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="text-[10px] text-yellow-400"
+          >
+            Processing final transfer
+          </motion.span>
+        )}
+        {paymentStatus === 'completed' && casinoTransferStatus === 'failed' && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-[10px] text-red-400"
+          >
+            Casino transfer failed
+          </motion.span>
         )}
       </div>
     </div>
