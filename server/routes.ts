@@ -4644,6 +4644,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint to process pending casino transfers
+  app.post("/api/payments/process-pending-transfers", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
+    try {
+      // Import the function dynamically to avoid circular dependencies
+      const { processPendingCasinoTransfers } = await import('../process-pending-transfers');
+      
+      // Run the process
+      await processPendingCasinoTransfers();
+      
+      return res.json({
+        success: true,
+        message: "Pending casino transfers processed successfully"
+      });
+    } catch (error) {
+      console.error("Error processing pending casino transfers:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to process pending casino transfers",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Endpoint to send transaction status notifications (for pending payments)
   app.post("/api/payments/send-reminders", roleAuthMiddleware(['admin']), async (req: Request, res: Response) => {
     try {
