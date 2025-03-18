@@ -294,16 +294,40 @@ export function setupAuth(app: Express) {
       preferredCurrencySchema.parse(registrationData.preferredCurrency);
 
       // Create new user
-      const user = await storage.createUser({
-        ...registrationData,
-        username: registrationData.username.toLowerCase(),
-        password: await hashPassword(registrationData.password),
+      const { username, password, email, casinoId, preferredCurrency, casinoClientId, casinoUsername, casinoUserType, topManager, immediateManager} = registrationData;
+      const finalTopManager = topManager || "";
+      const finalImmediateManager = immediateManager || "";
+      const finalCasinoUserType = casinoUserType || "player";
+
+      // Create new user in our system
+      console.log("[REGISTER] Creating user in storage with client ID:", casinoClientId);
+      const newUser = await storage.createUser({
+        username,
+        password: await hashPassword(password), // Always hash the password
+        email, // Email is now required and non-null
+        casinoId: String(casinoClientId), // Use client ID as-is without prefix
+        balance: "0.00",
+        pendingBalance: "0.00",
+        isVip: false,
+        casinoUsername: username, // Always set casino username same as username
+        casinoClientId: casinoClientId,
+        topManager: finalTopManager,
+        immediateManager: finalImmediateManager,
+        casinoUserType: finalCasinoUserType,
+        isAuthorized: true, // Pre-authorized since we checked the hierarchy
+        preferredCurrency
       });
 
-      req.login(user, (err) => {
+      // Update casino details immediately after creation
+      await storage.updateUserCasinoDetails(newUser.id, {
+        casinoUsername: username,
+        casinoClientId: casinoClientId
+      });
+
+      req.login(newUser, (err) => {
         if (err) return next(err);
         // Remove password from the response
-        const userResponse = { ...user } as Partial<SelectUser>;
+        const userResponse = { ...newUser } as Partial<SelectUser>;
         if (userResponse.password) {
           delete userResponse.password;
         }
