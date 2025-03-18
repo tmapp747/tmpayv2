@@ -187,9 +187,33 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       { found: true, username: user.username, casinoUsername: user.casinoUsername } : 
       { found: false });
     
-    if (!user || !user.casinoUsername) {
-      console.error(`❌ User with casino ID ${casinoId} not found or has no casino username`);
-      throw new Error(`User with casino ID ${casinoId} not found or has no casino username`);
+    if (!user) {
+      console.error(`❌ User with casino ID ${casinoId} not found`);
+      throw new Error(`User with casino ID ${casinoId} not found`);
+    }
+    
+    // If casinoUsername is not set but we have the username, use that 
+    // This fixes the issue where users have casinoClientId but missing casinoUsername
+    const effectiveCasinoUsername = user.casinoUsername || user.username;
+    if (!effectiveCasinoUsername) {
+      console.error(`❌ User with casino ID ${casinoId} has no username information`);
+      throw new Error(`User with casino ID ${casinoId} has no username information`);
+    }
+    
+    // If casinoUsername was missing, log this action
+    if (!user.casinoUsername && user.username) {
+      console.log(`⚠️ Using username "${user.username}" as fallback for missing casinoUsername`);
+      
+      // Try to automatically fix the user record for future transfers
+      try {
+        await storage.updateUserCasinoDetails(user.id, { 
+          casinoUsername: user.username
+        });
+        console.log(`✅ Updated user record with casinoUsername = ${user.username}`);
+      } catch (err) {
+        const updateError = err as Error;
+        console.warn(`⚠️ Could not update user record with casinoUsername: ${updateError.message}`);
+      }
     }
     
     // Generate a unique nonce (using timestamp + random number)
@@ -205,7 +229,7 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
     console.log(`📝 Preparing casino transfer with params:`, {
       amount,
       clientId: parseInt(casinoId),
-      username: user.casinoUsername,
+      username: effectiveCasinoUsername,
       currency: "PHP",
       fromUser: topManager, // Use top manager instead of system
       commentLength: comment.length,
@@ -217,14 +241,14 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
     const transferResult = await casino747Api.transferFunds(
       amount,
       parseInt(casinoId),
-      user.casinoUsername,
+      effectiveCasinoUsername,
       "PHP", // Use PHP currency for GCash deposits
       topManager, // Use top manager account to transfer funds
       comment
     );
     
-    console.log(`✅ Casino747: Transfer completed successfully from ${topManager} to ${user.casinoUsername}:`, {
-      user: user.casinoUsername,
+    console.log(`✅ Casino747: Transfer completed successfully from ${topManager} to ${effectiveCasinoUsername}:`, {
+      user: effectiveCasinoUsername,
       clientId: casinoId,
       amount,
       nonce,
@@ -254,7 +278,15 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
       console.log('🔄 Attempting fallback with alternative top managers');
       const user = await storage.getUserByCasinoClientId(parseInt(casinoId));
       
-      if (user && user.casinoUsername) {
+      if (user) {
+        // Use the username as fallback for casinoUsername if it's not set
+        const effectiveCasinoUsername = user.casinoUsername || user.username;
+        
+        if (!effectiveCasinoUsername) {
+          console.error('❌ User has no username or casinoUsername for fallback');
+          throw new Error('User has no username or casinoUsername for fallback');
+        }
+        
         // List of allowed top managers to try
         const fallbackManagers = ['Marcthepogi', 'bossmarc747', 'teammarc'].filter(
           manager => manager !== user.topManager
@@ -270,7 +302,7 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
             const fallbackResult = await casino747Api.transferFunds(
               amount,
               parseInt(casinoId),
-              user.casinoUsername,
+              effectiveCasinoUsername,
               "PHP",
               fallbackManager,
               fallbackComment
@@ -286,14 +318,16 @@ async function casino747CompleteTopup(casinoId: string, amount: number, referenc
               fromManager: fallbackManager,
               fallback: true
             };
-          } catch (fallbackError) {
-            console.error(`❌ Fallback with ${fallbackManager} failed:`, fallbackError);
+          } catch (err) {
+            const fallbackError = err as Error;
+            console.error(`❌ Fallback with ${fallbackManager} failed:`, fallbackError.message);
             // Continue to next fallback manager
           }
         }
       }
-    } catch (fallbackError) {
-      console.error('❌ All fallback attempts failed:', fallbackError);
+    } catch (err) {
+      const fallbackError = err as Error;
+      console.error('❌ All fallback attempts failed:', fallbackError.message);
     }
     
     // Last resort fallback for development/testing
