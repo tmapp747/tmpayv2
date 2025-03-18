@@ -29,6 +29,13 @@ export default function MobileProfile() {
     }
   };
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/mobile-auth');
+    }
+  }, [user, navigate]);
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#001138] to-[#002D87]">
@@ -109,20 +116,20 @@ export default function MobileProfile() {
         >
           <div className="flex items-center">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white text-xl font-semibold mr-4">
-              {user.username.charAt(0).toUpperCase()}
+              {user?.username ? user.username.charAt(0).toUpperCase() : '?'}
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white">{user.username}</h2>
+              <h2 className="text-xl font-semibold text-white">{user?.username || 'User'}</h2>
               <p className="text-blue-300 text-sm">
-                Member since {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                Member since {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { 
                   year: 'numeric', 
                   month: 'short',
                   day: 'numeric'
-                })}
+                }) : 'N/A'}
               </p>
               <div className="mt-1 flex items-center">
-                <span className={`px-2 py-0.5 rounded-full text-xs ${user.isVip ? 'bg-amber-500/30 text-amber-300' : 'bg-blue-500/30 text-blue-300'}`}>
-                  {user.isVip ? 'VIP Member' : 'Standard'}
+                <span className={`px-2 py-0.5 rounded-full text-xs ${user?.isVip ? 'bg-amber-500/30 text-amber-300' : 'bg-blue-500/30 text-blue-300'}`}>
+                  {user?.isVip ? 'VIP Member' : 'Standard'}
                 </span>
               </div>
             </div>
@@ -131,11 +138,15 @@ export default function MobileProfile() {
           <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <p className="text-xs text-white/70">Balance</p>
-              <p className="text-lg font-semibold text-white">₱{Number(user.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              <p className="text-lg font-semibold text-white">
+                ₱{(user?.balance ? Number(user.balance) : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
             <div className="bg-white/10 rounded-xl p-3 text-center">
               <p className="text-xs text-white/70">Casino Balance</p>
-              <p className="text-lg font-semibold text-white">₱{user.casinoBalance ? Number(user.casinoBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</p>
+              <p className="text-lg font-semibold text-white">
+                ₱{(user?.casinoBalance ? Number(user.casinoBalance) : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
         </motion.div>
