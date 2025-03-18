@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "cloudrun"
-run = ["sh", "-c", "NODE_ENV=production node dist/index.js"]
+run = ["sh", "-c", "NODE_ENV=production HOST=0.0.0.0 npm run start"]
 build = ["sh", "-c", "npm install --legacy-peer-deps && npm run build"]
 
 [[ports]]
@@ -99,6 +99,15 @@ args = "# Start server in test mode"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "NODE_ENV=test npm run dev"
+
+[[workflows.workflow]]
+name = "Production Server"
+author = 31747875
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production HOST=0.0.0.0 npm run start"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-4bef2d2c-3f21-42b8-9eea-548aa651a691"
