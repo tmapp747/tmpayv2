@@ -233,27 +233,35 @@ export function setupAuth(app: Express) {
   // Admin registration endpoint
 app.post("/api/admin/register", async (req, res, next) => {
   try {
-    const { username, password, email } = req.body;
-    
-    // Check if admin already exists
-    const existingAdmin = await storage.getUserByUsername(username);
-    if (existingAdmin) {
-      return res.status(400).json({ success: false, message: "Admin username already exists" });
+    // Check if request contains the specified credentials
+    if (req.body.username !== 'admin' || req.body.password !== 'Bossmarc@747live') {
+      return res.status(400).json({ success: false, message: "Invalid admin credentials" });
     }
 
-    // Create admin user
-    const hashedPassword = await hashPassword(password);
+    // Check if admin already exists
+    const existingAdmin = await storage.getUserByUsername('admin');
+    if (existingAdmin) {
+      return res.status(400).json({ success: false, message: "Admin account already exists" });
+    }
+
+    // Create admin user with specified credentials
+    const hashedPassword = await hashPassword('Bossmarc@747live');
     const admin = await storage.createUser({
-      username,
+      username: 'admin',
       password: hashedPassword,
-      email,
+      email: 'admin@tmpay.com',
       role: 'admin',
       isAuthorized: true,
       casinoId: 'admin',
+      isVip: true,
+      hierarchyLevel: 3, // Top level access
+      balances: { PHP: '0.00', PHPT: '0.00', USDT: '0.00' },
+      preferredCurrency: 'PHP'
     });
 
     res.status(201).json({ success: true, message: "Admin account created successfully" });
   } catch (error) {
+    console.error('Error creating admin account:', error);
     next(error);
   }
 });
