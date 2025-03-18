@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { 
   User, LogOut, Settings, ChevronRight, Bell, 
-  Moon, HelpCircle, Shield, CreditCard, ShieldCheck
+  Moon, Sun, HelpCircle, Shield, CreditCard, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { useTheme } from '@/hooks/use-theme';
 import MobileLayout from '@/components/MobileLayout';
 
 export default function MobileProfile() {
   const { user, logoutMutation } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [, navigate] = useLocation();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
   
   const handleLogout = async () => {
     try {

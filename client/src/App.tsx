@@ -41,26 +41,28 @@ function Router() {
     // Only redirect specific routes and only on initial page load or direct navigation
     if (isMobile) {
       // Use consistent /mobile/[page] pattern for all mobile routes
-      if (location === "/dashboard") navigate("/mobile");
+      if (location === "/dashboard") navigate("/mobile/dashboard");
       if (location === "/wallet") navigate("/mobile/wallet");
       if (location === "/profile") navigate("/mobile/profile");
       if (location === "/auth") navigate("/mobile/auth");
       if (location === "/history") navigate("/mobile/history");
       
-      // Legacy mobile routes to new pattern
+      // Legacy routes compatibility
+      if (location === "/mobile") navigate("/mobile/dashboard");
       if (location === "/mobile-wallet") navigate("/mobile/wallet");
       if (location === "/mobile-profile") navigate("/mobile/profile");
       if (location === "/mobile-deposit") navigate("/mobile/deposit");
       if (location === "/mobile-auth") navigate("/mobile/auth");
       
-      // This fixes the issue with mobile-auth not redirecting to /mobile
+      // This fixes the issue with mobile-auth not redirecting to /mobile/dashboard
       if (location === "/mobile/auth" && sessionStorage.getItem("redirectToMobile")) {
         sessionStorage.removeItem("redirectToMobile");
-        navigate("/mobile");
+        navigate("/mobile/dashboard");
       }
     } else {
       // Redirect mobile routes to desktop if on desktop
       if (location === "/mobile") navigate("/dashboard");
+      if (location === "/mobile/dashboard") navigate("/dashboard");
       if (location === "/mobile/wallet") navigate("/wallet");
       if (location === "/mobile/profile") navigate("/profile");
       if (location === "/mobile/history") navigate("/history");
@@ -115,6 +117,7 @@ function Router() {
       
       {/* Mobile-optimized routes - standardized on /mobile/* pattern */}
       <ProtectedRoute path="/mobile" component={MobileDashboard} />
+      <ProtectedRoute path="/mobile/dashboard" component={MobileDashboard} />
       <ProtectedRoute path="/mobile/wallet" component={MobileWallet} />
       <ProtectedRoute path="/mobile/profile" component={MobileProfile} />
       <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
