@@ -1,17 +1,35 @@
-// Mobile utility functions to enhance mobile experience
+/**
+ * Mobile-specific utility functions for enhancing the user experience
+ * on mobile devices.
+ */
 
 /**
- * Checks if the current device is a mobile device
+ * Checks if the current device is a mobile device based on screen width and user agent
  */
 export function isMobileDevice(): boolean {
-  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (typeof window === 'undefined') return false;
+  
+  // Check screen width
+  const isNarrowScreen = window.innerWidth < 768;
+  
+  // Check user agent
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobileAgent = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(userAgent);
+  
+  // Check touch capabilities
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  
+  return isNarrowScreen || isMobileAgent || hasTouch;
 }
 
 /**
  * Checks if the current device is iOS
  */
 export function isIOSDevice(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  if (typeof window === 'undefined') return false;
+  
+  const userAgent = navigator.userAgent.toLowerCase();
+  return /iphone|ipad|ipod/i.test(userAgent) && !window.MSStream;
 }
 
 /**
@@ -19,54 +37,31 @@ export function isIOSDevice(): boolean {
  * This helps fix issues with the iOS keyboard and viewport
  */
 export function setupIOSViewport(): void {
-  if (!isIOSDevice()) return;
+  if (typeof window === 'undefined') return;
   
-  const originalHeight = window.innerHeight;
-  
-  window.addEventListener('focusin', (e) => {
-    // Check if the focused element is an input or textarea
-    if (
-      e.target instanceof HTMLInputElement || 
-      e.target instanceof HTMLTextAreaElement ||
-      e.target instanceof HTMLSelectElement
-    ) {
-      // Add a small delay to allow the keyboard to fully open
-      setTimeout(() => {
-        // Add a class to the body to adjust the layout when keyboard is open
-        document.body.classList.add('keyboard-open');
-        
-        // Scroll the element into view with some padding
-        const element = e.target as HTMLElement;
-        element.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      }, 300);
-    }
-  });
-  
-  window.addEventListener('focusout', () => {
-    // Remove the keyboard-open class when focus is lost
-    document.body.classList.remove('keyboard-open');
-    
-    // Reset scroll position to prevent content from being stuck
-    setTimeout(() => {
-      window.scrollTo(0, 0);
-    }, 50);
-  });
-  
-  // Listen for visual viewport changes (iOS Safari)
-  if ('visualViewport' in window) {
-    window.visualViewport?.addEventListener('resize', () => {
-      // Calculate how much the keyboard is taking up
-      const keyboardHeight = originalHeight - window.visualViewport!.height;
+  if (isIOSDevice()) {
+    // Use visual viewport API if available
+    if (window.visualViewport) {
+      const viewportHandler = () => {
+        // Adjust the height when keyboard appears
+        const visibleHeight = window.visualViewport!.height;
+        document.documentElement.style.setProperty('--viewport-height', `${visibleHeight}px`);
+      };
       
-      if (keyboardHeight > 150) {
-        // Keyboard is likely open
-        document.body.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-        document.body.classList.add('keyboard-open');
-      } else {
-        // Keyboard is likely closed
-        document.body.classList.remove('keyboard-open');
-      }
-    });
+      window.visualViewport.addEventListener('resize', viewportHandler);
+      window.visualViewport.addEventListener('scroll', viewportHandler);
+      
+      // Initial call
+      viewportHandler();
+    } else {
+      // Fallback for older iOS versions
+      window.addEventListener('resize', () => {
+        document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+      });
+      
+      // Initial call
+      document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+    }
   }
 }
 
@@ -74,10 +69,8 @@ export function setupIOSViewport(): void {
  * Apply haptic feedback on iOS devices (if supported)
  */
 export function hapticFeedback(type: 'light' | 'medium' | 'heavy' = 'light'): void {
-  if (!isIOSDevice()) return;
-  
-  // Check if navigator has haptic feedback support
-  if ('vibrate' in navigator) {
+  // Use navigator.vibrate for Android
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
     switch (type) {
       case 'light':
         navigator.vibrate(10);
@@ -86,8 +79,45 @@ export function hapticFeedback(type: 'light' | 'medium' | 'heavy' = 'light'): vo
         navigator.vibrate(20);
         break;
       case 'heavy':
-        navigator.vibrate([20, 30, 20]);
+        navigator.vibrate([10, 30, 10]);
         break;
+    }
+  }
+  
+  // For iOS we need to use AudioContext for a small "click" sound as a hacky haptic feedback
+  if (isIOSDevice()) {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Set properties based on feedback type
+      switch (type) {
+        case 'light':
+          gainNode.gain.value = 0.1;
+          oscillator.frequency.value = 200;
+          break;
+        case 'medium':
+          gainNode.gain.value = 0.2;
+          oscillator.frequency.value = 300;
+          break;
+        case 'heavy':
+          gainNode.gain.value = 0.3;
+          oscillator.frequency.value = 400;
+          break;
+      }
+      
+      // Very short duration to simulate a tap
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+        audioContext.close();
+      }, 5);
+    } catch (error) {
+      console.warn('Haptic feedback via audio not supported', error);
     }
   }
 }
@@ -96,22 +126,41 @@ export function hapticFeedback(type: 'light' | 'medium' | 'heavy' = 'light'): vo
  * Adds app-like swipe navigation for going back
  */
 export function setupSwipeNavigation(): void {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  
   let startX: number;
-  let endX: number;
-  const threshold = 100; // Minimum swipe distance
+  let startTime: number;
   
-  document.addEventListener('touchstart', (e) => {
+  const handleTouchStart = (e: TouchEvent) => {
     startX = e.touches[0].clientX;
-  }, { passive: true });
+    startTime = Date.now();
+  };
   
-  document.addEventListener('touchend', (e) => {
-    endX = e.changedTouches[0].clientX;
+  const handleTouchEnd = (e: TouchEvent) => {
+    if (!startX) return;
     
-    // If swipe right from left edge, go back
-    if (startX < 30 && endX - startX > threshold) {
+    const endX = e.changedTouches[0].clientX;
+    const diffX = endX - startX;
+    const diffTime = Date.now() - startTime;
+    
+    // If swiped more than 30% of screen width from left edge and fast enough
+    if (
+      diffX > window.innerWidth * 0.3 && 
+      diffTime < 300 && 
+      startX < window.innerWidth * 0.1
+    ) {
+      // Provide haptic feedback
+      hapticFeedback('medium');
+      
+      // Go back in history
       window.history.back();
     }
-  }, { passive: true });
+    
+    startX = 0;
+  };
+  
+  document.addEventListener('touchstart', handleTouchStart, { passive: true });
+  document.addEventListener('touchend', handleTouchEnd, { passive: true });
 }
 
 /**
@@ -122,22 +171,13 @@ export function initMobileEnhancements(): void {
     setupIOSViewport();
     setupSwipeNavigation();
     
-    // Add meta tags dynamically if needed
-    const existingThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (!existingThemeColor) {
-      const themeColorMeta = document.createElement('meta');
-      themeColorMeta.name = 'theme-color';
-      themeColorMeta.content = '#000000';
-      document.head.appendChild(themeColorMeta);
-    }
-    
-    // Apply class to body for mobile-specific styles
-    document.body.classList.add('mobile-device');
-    
-    if (isIOSDevice()) {
-      document.body.classList.add('ios-device');
-    } else {
-      document.body.classList.add('android-device');
+    // Add a utility class to the body
+    if (typeof document !== 'undefined') {
+      document.body.classList.add('is-mobile-device');
+      
+      if (isIOSDevice()) {
+        document.body.classList.add('is-ios-device');
+      }
     }
   }
 }

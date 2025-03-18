@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { formatCurrency, cn } from "@/lib/utils";
-import { useSwipe } from "@/hooks/use-mobile";
+import { useSwipe } from "@/hooks/use-swipe";
 
 export default function MobileGCashDeposit() {
   const [amount, setAmount] = useState("");

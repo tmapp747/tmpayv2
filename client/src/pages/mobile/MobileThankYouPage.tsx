@@ -1,100 +1,216 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useRoute, useRouter } from 'wouter';
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useLocation } from 'wouter';
+import { ArrowLeft, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Check, ChevronRight, ArrowRight } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
-import { Sparkles } from '@/components/ui/sparkles';
+import { motion } from 'framer-motion';
+import Sparkles from '@/components/ui/sparkles';
+import { hapticFeedback } from '@/lib/mobile-utils';
+import useIsMobile from '@/hooks/use-mobile';
+
+type PaymentStatus = "completed" | "failed" | "pending";
+
+interface PaymentParams {
+  status: PaymentStatus;
+  amount: string;
+  transactionId: string;
+}
 
 export default function MobileThankYouPage() {
-  const [countdown, setCountdown] = useState(5);
-  const [, navigate] = useLocation();
-  const [match, params] = useRoute('/mobile/thank-you/:status/:amount/:transactionId?');
+  const [, setLocation] = useLocation();
+  const params = useParams<PaymentParams>();
+  const isMobile = useIsMobile();
+  const [showSparkles, setShowSparkles] = useState(false);
   
-  const status = params?.status || 'completed';
-  const amount = params?.amount ? parseFloat(params.amount) : 0;
-  const transactionId = params?.transactionId || '';
+  // Destructure params with defaults
+  const { 
+    status = 'pending', 
+    amount = '0', 
+    transactionId = '0'
+  } = params;
   
-  // Auto-redirect after countdown
-  useEffect(() => {
-    if (countdown <= 0) {
-      navigate('/mobile');
-      return;
+  // Format amount to display with proper currency symbol
+  const formattedAmount = new Intl.NumberFormat('en-PH', {
+    style: 'currency',
+    currency: 'PHP',
+    minimumFractionDigits: 2
+  }).format(Number(amount));
+
+  // Set up different content based on status
+  const statusConfig = {
+    completed: {
+      title: 'Payment Successful!',
+      icon: <CheckCircle className="h-16 w-16 text-emerald-500" />,
+      message: `Your payment of ${formattedAmount} has been successfully processed.`,
+      buttonText: 'View Transaction',
+      buttonAction: () => setLocation('/mobile/history'),
+      color: 'bg-emerald-500'
+    },
+    failed: {
+      title: 'Payment Failed',
+      icon: <AlertCircle className="h-16 w-16 text-red-500" />,
+      message: 'We encountered an issue processing your payment. Please try again.',
+      buttonText: 'Try Again',
+      buttonAction: () => setLocation('/mobile/deposit'),
+      color: 'bg-red-500'
+    },
+    pending: {
+      title: 'Payment Processing',
+      icon: <Clock className="h-16 w-16 text-amber-500" />,
+      message: `Your payment of ${formattedAmount} is being processed. Please wait.`,
+      buttonText: 'Check Status',
+      buttonAction: () => setLocation('/mobile/history'),
+      color: 'bg-amber-500'
     }
-    
-    const timer = setTimeout(() => {
-      setCountdown(countdown - 1);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
-  }, [countdown, navigate]);
-  
+  };
+
+  const currentStatus = statusConfig[status] || statusConfig.pending;
+
+  // Apply haptic feedback on component mount
+  useEffect(() => {
+    if (isMobile) {
+      if (status === 'completed') {
+        hapticFeedback('heavy');
+        // Delay showing sparkles for better effect
+        setTimeout(() => setShowSparkles(true), 300);
+      } else if (status === 'failed') {
+        hapticFeedback('medium');
+      }
+    }
+  }, [status, isMobile]);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-emerald-950 p-4">
-      <Card className="w-full max-w-md mx-auto rounded-xl bg-emerald-900/50 border border-emerald-700/30 shadow-xl overflow-hidden">
-        <div className="p-6 flex flex-col items-center text-center">
-          <div className="relative mb-6">
-            <div className="w-20 h-20 rounded-full bg-emerald-800/50 flex items-center justify-center">
-              <Check className="h-10 w-10 text-emerald-400" />
-            </div>
-            <Sparkles className="absolute top-0 right-0 left-0 bottom-0" />
-          </div>
-          
-          <h1 className="text-2xl font-bold text-emerald-100 mb-2">
-            Thank You!
-          </h1>
-          
-          {status === 'completed' ? (
-            <>
-              <p className="text-emerald-300 mb-4">
-                Your payment of {formatCurrency(amount, 'PHP')} has been received.
-              </p>
-              <div className="mb-6 bg-emerald-800/50 rounded-lg p-4 w-full">
-                <p className="text-emerald-200 font-medium">Payment Status:</p>
-                <p className="text-emerald-100 font-bold flex items-center justify-center">
-                  <span className="inline-block w-3 h-3 bg-emerald-400 rounded-full mr-2"></span>
-                  Completed
-                </p>
-                {transactionId && (
-                  <p className="text-emerald-300 text-sm mt-2">
-                    Transaction ID: #{transactionId}
-                  </p>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-emerald-300 mb-4">
-                Your payment of {formatCurrency(amount, 'PHP')} is being processed.
-              </p>
-              <div className="mb-6 bg-emerald-800/50 rounded-lg p-4 w-full">
-                <p className="text-emerald-200 font-medium">Payment Status:</p>
-                <p className="text-amber-100 font-bold flex items-center justify-center">
-                  <span className="inline-block w-3 h-3 bg-amber-400 rounded-full mr-2"></span>
-                  {status === 'pending' ? 'Pending' : 'Processing'}
-                </p>
-                {transactionId && (
-                  <p className="text-emerald-300 text-sm mt-2">
-                    Transaction ID: #{transactionId}
-                  </p>
-                )}
-              </div>
-            </>
-          )}
-          
-          <p className="text-emerald-400 text-sm mb-4">
-            Redirecting to home in {countdown} seconds...
-          </p>
-          
-          <Button
-            onClick={() => navigate('/mobile')}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white"
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col">
+      {/* Header */}
+      <div className="p-4 flex items-center">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-white"
+          onClick={() => setLocation('/mobile/wallet')}
+        >
+          <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <h1 className="text-xl font-bold text-white ml-2">Payment Status</h1>
+      </div>
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        {status === 'completed' ? (
+          <Sparkles 
+            isActive={showSparkles}
+            count={50}
+            color="#10b981"
+            size={15}
+            speed={0.8}
+            fadeOut={true}
+            className="w-full max-w-md"
           >
-            Continue to Home
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </Card>
+            <Card className="w-full max-w-md p-8 flex flex-col items-center gap-6 shadow-lg">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                className="rounded-full p-4 bg-emerald-100"
+              >
+                {currentStatus.icon}
+              </motion.div>
+              <motion.h2
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+                className="text-2xl font-bold text-center"
+              >
+                {currentStatus.title}
+              </motion.h2>
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-center text-gray-600"
+              >
+                {currentStatus.message}
+              </motion.p>
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="mt-2 text-sm text-gray-500"
+              >
+                Transaction ID: {transactionId}
+              </motion.div>
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="w-full"
+              >
+                <Button
+                  className="w-full bg-emerald-500 hover:bg-emerald-600"
+                  onClick={currentStatus.buttonAction}
+                >
+                  {currentStatus.buttonText}
+                </Button>
+              </motion.div>
+            </Card>
+          </Sparkles>
+        ) : (
+          <Card className="w-full max-w-md p-8 flex flex-col items-center gap-6 shadow-lg">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              className={`rounded-full p-4 ${status === 'failed' ? 'bg-red-100' : 'bg-amber-100'}`}
+            >
+              {currentStatus.icon}
+            </motion.div>
+            <motion.h2
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="text-2xl font-bold text-center"
+            >
+              {currentStatus.title}
+            </motion.h2>
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-center text-gray-600"
+            >
+              {currentStatus.message}
+            </motion.p>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-2 text-sm text-gray-500"
+            >
+              Transaction ID: {transactionId}
+            </motion.div>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="w-full"
+            >
+              <Button
+                className={`w-full ${status === 'failed' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}`}
+                onClick={currentStatus.buttonAction}
+              >
+                {currentStatus.buttonText}
+              </Button>
+            </motion.div>
+          </Card>
+        )}
+      </div>
+      
+      {/* Footer navigation */}
+      <div className="p-4 text-center">
+        <p className="text-sm text-gray-400">
+          Need assistance? <Link href="/mobile/support" className="text-blue-400 hover:underline">Contact Support</Link>
+        </p>
+      </div>
     </div>
   );
 }

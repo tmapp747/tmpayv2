@@ -194,21 +194,38 @@ const QRDeposit = () => {
 
         if (data.status === "completed") {
           clearInterval(interval);
+          
+          // Store success data for use in regular modal if mobile redirect isn't applicable
           setSuccessData({
             amount: parseFloat(amount),
             newBalance: data.qrPayment?.amount || amount,
             transactionId: refId,
           });
+          
           setIsModalOpen(false);
-          setIsSuccessModalOpen(true);
+          
+          // For mobile devices, redirect to the thank you page instead of showing modal
+          if (isMobile) {
+            // Format: /mobile/thank-you/:status/:amount/:transactionId?
+            navigate(`/mobile/thank-you/completed/${parseFloat(amount)}/${refId}`);
+          } else {
+            setIsSuccessModalOpen(true);
+          }
         } else if (data.status === "failed" || data.status === "expired") {
           clearInterval(interval);
           setIsModalOpen(false);
-          toast({
-            title: "Payment Failed",
-            description: "Your payment was not completed. Please try again.",
-            variant: "destructive",
-          });
+          
+          // For mobile devices, redirect to the thank you page with failed status
+          if (isMobile) {
+            // Format: /mobile/thank-you/:status/:amount/:transactionId?
+            navigate(`/mobile/thank-you/failed/${parseFloat(amount)}/${refId}`);
+          } else {
+            toast({
+              title: "Payment Failed",
+              description: "Your payment was not completed. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
       } catch (error) {
         console.error("Error checking payment status:", error);
@@ -218,11 +235,18 @@ const QRDeposit = () => {
         if (consecutiveErrors >= 5) {
           clearInterval(interval);
           setIsModalOpen(false);
-          toast({
-            title: "Connection Error",
-            description: "We're having trouble checking your payment status. Please check your transaction history later.",
-            variant: "destructive",
-          });
+          
+          // For mobile devices, redirect to the thank you page with pending status
+          if (isMobile && referenceId) {
+            // Format: /mobile/thank-you/:status/:amount/:transactionId?
+            navigate(`/mobile/thank-you/pending/${parseFloat(amount)}/${referenceId}`);
+          } else {
+            toast({
+              title: "Connection Error",
+              description: "We're having trouble checking your payment status. Please check your transaction history later.",
+              variant: "destructive",
+            });
+          }
         }
       }
     }, 5000);
