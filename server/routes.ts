@@ -2903,9 +2903,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get real-time balance from casino API (bypassing cache)
   app.post("/api/casino/balance-realtime", async (req: Request, res: Response) => {
     try {
-      const { username, clientId } = req.body;
+      // Extract parameters, supporting both formats (casinoUsername/casinoClientId and username/clientId)
+      const { casinoUsername, casinoClientId, username, clientId } = req.body;
       
-      if (!username || !clientId) {
+      // Use whichever parameters are provided
+      const effectiveUsername = casinoUsername || username;
+      const effectiveClientId = casinoClientId || clientId;
+      
+      if (!effectiveUsername || !effectiveClientId) {
         return res.status(400).json({ 
           success: false,
           message: "Username and client ID are required" 
@@ -2914,10 +2919,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // Force a fresh request to the casino API
-        const balanceResult = await casino747Api.getUserBalance(clientId, username);
+        const balanceResult = await casino747Api.getUserBalance(effectiveClientId, effectiveUsername);
         
         // Find user in our database to update their casino balance
-        const localUser = await storage.getUserByCasinoUsername(username);
+        const localUser = await storage.getUserByCasinoUsername(effectiveUsername);
         if (localUser) {
           await storage.updateUserCasinoDetails(localUser.id, {
             casinoBalance: balanceResult.balance.toString()
