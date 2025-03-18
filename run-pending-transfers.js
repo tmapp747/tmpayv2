@@ -13,8 +13,10 @@ async function runPendingTransfers() {
   try {
     await processPendingCasinoTransfers();
     console.log('✅ Process completed successfully!');
+    process.exit(0);
   } catch (error) {
     console.error('❌ Error processing pending transfers:', error);
+    process.exit(1);
   }
 }
 

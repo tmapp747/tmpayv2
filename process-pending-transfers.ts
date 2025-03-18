@@ -34,7 +34,7 @@ async function processPendingCasinoTransfers() {
     // Process each transaction with payment_completed status
     for (const transaction of completedPayments) {
       // Check if the casino transfer is still pending
-      const metadata = transaction.metadata as Record<string, any> || {};
+      const metadata = (transaction.metadata as Record<string, any> | null) || {};
       const casinoTransferStatus = metadata.casinoTransferStatus || 'pending';
       
       if (casinoTransferStatus === 'pending') {
@@ -132,17 +132,15 @@ async function processPendingCasinoTransfers() {
   }
 }
 
-// Only run if called directly
-if (require.main === module) {
-  processPendingCasinoTransfers()
-    .then(() => {
-      console.log('Finished processing pending casino transfers');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('Fatal error during processing:', error);
-      process.exit(1);
-    });
-}
+// When running with node -e or as a module, this will execute the function
+processPendingCasinoTransfers()
+  .then(() => {
+    console.log('Finished processing pending casino transfers');
+    // Don't exit if imported as a module
+  })
+  .catch(error => {
+    console.error('Fatal error during processing:', error);
+    // Don't exit if imported as a module
+  });
 
 export { processPendingCasinoTransfers };
