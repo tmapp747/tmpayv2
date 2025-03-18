@@ -360,20 +360,32 @@ export function TransactionDetailsModal({ isOpen, onClose, transactionId }: Tran
                 </div>
               )}
               
-              {/* Casino transfer status if available */}
-              {transaction.metadata?.casinoTransferStatus && (
+              {/* Detailed Status Information */}
+              <div className="bg-emerald-900/40 rounded-lg p-4 border border-emerald-700/30">
+                <p className="text-xs text-emerald-400 mb-2">Transaction Status</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* GCash Status */}
+                  <div>
+                    <p className="text-xs text-emerald-400 mb-1">GCash Payment</p>
+                    <StatusBadge status={transaction.gcashStatus || 'pending'} />
+                  </div>
+                  
+                  {/* Casino Status */}
+                  <div>
+                    <p className="text-xs text-emerald-400 mb-1">Casino Transfer</p>
+                    <StatusBadge status={transaction.casinoStatus || 'pending'} />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Casino transfer status if available (legacy support) */}
+              {transaction.metadata?.casinoTransferStatus && !transaction.casinoStatus && (
                 <div>
-                  <p className="text-xs text-emerald-400 mb-1">Casino Transfer</p>
+                  <p className="text-xs text-emerald-400 mb-1">Casino Transfer (Legacy)</p>
                   <div className="flex items-center">
-                    <Badge 
-                      className={`
-                        ${transaction.metadata.casinoTransferStatus === "completed" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
-                        ${transaction.metadata.casinoTransferStatus === "pending" ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}
-                        ${transaction.metadata.casinoTransferStatus === "failed" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
-                      `}
-                    >
-                      {transaction.metadata.casinoTransferStatus}
-                    </Badge>
+                    <StatusBadge 
+                      status={`casino_${transaction.metadata.casinoTransferStatus}`} 
+                    />
                     
                     {transaction.metadata.casinoTransferStatus === "completed" && transaction.metadata.casinoTransferTimestamp && (
                       <span className="text-xs text-emerald-300 ml-2">

@@ -127,7 +127,8 @@ export default function TransactionTable() {
                   <TableHead className="text-emerald-400">Type</TableHead>
                   <TableHead className="text-emerald-400">Method</TableHead>
                   <TableHead className="text-emerald-400">Amount</TableHead>
-                  <TableHead className="text-emerald-400">Status</TableHead>
+                  <TableHead className="text-emerald-400">Payment</TableHead>
+                  <TableHead className="text-emerald-400">Casino</TableHead>
                   <TableHead className="text-emerald-400">Reference</TableHead>
                   <TableHead className="text-emerald-400">Actions</TableHead>
                 </TableRow>
@@ -159,7 +160,10 @@ export default function TransactionTable() {
                       {formatCurrency(parseFloat(transaction.amount), transaction.currency || "PHP")}
                     </TableCell>
                     <TableCell>
-                      <StatusBadge status={transaction.status} size="sm" />
+                      <StatusBadge status={transaction.gcashStatus || 'pending'} size="sm" />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={transaction.casinoStatus || 'pending'} size="sm" />
                     </TableCell>
                     <TableCell className="text-emerald-200 text-sm">
                       <div className="flex items-center">
