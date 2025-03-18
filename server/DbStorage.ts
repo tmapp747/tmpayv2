@@ -890,63 +890,59 @@ export class DbStorage implements IStorage {
 
   async updateTransactionStatus(id: number, status: string, reference?: string, metadata?: Record<string, any>): Promise<Transaction> {
     try {
-      // Use transaction to ensure atomic update
-      return await this.dbInstance.transaction(async (tx) => {
-        // Get current transaction with all fields
-        const currentTransaction = await tx
-          .select()
-          .from(transactions)
-          .where(eq(transactions.id, id))
-          .forUpdate();
+      // First get the current transaction
+      const currentTransactions = await this.dbInstance
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, id));
 
-        if (!currentTransaction.length) {
-          throw new Error(`Transaction ${id} not found`);
-        }
+      if (!currentTransactions.length) {
+        throw new Error(`Transaction ${id} not found`);
+      }
 
-        const transaction = currentTransaction[0];
-        const now = new Date();
+      const transaction = currentTransactions[0];
+      const now = new Date();
 
-        // Create history entry
-        const historyEntry = {
-          status,
-          timestamp: now.toISOString(),
-          previousStatus: transaction.status,
-          note: `Status changed from ${transaction.status} to ${status}`
+      // Create history entry
+      const historyEntry = {
+        status,
+        timestamp: now.toISOString(),
+        previousStatus: transaction.status,
+        note: `Status changed from ${transaction.status} to ${status}`
+      };
+
+      // Update status history
+      const statusHistory = transaction.statusHistory || [];
+      statusHistory.push(historyEntry);
+
+      // Prepare update data
+      const updateData: Partial<Transaction> = {
+        status,
+        statusHistory: JSON.stringify(statusHistory), //Added JSON.stringify
+        statusUpdatedAt: now,
+        updatedAt: now
+      };
+
+      // Update reference if provided
+      if (reference) {
+        updateData.paymentReference = reference;
+      }
+
+      // Update metadata if provided
+      if (metadata) {
+        updateData.metadata = {
+          ...(transaction.metadata || {}),
+          ...metadata
         };
+      }
 
-        // Update status history
-        const statusHistory = transaction.statusHistory || [];
-        statusHistory.push(historyEntry);
+      const result = await this.dbInstance.update(transactions)
+        .set(updateData)
+        .where(eq(transactions.id, id))
+        .returning();
 
-        // Prepare update data
-        const updateData: Partial<Transaction> = {
-          status,
-          statusHistory: JSON.stringify(statusHistory), //Added JSON.stringify
-          statusUpdatedAt: now,
-          updatedAt: now
-        };
-
-        // Update reference if provided
-        if (reference) {
-          updateData.paymentReference = reference;
-        }
-
-        // Update metadata if provided
-        if (metadata) {
-          updateData.metadata = {
-            ...(transaction.metadata || {}),
-            ...metadata
-          };
-        }
-
-        const result = await this.dbInstance.update(transactions)
-          .set(updateData)
-          .where(eq(transactions.id, id))
-          .returning();
-
-        if (DB_DEBUG) console.log(`[DB] Updated transaction status: ${id}, status: ${status}`);
-        return result[0];
-      });
+      if (DB_DEBUG) console.log(`[DB] Updated transaction status: ${id}, status: ${status}`);
+      return result[0];
     } catch (error) {
       console.error(`[DB] Error updating transaction status for ID ${id}:`, error);
       throw new Error(`Failed to update transaction status: ${error instanceof Error ? error.message : String(error)}`);
