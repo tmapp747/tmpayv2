@@ -34,7 +34,7 @@ import { randomUUID, randomBytes, createHash } from "crypto";
 import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
 import { paygramApi } from "./paygramApi";
-import { setupAuth, hashPassword, comparePasswords } from "./auth";
+import { setupAuth, hashPassword, comparePasswords, isPasswordHashed } from "./auth";
 import { db, pool } from "./db";
 import { sql } from "drizzle-orm";
 
