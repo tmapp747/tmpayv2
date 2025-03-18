@@ -202,7 +202,7 @@ export default function MobileDashboard() {
           </div>
           
           {/* Quick Action Buttons */}
-          <div className="flex justify-center gap-2 text-center text-xs px-4">
+          <div className="flex justify-center gap-2 text-center text-xs px-4 mb-8">
             <Link href="/mobile/banking">
               <motion.div 
                 className="flex flex-col items-center space-y-2"
@@ -255,7 +255,7 @@ export default function MobileDashboard() {
           </div>
           
           {/* Casino Statistics Section */}
-          <div className="px-4">
+          <div className="px-4 mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium">Casino Stats</h2>
               <div className="flex items-center gap-1 text-sm text-blue-300 with-ripple">
@@ -269,7 +269,7 @@ export default function MobileDashboard() {
           </div>
           
           {/* Transactions List */}
-          <div className="px-4 mt-6">
+          <div className="px-4 mb-8">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-medium">Last Transaction</h2>
               <Link href="/mobile/wallet" className="text-sm text-blue-300 flex items-center with-ripple">
