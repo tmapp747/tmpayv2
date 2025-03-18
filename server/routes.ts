@@ -31,6 +31,8 @@ import { casino747Api } from "./casino747Api";
 import { directPayApi } from "./directPayApi";
 import { paygramApi } from "./paygramApi";
 import { setupAuth, hashPassword, comparePasswords, isPasswordHashed } from "./auth";
+import { db, pool } from "./db";
+import { sql } from "drizzle-orm";
 
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
@@ -1436,7 +1438,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get detailed transaction information with associated payment data
   app.get("/api/transactions/:id", authMiddleware, async (req: Request, res: Response) => {
     try {
-      const userId = (req.session as any).user.id;
+      // Fix: Get user ID from session or user object
+      let userId: number;
+      if ((req.session as any)?.user?.id) {
+        userId = (req.session as any).user.id;
+      } else if ((req as any)?.user?.id) {
+        userId = (req as any).user.id;
+      } else {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+      
       const transactionId = parseInt(req.params.id);
       
       if (isNaN(transactionId)) {
@@ -1462,34 +1473,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // If this is a GCash QR payment, fetch the associated QR payment data
-      if (transaction.method === 'gcash') {
-        const reference = transaction.paymentReference || transaction.reference;
-        const qrPayment = await storage.getQrPaymentByReference(reference);
-        if (qrPayment) {
-          response.qrPayment = qrPayment;
+      if (transaction.method === 'gcash' || transaction.method === 'gcash_qr') {
+        // Use paymentReference which is the safer option
+        const reference = transaction.paymentReference;
+        if (reference) {
+          const qrPayment = await storage.getQrPaymentByReference(reference);
+          if (qrPayment) {
+            response.qrPayment = qrPayment;
+          }
         }
       }
       
       // If this is a Telegram payment, fetch the associated Telegram payment data
       if (transaction.method === 'telegram' || transaction.method === 'paygram') {
-        const reference = transaction.paymentReference || transaction.reference;
-        const telegramPayment = await storage.getTelegramPaymentByReference(reference);
-        if (telegramPayment) {
-          response.telegramPayment = telegramPayment;
+        // Use paymentReference which is the safer option
+        const reference = transaction.paymentReference;
+        if (reference) {
+          const telegramPayment = await storage.getTelegramPaymentByReference(reference);
+          if (telegramPayment) {
+            response.telegramPayment = telegramPayment;
+          }
         }
       }
       
       // If this is a manual payment, fetch the associated manual payment data
       if (transaction.method === 'manual') {
-        const reference = transaction.paymentReference || transaction.reference;
-        const manualPayment = await storage.getManualPaymentByReference(reference);
-        if (manualPayment) {
-          response.manualPayment = manualPayment;
+        // Use paymentReference which is the safer option
+        const reference = transaction.paymentReference;
+        if (reference) {
+          const manualPayment = await storage.getManualPaymentByReference(reference);
+          if (manualPayment) {
+            response.manualPayment = manualPayment;
+          }
         }
       }
       
       // Add status history from metadata if available
-      if (transaction.metadata?.statusHistory) {
+      if (transaction.metadata && typeof transaction.metadata === 'object' && 'statusHistory' in transaction.metadata) {
         response.statusHistory = transaction.metadata.statusHistory;
       } else {
         // Create a basic status history if not available
