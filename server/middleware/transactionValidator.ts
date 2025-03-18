@@ -1,55 +1,53 @@
+/**
+ * Transaction validation middleware
+ * 
+ * This middleware validates transaction references and details
+ * to ensure data integrity and prevent duplicate payments or inconsistencies.
+ */
 
 import { Request, Response, NextFunction } from 'express';
 import { db } from '../db';
-import { transactions, qrPayments, telegramPayments, manualPayments } from '@shared/schema';
+import { transactions } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
+/**
+ * Middleware to validate transaction references
+ * Ensures that transaction references are unique and properly formatted
+ */
 export async function validateTransactionReferences(req: Request, res: Response, next: NextFunction) {
-  const transactionId = parseInt(req.params.id || req.body.transactionId);
-  
-  if (!transactionId) {
-    return next();
-  }
-
   try {
-    // Check transaction exists
-    const transaction = await db.select().from(transactions)
-      .where(eq(transactions.id, transactionId));
+    // Check if the request body contains a reference
+    if (req.body.reference) {
+      const { reference } = req.body;
+      
+      // Check if the reference is properly formatted
+      if (!reference || typeof reference !== 'string' || reference.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid transaction reference format'
+        });
+      }
+      
+      // Check if the reference is already in use
+      const existingTransaction = await db.select()
+        .from(transactions)
+        .where(eq(transactions.reference as any, reference))
+        .limit(1);
+      
+      if (existingTransaction.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Transaction reference already exists'
+        });
+      }
+    }
     
-    if (!transaction.length) {
-      return res.status(404).json({
-        success: false,
-        message: 'Transaction not found'
-      });
-    }
-
-    // Validate payment references
-    const qrPayment = await db.select().from(qrPayments)
-      .where(eq(qrPayments.transactionId, transactionId));
-      
-    const telegramPayment = await db.select().from(telegramPayments)
-      .where(eq(telegramPayments.transactionId, transactionId));
-      
-    const manualPayment = await db.select().from(manualPayments)
-      .where(eq(manualPayments.transactionId, transactionId));
-
-    // Only one payment type should exist
-    const paymentCount = [qrPayment, telegramPayment, manualPayment]
-      .filter(p => p.length > 0).length;
-
-    if (paymentCount > 1) {
-      return res.status(409).json({
-        success: false,
-        message: 'Multiple payment references found for transaction'
-      });
-    }
-
     next();
   } catch (error) {
-    console.error('Transaction validation error:', error);
+    console.error('Error validating transaction reference:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error validating transaction'
+      message: 'Error validating transaction reference'
     });
   }
 }
