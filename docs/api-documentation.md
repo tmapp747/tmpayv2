@@ -1,156 +1,70 @@
 # TMPay API Documentation
 
-![TMPay Logo](../public/logo.png)
-
-## Overview
-
-The TMPay API provides secure endpoints for authentication, payment processing, and casino fund transfers. This comprehensive documentation outlines all available endpoints, request/response formats, and authentication requirements.
-
 ## Base URL
-
 ```
 https://api.tmpay.com
 ```
 
 ## Authentication
 
-Most API endpoints require authentication using JSON Web Tokens (JWT). To authenticate:
+Most endpoints require authentication via:
+1. Session-based (browser clients)
+2. Bearer token (non-browser clients)
 
-1. Obtain a token via the login endpoint
-2. Include the token in the Authorization header of subsequent requests:
-
+Include token in requests:
 ```
 Authorization: Bearer <your_jwt_token>
 ```
 
-## Error Handling
-
-All API responses follow a consistent error format:
-
-```json
-{
-  "success": false,
-  "message": "Description of the error",
-  "error": {
-    "code": "ERROR_CODE",
-    "details": "Additional error details"
-  }
-}
-```
-
-Common error codes:
-
-| Code | Description |
-|------|-------------|
-| INVALID_TOKEN | Authentication token is invalid or expired |
-| INSUFFICIENT_FUNDS | Not enough funds to complete transaction |
-| INVALID_REQUEST | Request is malformed or missing required fields |
-| PAYMENT_FAILED | Payment processing failed |
-| RESOURCE_NOT_FOUND | Requested resource does not exist |
-| UNAUTHORIZED | User not authorized to perform this action |
-
-## API Endpoints
+## Core Endpoints
 
 ### Authentication
 
-#### User Verification
-
-```
-POST /api/auth/verify-username
-```
-
-Verifies if a username exists in the 747 Casino system.
-
-**Request Body:**
-
-```json
-{
-  "username": "example_user",
-  "isAgent": false
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message": "User verified successfully",
-  "isAllowed": true,
-  "topManager": "bossmarc747",
-  "immediateManager": "Marcthepogi",
-  "userType": "player",
-  "clientId": 123456
-}
-```
-
 #### Login
-
-```
+```http
 POST /api/auth/login
-```
+Content-Type: application/json
 
-Authenticates a user and returns an access token.
-
-**Request Body:**
-
-```json
 {
   "username": "example_user",
   "password": "secure_password"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
-  "message": "Login successful",
   "user": {
     "id": 1,
     "username": "example_user",
     "balance": "1000.00",
-    "pendingBalance": "0.00",
     "isVip": false,
     "casinoUsername": "example_user",
-    "casinoClientId": 123456,
-    "topManager": "bossmarc747",
-    "casinoUserType": "player"
+    "casinoClientId": 123456
   },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "message": "Login successful"
 }
 ```
 
-#### Logout
+#### Verify Username
+```http
+POST /api/auth/verify-username
 
-```
-POST /api/auth/logout
-```
-
-Invalidates the current session token.
-
-**Response:**
-
-```json
 {
-  "success": true,
-  "message": "Logged out successfully"
+  "username": "example_user",
+  "userType": "player"
 }
 ```
 
-### User Information
+### User Operations
 
-#### Get User Profile
-
-```
+#### Get User Info
+```http
 GET /api/user/info
 ```
 
-Returns the user's profile information.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -174,15 +88,11 @@ Returns the user's profile information.
 ```
 
 #### Get Currency Balances
-
-```
+```http
 GET /api/user/currency-balances
 ```
 
-Returns the user's balances in all supported currencies.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -196,23 +106,15 @@ Returns the user's balances in all supported currencies.
 ```
 
 #### Update Preferred Currency
-
-```
+```http
 POST /api/user/preferred-currency
-```
 
-Updates the user's preferred currency for display and transactions.
-
-**Request Body:**
-
-```json
 {
-  "currency": "USDT"
+  "currency": "PHP"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -223,38 +125,25 @@ Updates the user's preferred currency for display and transactions.
 
 ### Payment Operations
 
-#### Generate GCash QR Code
-
-```
+#### Generate GCash QR
+```http
 POST /api/payments/gcash/generate-qr
-```
 
-Generates a QR code for GCash payment.
-
-**Request Body:**
-
-```json
 {
   "amount": 500
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
   "qrPayment": {
     "id": 1,
-    "userId": 1,
-    "transactionId": 100,
-    "qrCodeData": "data:image/png;base64,iVBORw0KGgoA...",
+    "qrCodeData": "data:image/png;base64,...",
+    "payUrl": "https://pay.direct-pay.ph/...",
     "amount": "500.00",
-    "expiresAt": "2023-07-15T12:30:00Z",
-    "directPayReference": "DP123456789",
-    "status": "pending",
-    "createdAt": "2023-07-15T12:00:00Z",
-    "updatedAt": "2023-07-15T12:00:00Z"
+    "status": "pending"
   },
   "transaction": {
     "id": 100,
@@ -271,24 +160,16 @@ Generates a QR code for GCash payment.
 ```
 
 #### Generate Paygram Payment
-
-```
+```http
 POST /api/payments/paygram/generate
-```
 
-Generates a payment URL for Paygram (PHPT/USDT) transactions.
-
-**Request Body:**
-
-```json
 {
   "amount": 100,
   "currency": "PHPT"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -310,26 +191,18 @@ Generates a payment URL for Paygram (PHPT/USDT) transactions.
 ```
 
 #### Create Manual Payment
-
-```
+```http
 POST /api/payments/manual/create
-```
 
-Initiates a manual payment process.
-
-**Request Body:**
-
-```json
 {
   "amount": 1000,
   "paymentMethod": "bank_transfer",
-  "bankAccount": "BDO",
-  "notes": "Transfer from my BDO account"
+  "notes": "BDO transfer",
+  "proofImageUrl": "https://..."
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -360,24 +233,16 @@ Initiates a manual payment process.
 ```
 
 #### Submit Manual Payment Proof
-
-```
+```http
 POST /api/payments/manual/submit
-```
 
-Submit proof of payment for a manual payment.
-
-**Request Body:**
-
-```json
 {
   "reference": "MP123456789",
   "proofImageUrl": "https://storage.tmpay.com/receipts/receipt123.jpg"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -387,15 +252,11 @@ Submit proof of payment for a manual payment.
 ```
 
 #### Check Payment Status
-
-```
+```http
 GET /api/payments/status/:referenceId
 ```
 
-Checks the status of a payment by its reference ID.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -414,23 +275,15 @@ Checks the status of a payment by its reference ID.
 ### Casino Operations
 
 #### Get Casino User Details
-
-```
+```http
 POST /api/casino/user-details
-```
 
-Retrieves user details from the 747 Casino system.
-
-**Request Body:**
-
-```json
 {
   "username": "example_user"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -446,24 +299,16 @@ Retrieves user details from the 747 Casino system.
 ```
 
 #### Get Casino Balance
-
-```
+```http
 POST /api/casino/balance
-```
 
-Retrieves the user's current balance from the 747 Casino system.
-
-**Request Body:**
-
-```json
 {
-  "casinoClientId": 123456,
-  "casinoUsername": "example_user"
+  "username": "example_user",
+  "clientId": 123456
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -473,24 +318,18 @@ Retrieves the user's current balance from the 747 Casino system.
 ```
 
 #### Casino Deposit
-
-```
+```http
 POST /api/casino/deposit
-```
 
-Transfers funds from the user's TMPay wallet to their 747 Casino account.
-
-**Request Body:**
-
-```json
 {
+  "amount": 1000,
   "casinoUsername": "example_user",
-  "amount": 1000
+  "casinoClientId": 123456,
+  "currency": "PHP"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -514,24 +353,16 @@ Transfers funds from the user's TMPay wallet to their 747 Casino account.
 ```
 
 #### Casino Withdraw
-
-```
+```http
 POST /api/casino/withdraw
-```
 
-Transfers funds from the user's 747 Casino account to their TMPay wallet.
-
-**Request Body:**
-
-```json
 {
   "casinoUsername": "example_user",
   "amount": 1000
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -555,16 +386,9 @@ Transfers funds from the user's 747 Casino account to their TMPay wallet.
 ```
 
 #### Casino Transfer
-
-```
+```http
 POST /api/casino/transfer
-```
 
-Transfers funds between casino users.
-
-**Request Body:**
-
-```json
 {
   "amount": 500,
   "fromUsername": "example_user",
@@ -573,8 +397,7 @@ Transfers funds between casino users.
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -600,25 +423,17 @@ Transfers funds between casino users.
 ### Transaction Management
 
 #### Get Transactions
-
-```
+```http
 GET /api/transactions
 ```
 
-Retrieves the user's transaction history.
+Query Parameters:
+- limit (optional): Number of transactions to return
+- offset (optional): Offset for pagination
+- type (optional): Filter by transaction type
+- status (optional): Filter by status
 
-**Query Parameters:**
-
-- `limit` (optional): Number of transactions to return (default: 20)
-- `offset` (optional): Offset for pagination (default: 0)
-- `type` (optional): Filter by transaction type
-- `method` (optional): Filter by payment method
-- `status` (optional): Filter by transaction status
-- `startDate` (optional): Filter by start date (ISO format)
-- `endDate` (optional): Filter by end date (ISO format)
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -658,15 +473,11 @@ Retrieves the user's transaction history.
 ```
 
 #### Get Casino Transactions
-
-```
+```http
 GET /api/casino/transactions/:username
 ```
 
-Retrieves the user's transaction history from the 747 Casino system.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -698,15 +509,11 @@ Retrieves the user's transaction history from the 747 Casino system.
 ### Currency Operations
 
 #### Get Available Currencies
-
-```
+```http
 GET /api/currencies
 ```
 
-Returns all supported currencies.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -723,16 +530,9 @@ Returns all supported currencies.
 ```
 
 #### Exchange Currency
-
-```
+```http
 POST /api/currency/exchange
-```
 
-Exchanges funds between supported currencies.
-
-**Request Body:**
-
-```json
 {
   "fromCurrency": "PHP",
   "toCurrency": "USDT",
@@ -740,8 +540,7 @@ Exchanges funds between supported currencies.
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -774,18 +573,14 @@ Exchanges funds between supported currencies.
 }
 ```
 
-## Webhook APIs
+### Webhook APIs
 
-### DirectPay Payment Webhook
-
-```
+#### DirectPay Payment Webhook
+```http
 POST /api/webhook/directpay/payment
 ```
 
-Webhook for receiving payment notifications from DirectPay.
-
-**Request Body (from DirectPay):**
-
+Request Body (from DirectPay):
 ```json
 {
   "reference": "DP123456789",
@@ -799,8 +594,7 @@ Webhook for receiving payment notifications from DirectPay.
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -808,20 +602,16 @@ Webhook for receiving payment notifications from DirectPay.
 }
 ```
 
-## Admin APIs
+### Admin Endpoints
 
-These endpoints require admin authentication.
+Requires admin role authentication.
 
-### Get All Users
-
-```
+#### Get All Users
+```http
 GET /api/admin/users
 ```
 
-Retrieves all registered users.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -846,16 +636,12 @@ Retrieves all registered users.
 }
 ```
 
-### Get Manual Payments
-
-```
+#### Get Manual Payments
+```http
 GET /api/admin/manual-payments
 ```
 
-Retrieves all manual payments for administrative review.
-
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -881,25 +667,17 @@ Retrieves all manual payments for administrative review.
 }
 ```
 
-### Update Manual Payment Status
-
-```
+#### Update Manual Payment Status
+```http
 POST /api/admin/manual-payment/:id/status
-```
 
-Updates the status of a manual payment.
-
-**Request Body:**
-
-```json
 {
   "status": "approved",
-  "adminNotes": "Payment verified against bank statement"
+  "adminNotes": "Payment verified"
 }
 ```
 
-**Response:**
-
+Response:
 ```json
 {
   "success": true,
@@ -922,27 +700,45 @@ Updates the status of a manual payment.
 }
 ```
 
-## Rate Limiting
+## WebSocket Events
 
-To ensure API stability, rate limits are applied:
-
-- Authentication endpoints: 10 requests per minute per IP
-- User endpoints: 60 requests per minute per user
-- Payment endpoints: 20 requests per minute per user
-- Admin endpoints: 100 requests per minute per admin
-
-When a rate limit is exceeded, the API will respond with a 429 Too Many Requests status code.
-
-## Development and Testing
-
-For development and testing purposes, you can use the following sandbox environment:
-
-```
-https://sandbox.api.tmpay.com
+### Payment Updates
+```javascript
+socket.on('payment_status', (data) => {
+  // data.status: 'completed' | 'failed' | 'expired'
+  // data.paymentId: string
+  // data.transactionId: string
+});
 ```
 
-Test accounts and credentials are available in the [Admin Guide](./admin-guide.md).
+## Rate Limits
 
----
+- Authentication: 10 requests/minute/IP
+- User endpoints: 60 requests/minute/user
+- Payment endpoints: 20 requests/minute/user
+- Admin endpoints: 100 requests/minute/admin
 
-© 2025 TMPay. All rights reserved.
+## Error Handling
+
+All errors follow the format:
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error": {
+    "code": "ERROR_CODE",
+    "details": "Additional details"
+  }
+}
+```
+
+Common error codes:
+- INVALID_TOKEN
+- INSUFFICIENT_FUNDS
+- PAYMENT_FAILED
+- UNAUTHORIZED
+- RESOURCE_NOT_FOUND
+
+## Testing
+
+Test accounts and environment details available in docs/auth-testing.md.
