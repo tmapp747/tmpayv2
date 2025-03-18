@@ -28,6 +28,8 @@ interface PaymentStatusResponse {
     createdAt: string;
     directPayReference: string;
     status: string;
+    payUrl?: string;
+    qrCodeData?: string;
   };
 }
 
@@ -274,22 +276,63 @@ export default function PaymentThankYou() {
                   </div>
                 )}
               </div>
+              
+              {/* Show the GCash payment link for pending payments */}
+              {paymentStatus === "pending" && paymentDetails?.payUrl && (
+                <div className="mt-6">
+                  <Separator className="mb-4" />
+                  <h4 className="text-sm font-medium mb-2">Payment Link</h4>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Click the button below to open GCash and complete your payment:
+                  </p>
+                  <Button
+                    className="w-full bg-[#0074E0] hover:bg-[#005BB1] text-white"
+                    onClick={() => window.open(paymentDetails.payUrl, '_blank')}
+                  >
+                    Pay with GCash
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    You can also save this page to resume payment later or from another device.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
           
-          <CardFooter className="flex justify-center gap-4 pb-6">
-            <Button asChild variant="outline">
-              <Link href="/wallet">
-                <ArrowRight className="mr-2 h-4 w-4" />
-                Back to Wallet
-              </Link>
-            </Button>
-            {(paymentStatus === "failed" || paymentStatus === "expired") && (
-              <Button asChild>
-                <Link href="/wallet">
-                  Try Again
-                </Link>
-              </Button>
+          <CardFooter className="flex flex-col gap-4 pb-6">
+            {paymentStatus === "pending" && paymentDetails?.payUrl ? (
+              <>
+                <Button 
+                  className="w-full bg-[#0074E0] hover:bg-[#005BB1] text-white"
+                  onClick={() => window.open(paymentDetails.payUrl, '_blank')}
+                >
+                  Pay with GCash
+                </Button>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/wallet">
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Back to Wallet
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-center gap-4 w-full">
+                  <Button asChild variant="outline">
+                    <Link href="/wallet">
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      Back to Wallet
+                    </Link>
+                  </Button>
+                  {(paymentStatus === "failed" || paymentStatus === "expired") && (
+                    <Button asChild>
+                      <Link href="/wallet">
+                        Try Again
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </>
             )}
           </CardFooter>
         </Card>

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { User } from "@/lib/types";
 import { Briefcase, Wallet, ArrowDown, ArrowUp, RefreshCw, ChevronDown, AlertCircle, ShieldAlert } from "lucide-react";
 import NewBalanceCard from "@/components/NewBalanceCard";
+import ActiveQRPaymentCard from "@/components/wallet/ActiveQRPaymentCard";
 
 function WalletPage() {
   const [activeTab, setActiveTab] = useState("balance");
@@ -76,6 +77,15 @@ function WalletPage() {
             className="w-full"
           >
             <NewBalanceCard className="w-full mx-0" />
+          </motion.div>
+          
+          {/* Active QR Payment Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
+          >
+            <ActiveQRPaymentCard />
           </motion.div>
           
           {/* Deposit Form */}

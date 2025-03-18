@@ -2282,6 +2282,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint to retrieve active QR payments for a user (including ones on other devices)
+  app.get("/api/payments/active-qr", authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const user = req.user as User;
+      
+      // Find any pending QR payments for this user
+      // Get the active QR payment if any exists
+      const activeQrPayment = await storage.getActiveQrPaymentByUserId(user.id);
+      
+      if (!activeQrPayment) {
+        return res.json({
+          success: false,
+          message: "No active QR payments found for this user",
+          hasActivePayment: false
+        });
+      }
+      
+      // Check if the payment has expired
+      if (new Date() > activeQrPayment.expiresAt) {
+        await storage.updateQrPaymentStatus(activeQrPayment.id, "expired");
+        return res.json({
+          success: false,
+          status: "expired",
+          hasActivePayment: false,
+          message: "Your payment has expired"
+        });
+      }
+      
+      // Return the active QR payment details
+      const transaction = await storage.getTransaction(activeQrPayment.transactionId);
+      
+      return res.json({
+        success: true,
+        hasActivePayment: true,
+        qrPayment: activeQrPayment,
+        transaction,
+        message: "Active GCash QR payment found"
+      });
+    } catch (error) {
+      console.error("Error retrieving active QR payments:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Server error while retrieving active QR payments"
+      });
+    }
+  });
+  
   // Endpoint to simulate payment completion for testing & development (in production this would be a webhook from DirectPay)
   app.post("/api/payments/simulate-completion", async (req: Request, res: Response) => {
     try {
