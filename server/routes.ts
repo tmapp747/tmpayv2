@@ -205,6 +205,30 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
     if (!user.casinoUsername && user.username) {
       console.log(`⚠️ Using username "${user.username}" as fallback for missing casinoUsername`);
       
+      // Mark this as a fallback case in transaction metadata
+      try {
+        // Find the associated transaction by reference
+        const transaction = await storage.getTransactionByUniqueId(reference) || 
+                          await storage.getTransactionByCasinoReference(reference);
+        
+        if (transaction) {
+          // Update transaction metadata to indicate fallback was used
+          await storage.updateTransactionMetadata(transaction.id, {
+            ...transaction.metadata,
+            usedUsernameFallback: true,
+            fallbackDetails: {
+              originalCasinoUsername: user.casinoUsername,
+              usedUsername: user.username,
+              timestamp: new Date().toISOString()
+            }
+          });
+          console.log(`✅ Updated transaction ${transaction.id} with fallback metadata`);
+        }
+      } catch (err) {
+        const metadataError = err as Error;
+        console.warn(`⚠️ Could not update transaction metadata: ${metadataError.message}`);
+      }
+      
       // Try to automatically fix the user record for future transfers
       try {
         await storage.updateUserCasinoDetails(user.id, { 
@@ -286,6 +310,36 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
         if (!effectiveCasinoUsername) {
           console.error('❌ User has no username or casinoUsername for fallback');
           throw new Error('User has no username or casinoUsername for fallback');
+        }
+        
+        // If using username as fallback in the error handler, track this in metadata
+        if (!user.casinoUsername && user.username) {
+          console.log(`⚠️ [FALLBACK] Using username "${user.username}" as fallback for missing casinoUsername`);
+          
+          // Mark this as a fallback case in transaction metadata
+          try {
+            // Find the associated transaction by reference
+            const transaction = await storage.getTransactionByUniqueId(reference) || 
+                              await storage.getTransactionByCasinoReference(reference);
+            
+            if (transaction) {
+              // Update transaction metadata to indicate fallback was used
+              await storage.updateTransactionMetadata(transaction.id, {
+                ...transaction.metadata,
+                usedUsernameFallback: true,
+                fallbackDetails: {
+                  originalCasinoUsername: user.casinoUsername,
+                  usedUsername: user.username,
+                  timestamp: new Date().toISOString(),
+                  fromErrorHandler: true
+                }
+              });
+              console.log(`✅ Updated transaction ${transaction.id} with fallback metadata (from error handler)`);
+            }
+          } catch (err) {
+            const metadataError = err as Error;
+            console.warn(`⚠️ Could not update transaction metadata in error handler: ${metadataError.message}`);
+          }
         }
         
         // List of allowed top managers to try
