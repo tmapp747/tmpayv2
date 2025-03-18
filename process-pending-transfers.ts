@@ -66,9 +66,12 @@ async function processPendingCasinoTransfers() {
           const comment = `An amount of ${amount} ${transaction.currency || 'PHP'} has been deposited. Nonce: ${nonce}. TMPay Web App Transaction.`;
           
           // Get the top manager for this user (use stored value or default to first allowed top manager)
+          // Make sure we're using the correct top manager that has a valid token
           const topManager = user.topManager || 'Marcthepogi';
+          console.log(`Using top manager '${topManager}' for casino transfer`);
           
           // Call casino API to transfer funds
+          // The API will handle getting the correct token for this top manager
           const transferResult = await casino747Api.transferFunds(
             amount,
             parseInt(user.casinoId),

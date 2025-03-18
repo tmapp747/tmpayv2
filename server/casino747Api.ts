@@ -575,17 +575,20 @@ export class Casino747Api {
    * @private
    */
   private async getTopManagerToken(topManager: string): Promise<string> {
-    console.log(`Getting token for top manager: ${topManager}`);
+    console.log(`🔑 [CASINO747] Getting token for top manager: ${topManager}`);
+    
+    // Normalize to lowercase for consistency in comparisons
+    const topManagerLower = topManager.toLowerCase();
     
     // 1. Check if we have a cached token for this top manager that's not expired
-    if (this.tokenCacheMap.has(topManager)) {
-      const cachedData = this.tokenCacheMap.get(topManager)!;
+    if (this.tokenCacheMap.has(topManagerLower)) {
+      const cachedData = this.tokenCacheMap.get(topManagerLower)!;
       if (cachedData.expiry > new Date()) {
-        console.log(`Using cached auth token for top manager: ${topManager}`);
+        console.log(`✅ [CASINO747] Using cached auth token for top manager: ${topManager}`);
         return cachedData.token;
       } else {
-        console.log(`Cached token expired for top manager: ${topManager}`);
-        this.tokenCacheMap.delete(topManager);
+        console.log(`⏰ [CASINO747] Cached token expired for top manager: ${topManager}`);
+        this.tokenCacheMap.delete(topManagerLower);
       }
     }
     
@@ -593,9 +596,9 @@ export class Casino747Api {
     const user = await storage.getUserByTopManager(topManager);
     
     if (user && user.casinoAuthToken && user.casinoAuthTokenExpiry && user.casinoAuthTokenExpiry > new Date()) {
-      console.log(`Using stored auth token for top manager: ${topManager} from user ${user.username}`);
+      console.log(`✅ [CASINO747] Using stored auth token for top manager: ${topManager} from user ${user.username}`);
       // Cache the token
-      this.tokenCacheMap.set(topManager, {
+      this.tokenCacheMap.set(topManagerLower, {
         token: user.casinoAuthToken,
         expiry: user.casinoAuthTokenExpiry
       });
@@ -603,18 +606,20 @@ export class Casino747Api {
     }
     
     // 3. If no valid token exists, get it from environment secrets
-    console.log(`Getting auth token from environment for top manager: ${topManager}`);
+    console.log(`🔄 [CASINO747] Getting auth token from environment for top manager: ${topManager}`);
     
-    // Make the comparison case-insensitive
-    const topManagerLower = topManager.toLowerCase();
+    // Get the token based on normalized top manager name
     let token: string | undefined;
     
     if (topManagerLower === 'marcthepogi') {
-      token = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf'; // Use the token from your curl example
+      token = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf'; // Fallback token
+      console.log(`✅ [CASINO747] Using ${token === process.env.CASINO_TOKEN_MARCTHEPOGI ? 'environment' : 'fallback'} token for Marcthepogi`);
     } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
       token = process.env.CASINO_TOKEN_BOSSMARC747;
+      console.log(`✅ [CASINO747] Using environment token for Bossmarc747: ${token ? 'Found' : 'Not found'}`);
     } else if (topManagerLower === 'teammarc') {
       token = process.env.CASINO_TOKEN_TEAMMARC;
+      console.log(`✅ [CASINO747] Using environment token for Teammarc: ${token ? 'Found' : 'Not found'}`);
     }
     
     if (!token) {
