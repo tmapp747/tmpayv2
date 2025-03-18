@@ -3243,12 +3243,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Log the payload
     console.log("✅ DirectPay webhook received:", JSON.stringify(payload));
     
-    // Extract payment details from the webhook payload
+    // Extract payment details from the webhook payload based on DirectPay's official format
+    // Official DirectPay sends: refId, status, txnId, amount, txnDate, etc.
     const { 
       reference, status, state, payment_status, 
       amount, transactionId, transaction_id, 
-      payment_reference, refId, invoiceNo
+      payment_reference, refId, invoiceNo,
+      txnId, txnDate, txnDesc, merchant_id
     } = payload;
+    
+    // Log all fields for diagnostic purposes
+    console.log("📝 DirectPay webhook fields:", {
+      refId, reference, payment_reference, invoiceNo,
+      status, state, payment_status,
+      txnId, transaction_id, transactionId,
+      amount, txnDate, txnDesc, merchant_id
+    });
     
     // Determine the actual reference value from possible fields
     // Support both official DirectPay format (refId) and legacy formats
@@ -3475,6 +3485,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("✅ DirectPay webhook received:", JSON.stringify(req.body));
       
+      // Official DirectPay GCash webhook format has these fields:
+      // {
+      //   "amount": "100",
+      //   "currency": "PHP",
+      //   "refId": "ref_1ae942cfd281eaa9", 
+      //   "invoiceNo": "Invoice123",
+      //   "txnDesc": "Add Funds via GCASH QR|refId:ref_1ae942cfd281eaa9",
+      //   "txnDate": "1742016549514",
+      //   "txnId": "9908728",
+      //   "status": "SUCCESS", 
+      //   "merchant_id": "ACw4xoKnvj52StUi"
+      // }
+      
       // Extract payment reference from various possible fields
       // Official DirectPay format uses refId, but we support legacy formats too
       const paymentReference = req.body.refId || req.body.reference || req.body.payment_reference || req.body.ref;
@@ -3487,6 +3510,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           webhookReceived: true
         });
       }
+      
+      // Log an enhanced webhook receipt confirmation with reference ID
+      console.log(`🔄 Processing DirectPay webhook for reference: ${paymentReference}`);
+      console.log(`📌 Payment status from DirectPay: ${req.body.status || 'not specified'}`);
+      
 
       // Add timeout handling
       const timeoutPromise = new Promise((_, reject) => 

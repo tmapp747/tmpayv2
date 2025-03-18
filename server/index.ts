@@ -6,6 +6,8 @@ import { apiLimiter, authLimiter } from './middleware/rateLimiter';
 // Use the original routes file for now while transitioning
 import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
+// Import webhook routes for payment integrations
+import webhookRoutes from './routes/webhooks';
 
 const app = express();
 app.use(express.json());
@@ -59,6 +61,10 @@ app.use((req, res, next) => {
   
   // Setup authentication
   setupAuth(app);
+  
+  // Register webhook routes (no authentication required for external service callbacks)
+  // These need to be defined before the main routes to ensure proper handling
+  app.use('/api/webhook', webhookRoutes);
   
   // Use the original routes system temporarily
   await registerRoutes(app);
