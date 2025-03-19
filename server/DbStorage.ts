@@ -64,10 +64,8 @@ export class DbStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     try {
-      // Use SQL LOWER function for case-insensitive comparison
-      const result = await this.dbInstance.select().from(users)
-        .where(sql`LOWER(${users.username}) = LOWER(${username})`);
-      if (DB_DEBUG) console.log(`[DB] Retrieved user by username (case-insensitive): ${username}`);
+      const result = await this.dbInstance.select().from(users).where(eq(users.username, username));
+      if (DB_DEBUG) console.log(`[DB] Retrieved user by username: ${username}`);
       return result[0];
     } catch (error) {
       console.error(`[DB] Error retrieving user by username ${username}:`, error);
@@ -235,10 +233,8 @@ export class DbStorage implements IStorage {
 
   async getUserByCasinoUsername(casinoUsername: string): Promise<User | undefined> {
     try {
-      // Use SQL LOWER function for case-insensitive comparison
-      const result = await this.dbInstance.select().from(users)
-        .where(sql`LOWER(${users.casinoUsername}) = LOWER(${casinoUsername})`);
-      if (DB_DEBUG) console.log(`[DB] Retrieved user by casino username (case-insensitive): ${casinoUsername}`);
+      const result = await this.dbInstance.select().from(users).where(eq(users.casinoUsername, casinoUsername));
+      if (DB_DEBUG) console.log(`[DB] Retrieved user by casino username: ${casinoUsername}`);
       return result[0];
     } catch (error) {
       console.error(`[DB] Error retrieving user by casino username ${casinoUsername}:`, error);
@@ -418,10 +414,9 @@ export class DbStorage implements IStorage {
 
   async isUserAuthorized(username: string): Promise<boolean> {
     try {
-      // Use SQL LOWER function for case-insensitive comparison
       const result = await this.dbInstance.select({
         isAuthorized: users.isAuthorized
-      }).from(users).where(sql`LOWER(${users.username}) = LOWER(${username})`);
+      }).from(users).where(eq(users.username, username));
 
       if (!result.length) return false;
       return result[0].isAuthorized === true;
@@ -635,10 +630,8 @@ export class DbStorage implements IStorage {
 
   async getUserByTopManager(topManager: string): Promise<User | undefined> {
     try {
-      // Use SQL LOWER function for case-insensitive comparison
-      const result = await this.dbInstance.select().from(users)
-        .where(sql`LOWER(${users.topManager}) = LOWER(${topManager})`);
-      if (DB_DEBUG && result.length) console.log(`[DB] Retrieved user by top manager (case-insensitive): ${topManager}`);
+      const result = await this.dbInstance.select().from(users).where(eq(users.topManager, topManager));
+      if (DB_DEBUG && result.length) console.log(`[DB] Retrieved user by top manager: ${topManager}`);
       return result[0];
     } catch (error) {
       console.error(`[DB] Error retrieving user by top manager ${topManager}:`, error);

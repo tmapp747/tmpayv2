@@ -8,7 +8,6 @@ import {
   Eye, EyeOff, ArrowLeft, ChevronRight, 
   CheckCircle, XCircle, Loader2
 } from 'lucide-react';
-import sevenLogo from '../assets/logos/747-logo.png';
 import { useMutation } from '@tanstack/react-query';
 
 // Form schemas
@@ -323,7 +322,7 @@ export default function MobileAuthPage() {
             <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl transform scale-110"></div>
             <div className="absolute inset-0 rounded-full bg-white/20 blur-md"></div>
             <img 
-              src={sevenLogo} 
+              src="/assets/logos/747-logo.png" 
               alt="747 Logo" 
               className="h-16 object-contain relative z-10 drop-shadow-lg"
             />
