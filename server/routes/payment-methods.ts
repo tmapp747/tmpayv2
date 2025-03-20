@@ -41,6 +41,25 @@ router.get('/user/payment-methods', async (req: Request, res: Response) => {
 /**
  * Create a new payment method for the current user
  */
+/**
+ * Helper function to format numeric fields for database storage
+ * Converts numbers to strings as required by the numeric columns in PostgreSQL
+ */
+function formatNumericFields(data: any): any {
+  const formattedData = { ...data };
+  
+  // Convert numeric fields to strings to match PostgreSQL's numeric type
+  if (formattedData.dailyTransferLimit !== undefined && formattedData.dailyTransferLimit !== null) {
+    formattedData.dailyTransferLimit = String(formattedData.dailyTransferLimit);
+  }
+  
+  if (formattedData.perTransactionLimit !== undefined && formattedData.perTransactionLimit !== null) {
+    formattedData.perTransactionLimit = String(formattedData.perTransactionLimit);
+  }
+  
+  return formattedData;
+}
+
 router.post('/user/payment-methods', async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any)?.id;
@@ -105,6 +124,9 @@ router.post('/user/payment-methods', async (req: Request, res: Response) => {
       ...req.body,
       userId
     });
+    
+    // Format numeric fields for database storage
+    const formattedData = formatNumericFields(validatedData);
 
     // If setting as default, clear other defaults first
     if (validatedData.isDefault) {
@@ -116,7 +138,7 @@ router.post('/user/payment-methods', async (req: Request, res: Response) => {
       }
     }
 
-    const newMethod = await storage.createUserPaymentMethod(validatedData);
+    const newMethod = await storage.createUserPaymentMethod(formattedData);
     
     return res.status(201).json({
       success: true,
@@ -219,6 +241,9 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
     });
 
     const validatedData = validationSchema.parse(req.body);
+    
+    // Format numeric fields for database storage
+    const formattedData = formatNumericFields(validatedData);
 
     // If setting as default, clear other defaults first
     if (validatedData.isDefault) {
@@ -230,7 +255,7 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
       }
     }
 
-    const updatedMethod = await storage.updateUserPaymentMethod(methodId, validatedData);
+    const updatedMethod = await storage.updateUserPaymentMethod(methodId, formattedData);
     
     return res.json({
       success: true,
