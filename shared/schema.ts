@@ -4,7 +4,7 @@ import { z } from "zod";
 
 // Currency definition - only supporting PHP (fiat), PHPT and USDT (crypto)
 export const supportedCurrencies = ['PHP', 'PHPT', 'USDT'];
-export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'other'];
+export const supportedPaymentMethodTypes = ['bank', 'wallet', 'cash', 'remittance', 'crypto', 'instapay', 'pesonet', 'other'];
 export const supportedUserRoles = ['player', 'agent', 'admin'];
 export const supportedUserStatuses = ['active', 'suspended', 'inactive', 'pending_review'];
 export const supportedConversationStatuses = ['active', 'resolved', 'pending', 'closed'];
@@ -241,7 +241,7 @@ export const paymentMethods = pgTable("payment_methods", {
 export const userPaymentMethods = pgTable("user_payment_methods", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(), // User who owns this payment method
-  type: text("type").notNull(), // Type of payment method: 'bank', 'wallet', 'crypto', 'other'
+  type: text("type").notNull(), // Type of payment method: 'bank', 'wallet', 'crypto', 'instapay', 'pesonet', 'remittance', 'other'
   name: text("name").notNull(), // Name for this payment method (e.g., "My Maya Account")
   accountName: text("account_name").notNull(), // Account owner's name
   accountNumber: text("account_number").notNull(), // Account number, phone number, or wallet address
@@ -250,6 +250,29 @@ export const userPaymentMethods = pgTable("user_payment_methods", {
   swiftCode: text("swift_code"), // SWIFT/BIC code for international transfers
   routingNumber: text("routing_number"), // Routing/ABA number for US banks
   blockchainNetwork: text("blockchain_network"), // Network for crypto addresses (e.g., "ETH", "BTC")
+  
+  // Philippine-specific fields
+  instapayEnabled: boolean("instapay_enabled").default(false), // Whether this account supports InstaPay
+  pesonetEnabled: boolean("pesonet_enabled").default(false), // Whether this account supports PESONet
+  qrPhEnabled: boolean("qr_ph_enabled").default(false), // Whether this account supports QR Ph
+  dailyTransferLimit: numeric("daily_transfer_limit", { precision: 10, scale: 2 }), // Daily transfer limit
+  perTransactionLimit: numeric("per_transaction_limit", { precision: 10, scale: 2 }), // Per transaction limit
+  
+  // Security and verification
+  verificationMethod: text("verification_method"), // 'micro_deposit', 'id_verification', 'otp', 'biometric'
+  verificationStatus: text("verification_status").default("pending"), // 'pending', 'in_progress', 'verified', 'failed'
+  verificationDate: timestamp("verification_date"), // When the verification was completed
+  verificationData: json("verification_data").default({}), // Verification data (e.g., micro-deposit amounts)
+  
+  // Remittance-specific fields
+  remittanceProvider: text("remittance_provider"), // 'western_union', 'remitly', 'xoom', 'palawan', 'cebuana', 'mlhuillier'
+  remittancePhoneNumber: text("remittance_phone_number"), // Phone number for remittance service
+  remittancePin: text("remittance_pin"), // PIN for remittance service (encrypted)
+  
+  // Enhanced categorization for e-wallets
+  eWalletProvider: text("e_wallet_provider"), // 'gcash', 'paymaya', 'grabpay', 'shopeepay', 'coins', 'other'
+  eWalletLinkedMobile: text("e_wallet_linked_mobile"), // Mobile number linked to this e-wallet
+  
   additionalInfo: text("additional_info"), // Any additional information
   isDefault: boolean("is_default").default(false), // Whether this is the default payment method for the user
   isVerified: boolean("is_verified").default(false), // Whether this payment method has been verified
