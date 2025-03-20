@@ -1,12 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { Redirect } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import MobileGCashDeposit from "@/components/mobile/MobileGCashDeposit";
+import MobileManualDeposit from "@/components/mobile/MobileManualDeposit";
+import MobilePaygramDeposit from "@/components/mobile/MobilePaygramDeposit";
+import MobileDepositMethodSelection, { PaymentMethodType } from "@/components/mobile/MobileDepositMethodSelection";
 import MobileLayout from "@/components/MobileLayout";
+import { AnimatePresence, motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
 export default function MobileDepositPage() {
   const { user, isLoading } = useAuth();
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethodType | null>(null);
 
   // Show loading state
   if (isLoading) {
@@ -22,13 +27,42 @@ export default function MobileDepositPage() {
     return <Redirect to="/mobile-auth" />;
   }
 
+  // Handle payment method selection
+  const handleSelectMethod = (method: PaymentMethodType) => {
+    setSelectedMethod(method);
+  };
+
+  // Render the appropriate deposit component based on selected method
+  const renderDepositComponent = () => {
+    switch (selectedMethod) {
+      case 'gcash':
+        return <MobileGCashDeposit />;
+      case 'manual':
+        return <MobileManualDeposit />;
+      case 'paygram':
+        return <MobilePaygramDeposit />;
+      default:
+        return <MobileDepositMethodSelection onSelectMethod={handleSelectMethod} />;
+    }
+  };
+
   return (
     <MobileLayout 
-      title="Deposit" 
+      title={selectedMethod ? `${selectedMethod.charAt(0).toUpperCase() + selectedMethod.slice(1)} Deposit` : "Deposit"} 
       showNav={true}
       transparentHeader={true}
     >
-      <MobileGCashDeposit />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedMethod || 'selection'}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {renderDepositComponent()}
+        </motion.div>
+      </AnimatePresence>
     </MobileLayout>
   );
 }
