@@ -273,7 +273,7 @@ export const userPaymentMethods = pgTable("user_payment_methods", {
   eWalletProvider: text("e_wallet_provider"), // 'gcash', 'paymaya', 'grabpay', 'shopeepay', 'coins', 'other'
   eWalletLinkedMobile: text("e_wallet_linked_mobile"), // Mobile number linked to this e-wallet
   
-  additionalInfo: text("additional_info"), // Any additional information
+  additionalInfo: json("additional_info").default({}), // Any additional information
   isDefault: boolean("is_default").default(false), // Whether this is the default payment method for the user
   isVerified: boolean("is_verified").default(false), // Whether this payment method has been verified
   createdAt: timestamp("created_at").defaultNow(),

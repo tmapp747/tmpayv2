@@ -8,76 +8,51 @@
  * 4. Additional verification and security features
  */
 import { db } from "./server/db";
-import { userPaymentMethods } from "./shared/schema";
 import { sql } from "drizzle-orm";
+
+// List of all columns we want to add, each with their SQL definition
+const columnsToAdd = [
+  { name: "instapay_enabled", definition: "BOOLEAN DEFAULT false" },
+  { name: "pesonet_enabled", definition: "BOOLEAN DEFAULT false" },
+  { name: "qr_ph_enabled", definition: "BOOLEAN DEFAULT false" },
+  { name: "daily_transfer_limit", definition: "NUMERIC(10,2)" },
+  { name: "per_transaction_limit", definition: "NUMERIC(10,2)" },
+  { name: "verification_method", definition: "TEXT" },
+  { name: "verification_status", definition: "TEXT DEFAULT 'pending'" },
+  { name: "verification_data", definition: "JSONB DEFAULT '{}'::jsonb" },
+  { name: "remittance_provider", definition: "TEXT" },
+  { name: "remittance_phone_number", definition: "TEXT" },
+  { name: "remittance_pin", definition: "TEXT" },
+  { name: "e_wallet_provider", definition: "TEXT" },
+  { name: "e_wallet_linked_mobile", definition: "TEXT" },
+  { name: "blockchain_network", definition: "TEXT" },
+  { name: "branch_name", definition: "TEXT" },
+  { name: "swift_code", definition: "TEXT" },
+  { name: "routing_number", definition: "TEXT" },
+  { name: "additional_info", definition: "JSONB DEFAULT '{}'::jsonb" }
+];
 
 async function migrateDatabase() {
   console.log("Starting migration for Philippine banking features...");
   
   try {
-    // First check if the new columns already exist to avoid errors
-    if (!await checkColumnExists("user_payment_methods", "instapay_enabled")) {
-      console.log("Adding InstaPay support columns...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN instapay_enabled BOOLEAN DEFAULT false,
-        ADD COLUMN pesonet_enabled BOOLEAN DEFAULT false,
-        ADD COLUMN qr_ph_enabled BOOLEAN DEFAULT false
-      `);
-    }
-
-    if (!await checkColumnExists("user_payment_methods", "daily_transfer_limit")) {
-      console.log("Adding transaction limit columns...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN daily_transfer_limit NUMERIC(10,2),
-        ADD COLUMN per_transaction_limit NUMERIC(10,2)
-      `);
-    }
-
-    if (!await checkColumnExists("user_payment_methods", "verification_method")) {
-      console.log("Adding verification fields...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN verification_method TEXT,
-        ADD COLUMN verification_status TEXT DEFAULT 'pending',
-        ADD COLUMN verification_date TIMESTAMP,
-        ADD COLUMN verification_data JSONB DEFAULT '{}'::jsonb
-      `);
-    }
-
-    if (!await checkColumnExists("user_payment_methods", "remittance_provider")) {
-      console.log("Adding remittance service fields...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN remittance_provider TEXT,
-        ADD COLUMN remittance_phone_number TEXT,
-        ADD COLUMN remittance_pin TEXT
-      `);
-    }
-
-    if (!await checkColumnExists("user_payment_methods", "e_wallet_provider")) {
-      console.log("Adding enhanced e-wallet fields...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN e_wallet_provider TEXT,
-        ADD COLUMN e_wallet_linked_mobile TEXT
-      `);
+    let columnsAdded = 0;
+    
+    // Process each column individually
+    for (const column of columnsToAdd) {
+      if (!await checkColumnExists("user_payment_methods", column.name)) {
+        console.log(`Adding column: ${column.name}`);
+        await db.execute(sql.raw(`
+          ALTER TABLE user_payment_methods 
+          ADD COLUMN ${column.name} ${column.definition}
+        `));
+        columnsAdded++;
+      } else {
+        console.log(`Column ${column.name} already exists, skipping...`);
+      }
     }
     
-    if (!await checkColumnExists("user_payment_methods", "blockchain_network")) {
-      console.log("Adding blockchain and additional banking fields...");
-      await db.execute(sql`
-        ALTER TABLE user_payment_methods 
-        ADD COLUMN blockchain_network TEXT,
-        ADD COLUMN branch_name TEXT,
-        ADD COLUMN swift_code TEXT,
-        ADD COLUMN routing_number TEXT,
-        ADD COLUMN additional_info JSONB DEFAULT '{}'::jsonb
-      `);
-    }
-
-    console.log("Migration completed successfully!");
+    console.log(`Migration completed successfully! Added ${columnsAdded} new columns.`);
   } catch (error) {
     console.error("Error during migration:", error);
     throw error;
