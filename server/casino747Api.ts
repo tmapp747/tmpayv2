@@ -865,15 +865,33 @@ export class Casino747Api {
     // Get the token based on normalized top manager name
     let token: string | undefined;
     
-    if (topManagerLower === 'marcthepogi') {
-      token = process.env.CASINO_TOKEN_MARCTHEPOGI || 'e726f734-0b50-4ca2-b8d7-bca385955acf'; // Fallback token
-      console.log(`✅ [CASINO747] Using ${token === process.env.CASINO_TOKEN_MARCTHEPOGI ? 'environment' : 'fallback'} token for Marcthepogi`);
-    } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
-      token = process.env.CASINO_TOKEN_BOSSMARC747;
-      console.log(`✅ [CASINO747] Using environment token for Bossmarc747: ${token ? 'Found' : 'Not found'}`);
-    } else if (topManagerLower === 'teammarc') {
-      token = process.env.CASINO_TOKEN_TEAMMARC;
-      console.log(`✅ [CASINO747] Using environment token for Teammarc: ${token ? 'Found' : 'Not found'}`);
+    // First check if we have a hierarchy-specific token in environment
+    const envVarName = `CASINO_TOKEN_${topManagerLower.toUpperCase()}`;
+    
+    // Try to get from exact match environment variable
+    token = process.env[envVarName];
+    
+    // If no exact match, try the predefined mappings
+    if (!token) {
+      if (topManagerLower === 'marcthepogi') {
+        token = process.env.CASINO_TOKEN_MARCTHEPOGI;
+        console.log(`✅ [CASINO747] Using environment token for Marcthepogi: ${token ? 'Found' : 'Not found'}`);
+      } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
+        token = process.env.CASINO_TOKEN_BOSSMARC747;
+        console.log(`✅ [CASINO747] Using environment token for Bossmarc747: ${token ? 'Found' : 'Not found'}`);
+      } else if (topManagerLower === 'teammarc') {
+        token = process.env.CASINO_TOKEN_TEAMMARC;
+        console.log(`✅ [CASINO747] Using environment token for Teammarc: ${token ? 'Found' : 'Not found'}`);
+      }
+    } else {
+      console.log(`✅ [CASINO747] Found exact match token for ${topManager} in environment variable ${envVarName}`);
+    }
+    
+    // If all else fails, use a default admin manager
+    if (!token) {
+      const defaultManager = 'Marcthepogi';
+      console.log(`⚠️ [CASINO747] No token found for ${topManager}, falling back to default manager: ${defaultManager}`);
+      token = process.env.CASINO_TOKEN_MARCTHEPOGI;
     }
     
     if (!token) {
