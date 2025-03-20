@@ -125,7 +125,7 @@ async function seedPaymentMethods() {
           '${method.type}', 
           '${method.account_name}', 
           '${method.account_number}', 
-          ${method.bankName ? `'${method.bankName}'` : 'NULL'}, 
+          ${method.bankName ? `'${method.bankName}'` : 'NULL'}, /* This corresponds to bank_name column in the database */
           ${method.instructions ? `'${method.instructions}'` : 'NULL'}, 
           ${method.icon_url ? `'${method.icon_url}'` : 'NULL'}, 
           ${method.is_active}, 
