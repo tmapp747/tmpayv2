@@ -110,10 +110,10 @@ export default function PortalSelector() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#001138] to-[#002D87] flex flex-col">
+    <div className="min-h-screen min-h-[100dvh] bg-gradient-to-b from-[#001138] to-[#002D87] flex flex-col pt-16">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 w-full z-50 bg-[#00174F]/95 backdrop-blur-md py-3">
-        <div className="container flex items-center justify-between mx-4">
+        <div className="flex items-center justify-between px-4 w-full">
           {/* Logo */}
           <div className="relative flex items-center justify-center h-10 w-auto">
             <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-300/40 to-amber-500/30 blur-xl transform scale-[1.4] animate-pulse-slow opacity-70"></div>
@@ -144,7 +144,7 @@ export default function PortalSelector() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pt-20 px-4 pb-6">
+      <main className="flex-1 pt-4 px-4 pb-6 overflow-x-hidden">
         <div className="w-full max-w-md mx-auto">
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-white mb-2">747 Portal Links</h2>
@@ -152,7 +152,7 @@ export default function PortalSelector() {
           </div>
           
           {/* Links Grid */}
-          <div className="grid gap-3">
+          <div className="grid gap-3 w-full">
             {portalLinks.map((link, index) => (
               <LinkCard
                 key={index}
@@ -203,18 +203,18 @@ function LinkCard({ title, description, domain, url, icon, color, internal = fal
   const linkContent = (
     <motion.div 
       whileTap={{ scale: 0.98 }}
-      className={`bg-gradient-to-br ${colors[color]} backdrop-blur-md rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden`}
+      className={`bg-gradient-to-br ${colors[color]} backdrop-blur-md rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors relative overflow-hidden w-full`}
     >
       <div className="flex items-center">
-        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 backdrop-filter backdrop-blur-sm">
+        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mr-4 backdrop-filter backdrop-blur-sm shrink-0">
           {icon}
         </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-white">{title}</h3>
-          <p className="text-sm text-blue-100/70">{description}</p>
-          <div className="mt-1 text-xs text-blue-300">{domain}</div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-bold text-white truncate">{title}</h3>
+          <p className="text-sm text-blue-100/70 truncate">{description}</p>
+          <div className="mt-1 text-xs text-blue-300 truncate">{domain}</div>
         </div>
-        <ExternalLink size={18} className="text-white/50 ml-2" />
+        <ExternalLink size={18} className="text-white/50 ml-2 shrink-0" />
       </div>
     </motion.div>
   );
