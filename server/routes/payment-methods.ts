@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { storage } from '../storage';
 import { insertPaymentMethodSchema, insertUserPaymentMethodSchema } from '../../shared/schema';
+import { mapDbToFrontend, mapFrontendToDb } from '../utils/payment-adapter';
 
 /**
  * Helper function to format numeric fields for database storage
@@ -359,9 +360,12 @@ router.get('/payment-methods', async (req: Request, res: Response) => {
 
     const paymentMethods = await storage.getPaymentMethods(type, isActive);
     
+    // Convert snake_case DB fields to camelCase for frontend
+    const formattedMethods = paymentMethods.map(method => mapDbToFrontend(method));
+    
     return res.json({
       success: true,
-      methods: paymentMethods
+      methods: formattedMethods
     });
   } catch (error) {
     console.error('Error fetching payment methods:', error);
@@ -384,9 +388,12 @@ router.get('/payment-methods/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Payment method not found' });
     }
     
+    // Convert snake_case DB fields to camelCase for frontend
+    const formattedMethod = mapDbToFrontend(paymentMethod);
+    
     return res.json({
       success: true,
-      method: paymentMethod
+      method: formattedMethod
     });
   } catch (error) {
     console.error('Error fetching payment method:', error);
