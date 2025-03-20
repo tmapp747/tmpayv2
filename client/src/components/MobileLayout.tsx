@@ -3,6 +3,7 @@ import { ReactNode, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import BottomNavBar from "./navigation/BottomNavBar";
 import { initMobileEnhancements } from "@/lib/mobile-utils";
+import MobileHeader from "./MobileHeader";
 
 interface MobileLayoutProps {
   children: ReactNode;
@@ -12,6 +13,8 @@ interface MobileLayoutProps {
   customHeader?: boolean;
   gradient?: boolean;
   padding?: boolean;
+  transparentHeader?: boolean;
+  showLogout?: boolean;
 }
 
 export const MobileLayout = ({ 
@@ -21,7 +24,9 @@ export const MobileLayout = ({
   headerContent,
   customHeader = false,
   gradient = true,
-  padding = true
+  padding = true,
+  transparentHeader = false,
+  showLogout = true
 }: MobileLayoutProps) => {
   // Initialize mobile enhancements (status bar handling, viewport adjustments)
   useEffect(() => {
@@ -38,20 +43,17 @@ export const MobileLayout = ({
       paddingBottom: showNav ? 'calc(env(safe-area-inset-bottom, 16px) + 80px)' : 'env(safe-area-inset-bottom, 16px)',
       paddingTop: 'env(safe-area-inset-top, 0px)'
     }}>
+      {/* Use custom header if provided */}
       {customHeader && headerContent}
       
+      {/* Use the universal MobileHeader component when title is provided and no custom header */}
       {title && !customHeader && (
-        <header className={cn(
-          "sticky top-0 z-40 w-full",
-          "backdrop-blur-md bg-[#00174F]/70 px-4 py-4"
-        )}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-white">{title}</h1>
-            </div>
-            {headerContent}
-          </div>
-        </header>
+        <MobileHeader 
+          title={title} 
+          transparent={transparentHeader}
+          showLogout={showLogout}
+          customClassName={padding ? "-mx-4 px-4" : ""}
+        />
       )}
       
       <main className={cn(

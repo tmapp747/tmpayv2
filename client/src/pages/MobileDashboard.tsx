@@ -210,10 +210,10 @@ export default function MobileDashboard() {
   
   return (
     <MobileLayout
-      customHeader={true}
-      headerContent={headerContent}
+      title="Dashboard"
       showNav={true}
       padding={false}
+      transparentHeader={true}
     >
       {/* Pull-to-refresh indicator */}
       <div 
