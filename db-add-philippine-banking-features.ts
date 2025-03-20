@@ -64,6 +64,18 @@ async function migrateDatabase() {
         ADD COLUMN e_wallet_linked_mobile TEXT
       `);
     }
+    
+    if (!await checkColumnExists("user_payment_methods", "blockchain_network")) {
+      console.log("Adding blockchain and additional banking fields...");
+      await db.execute(sql`
+        ALTER TABLE user_payment_methods 
+        ADD COLUMN blockchain_network TEXT,
+        ADD COLUMN branch_name TEXT,
+        ADD COLUMN swift_code TEXT,
+        ADD COLUMN routing_number TEXT,
+        ADD COLUMN additional_info JSONB DEFAULT '{}'::jsonb
+      `);
+    }
 
     console.log("Migration completed successfully!");
   } catch (error) {
@@ -82,7 +94,7 @@ async function checkColumnExists(table: string, column: string): Promise<boolean
     WHERE table_name = ${table} AND column_name = ${column}
   `);
   
-  return result.length > 0;
+  return result.rows.length > 0;
 }
 
 // Run the migration
