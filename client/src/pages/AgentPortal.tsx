@@ -205,7 +205,15 @@ export default function AgentPortal() {
 }
 
 // Stats Card Component
-function StatsCard({ title, value, icon, change, color }) {
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  change?: number;
+  color: 'blue' | 'green' | 'purple' | 'amber';
+}
+
+function StatsCard({ title, value, icon, change, color }: StatsCardProps) {
   const colors = {
     blue: "from-blue-500/20 to-blue-600/10 text-blue-300",
     green: "from-emerald-500/20 to-emerald-600/10 text-emerald-300",
@@ -213,7 +221,7 @@ function StatsCard({ title, value, icon, change, color }) {
     amber: "from-amber-500/20 to-amber-600/10 text-amber-300",
   };
 
-  const isPositive = change > 0;
+  const isPositive = change !== undefined && change > 0;
   
   return (
     <div className={`bg-gradient-to-br ${colors[color]} rounded-xl p-3 backdrop-blur-sm border border-white/10`}>
@@ -232,7 +240,14 @@ function StatsCard({ title, value, icon, change, color }) {
 }
 
 // Action Button Component
-function ActionButton({ icon, title, description, color }) {
+interface ActionButtonProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  color: 'blue' | 'green' | 'purple' | 'amber';
+}
+
+function ActionButton({ icon, title, description, color }: ActionButtonProps) {
   const colors = {
     blue: "from-blue-500/20 to-blue-600/5",
     green: "from-emerald-500/20 to-emerald-600/5",

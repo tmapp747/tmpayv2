@@ -304,7 +304,7 @@ export default function MobileDashboard() {
                 </motion.div>
               </Link>
               
-              <Link href="/mobile/portals" target="_blank">
+              <Link href="/portals">
                 <motion.div 
                   whileTap={{ scale: 0.95 }}
                   className="bg-gradient-to-br from-green-600 to-green-700 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg"

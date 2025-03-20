@@ -154,9 +154,9 @@ function Router() {
       }} />
       
       {/* Portal routes */}
-      <ProtectedRoute path="/portals" component={PortalSelector} />
-      <ProtectedRoute path="/player" component={PlayerPortal} />
-      <ProtectedRoute path="/agent" component={AgentPortal} />
+      <ProtectedRoute path="/portals" component={() => <PortalSelector />} />
+      <ProtectedRoute path="/player" component={() => <PlayerPortal />} />
+      <ProtectedRoute path="/agent" component={() => <AgentPortal />} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />

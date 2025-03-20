@@ -215,7 +215,13 @@ export default function PlayerPortal() {
 }
 
 // Action Button Component
-function ActionButton({ icon, title, color }) {
+interface ActionButtonProps {
+  icon: React.ReactNode;
+  title: string;
+  color: 'blue' | 'green' | 'purple' | 'amber';
+}
+
+function ActionButton({ icon, title, color }: ActionButtonProps) {
   const colors = {
     blue: "bg-blue-500/20 text-blue-300",
     green: "bg-emerald-500/20 text-emerald-300",
@@ -235,7 +241,15 @@ function ActionButton({ icon, title, color }) {
 }
 
 // Transaction Item Component
-function TransactionItem({ type, amount, date, status, game = null }) {
+interface TransactionItemProps {
+  type: string;
+  amount: number;
+  date: string;
+  status: string;
+  game?: string;
+}
+
+function TransactionItem({ type, amount, date, status, game }: TransactionItemProps) {
   // Set up icon and colors based on transaction type
   let icon = <Wallet className="h-5 w-5" />;
   let color = "text-blue-400";
