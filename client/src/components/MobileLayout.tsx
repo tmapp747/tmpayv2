@@ -59,7 +59,8 @@ export const MobileLayout = ({
       <main className={cn(
         "flex-1",
         !padding && !customHeader && title ? "mt-4" : "",
-        showNav ? "pb-16" : ""
+        showNav ? "pb-16" : "",
+        title ? "pt-16" : ""  // Add padding at the top equal to header height when title exists
       )}>
         {children}
       </main>

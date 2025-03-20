@@ -56,7 +56,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header className={`
-      sticky top-0 z-50 
+      fixed top-0 z-50 
       ${transparent ? 'bg-[#00174F]/80' : 'bg-[#00174F]/95'} 
       backdrop-blur-md
       py-3 
@@ -67,7 +67,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
     style={{
       marginLeft: 'calc(-50vw + 50%)',
       marginRight: 'calc(-50vw + 50%)',
-      position: 'relative',
+      position: 'fixed',
       width: '100vw',
     }}>
       <div className="flex items-center justify-between mx-4">
