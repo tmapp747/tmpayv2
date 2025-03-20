@@ -22,7 +22,7 @@ async function seedPaymentMethods() {
       type: "bank",
       account_name: "747 E-Wallet",
       account_number: "00123456789",
-      bank_name: "Banco de Oro",
+      bankName: "Banco de Oro", // Changed to match field in the data model
       instructions: "Transfer to this BDO account. Include reference number in the notes.",
       icon_url: "/assets/icons/bdo.svg",
       is_active: true,
@@ -33,7 +33,7 @@ async function seedPaymentMethods() {
       type: "bank",
       account_name: "747 E-Wallet",
       account_number: "1234567890",
-      bank_name: "Bank of the Philippine Islands",
+      bankName: "Bank of the Philippine Islands", // Changed to match field in the data model
       instructions: "Transfer to this BPI account. Include reference number in the notes.",
       icon_url: "/assets/icons/bpi.svg",
       is_active: true,
@@ -44,7 +44,7 @@ async function seedPaymentMethods() {
       type: "bank",
       account_name: "747 E-Wallet",
       account_number: "123-456-78901",
-      bank_name: "Metropolitan Bank & Trust Company",
+      bankName: "Metropolitan Bank & Trust Company", // Changed to match field in the data model
       instructions: "Transfer to this Metrobank account. Include reference number in the notes.",
       icon_url: "/assets/icons/metrobank.svg",
       is_active: true,
@@ -125,7 +125,7 @@ async function seedPaymentMethods() {
           '${method.type}', 
           '${method.account_name}', 
           '${method.account_number}', 
-          ${method.bank_name ? `'${method.bank_name}'` : 'NULL'}, 
+          ${method.bankName ? `'${method.bankName}'` : 'NULL'}, 
           ${method.instructions ? `'${method.instructions}'` : 'NULL'}, 
           ${method.icon_url ? `'${method.icon_url}'` : 'NULL'}, 
           ${method.is_active}, 
