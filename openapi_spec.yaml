@@ -1,0 +1,966 @@
+openapi: 3.0.0
+info:
+  title: 747 Casino E-Wallet Platform API
+  description: API documentation for the 747 Casino E-Wallet Platform
+  version: 1.0.0
+  contact:
+    name: Team Marc
+servers:
+  - url: https://e-cash-pro-bossmarc.replit.app/api
+    description: Production server
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT bearer token authentication
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: Session cookie for authentication
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          example: "Athan45"
+        password:
+          type: string
+          format: password
+          example: "A1234567"
+    
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 9
+            username:
+              type: string
+              example: "Athan45"
+            email:
+              type: string
+              example: "athan45@gmail.com"
+            balance:
+              type: string
+              example: "300.00"
+            pendingBalance:
+              type: string
+              example: "0.00"
+            casinoUsername:
+              type: string
+              example: "Athan45"
+            casinoClientId:
+              type: integer
+              example: 535901599
+            casinoUserType:
+              type: string
+              example: "player"
+            casinoBalance:
+              type: string
+              example: "0"
+            preferredCurrency:
+              type: string
+              example: "PHP"
+            isVip:
+              type: boolean
+              example: false
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "a1562a52424c9076d1b56babe72915dc015d819be323a13c4fc4f2b7812bedbc"
+    
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          example: "a1562a52424c9076d1b56babe72915dc015d819be323a13c4fc4f2b7812bedbc"
+    
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "b2673c63535c8987c2b56babe73026cb015d819be323a13c4fc4f2b7812cedcd"
+    
+    UserInfo:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 9
+            username:
+              type: string
+              example: "Athan45"
+            email:
+              type: string
+              example: "athan45@gmail.com"
+            balance:
+              type: string
+              example: "300.00"
+            pendingBalance:
+              type: string
+              example: "0.00"
+            casinoUsername:
+              type: string
+              example: "Athan45"
+            casinoClientId:
+              type: integer
+              example: 535901599
+            casinoUserType:
+              type: string
+              example: "player"
+            casinoBalance:
+              type: string
+              example: "0"
+            preferredCurrency:
+              type: string
+              example: "PHP"
+            isVip:
+              type: boolean
+              example: false
+    
+    CreateTransactionRequest:
+      type: object
+      required:
+        - type
+        - amount
+        - method
+      properties:
+        type:
+          type: string
+          enum: [deposit, withdraw, transfer]
+          example: "deposit"
+        amount:
+          type: number
+          format: float
+          example: 100
+        currency:
+          type: string
+          enum: [PHP, PHPT, USDT]
+          example: "PHP"
+        method:
+          type: string
+          enum: [gcash, bank, manual, crypto]
+          example: "gcash"
+        casinoUsername:
+          type: string
+          example: "Athan45"
+        description:
+          type: string
+          example: "Deposit via GCash"
+    
+    CreateTransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transaction:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 42
+            userId:
+              type: integer
+              example: 9
+            type:
+              type: string
+              example: "deposit"
+            method:
+              type: string
+              example: "gcash"
+            amount:
+              type: string
+              example: "100.00"
+            currency:
+              type: string
+              example: "PHP"
+            status:
+              type: string
+              example: "pending"
+            gcashStatus:
+              type: string
+              example: "pending"
+            casinoStatus:
+              type: string
+              example: "pending"
+            reference:
+              type: string
+              example: "Athan45_1742457932_DEPOSIT"
+            casinoUsername:
+              type: string
+              example: "Athan45"
+            createdAt:
+              type: string
+              format: date-time
+              example: "2025-03-20T07:45:32.000Z"
+    
+    GenerateQRRequest:
+      type: object
+      required:
+        - amount
+        - transactionId
+      properties:
+        amount:
+          type: number
+          format: float
+          example: 100
+        transactionId:
+          type: integer
+          example: 42
+    
+    GenerateQRResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        qrCode:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 15
+            transactionId:
+              type: integer
+              example: 42
+            paymentReference:
+              type: string
+              example: "ref_11b21e4de1a33b1d"
+            payUrl:
+              type: string
+              example: "https://direct-payph.com/payment/gcash/ref_11b21e4de1a33b1d"
+            qrCodeData:
+              type: string
+              example: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+            status:
+              type: string
+              example: "pending"
+            expiresAt:
+              type: string
+              format: date-time
+              example: "2025-03-20T08:15:32.000Z"
+    
+    TransactionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transaction:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 42
+            userId:
+              type: integer
+              example: 9
+            type:
+              type: string
+              example: "deposit"
+            method:
+              type: string
+              example: "gcash"
+            amount:
+              type: string
+              example: "100.00"
+            currency:
+              type: string
+              example: "PHP"
+            status:
+              type: string
+              example: "pending"
+            gcashStatus:
+              type: string
+              example: "pending"
+            casinoStatus:
+              type: string
+              example: "pending"
+            reference:
+              type: string
+              example: "Athan45_1742457932_DEPOSIT"
+            casinoUsername:
+              type: string
+              example: "Athan45"
+            createdAt:
+              type: string
+              format: date-time
+              example: "2025-03-20T07:45:32.000Z"
+            timeline:
+              type: array
+              items:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "payment_initiated"
+                  label:
+                    type: string
+                    example: "Payment Initiated"
+                  description:
+                    type: string
+                    example: "Payment process has been initiated"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-03-20T07:45:32.000Z"
+    
+    TransactionListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        transactions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 42
+              userId:
+                type: integer
+                example: 9
+              type:
+                type: string
+                example: "deposit"
+              method:
+                type: string
+                example: "gcash"
+              amount:
+                type: string
+                example: "100.00"
+              currency:
+                type: string
+                example: "PHP"
+              status:
+                type: string
+                example: "pending"
+              reference:
+                type: string
+                example: "Athan45_1742457932_DEPOSIT"
+              createdAt:
+                type: string
+                format: date-time
+                example: "2025-03-20T07:45:32.000Z"
+    
+    WebhookPayload:
+      type: object
+      properties:
+        transactionId:
+          type: string
+          example: "trans_123456"
+        reference:
+          type: string
+          example: "ref_11b21e4de1a33b1d"
+        status:
+          type: string
+          enum: [SUCCESS, FAILED, PENDING, EXPIRED, CANCELLED]
+          example: "SUCCESS"
+        amount:
+          type: string
+          example: "100.00"
+        currency:
+          type: string
+          example: "PHP"
+        paymentMethod:
+          type: string
+          example: "gcash"
+    
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Authentication required. Please log in again."
+        error:
+          type: string
+          example: "UNAUTHORIZED"
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate a user with username and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh authentication token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Log out a user
+      operationId: logout
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /user/info:
+    get:
+      tags:
+        - User Management
+      summary: Get current user information
+      operationId: getUserInfo
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get user's transaction history
+      operationId: getTransactions
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of transactions to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          description: Number of transactions to skip
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: type
+          in: query
+          description: Transaction type filter
+          required: false
+          schema:
+            type: string
+            enum: [deposit, withdraw, transfer]
+        - name: status
+          in: query
+          description: Transaction status filter
+          required: false
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+      responses:
+        '200':
+          description: Transaction history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /transactions/create:
+    post:
+      tags:
+        - Transactions
+      summary: Create a new transaction
+      operationId: createTransaction
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '200':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTransactionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Get a specific transaction by ID
+      operationId: getTransactionById
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: Transaction ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Transaction retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /payments/gcash/generate-qr:
+    post:
+      tags:
+        - Payments
+      summary: Generate a GCash QR code for payment
+      operationId: generateGCashQR
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateQRRequest'
+      responses:
+        '200':
+          description: QR code generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateQRResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /payments/gcash/check-status:
+    post:
+      tags:
+        - Payments
+      summary: Check the status of a GCash payment
+      operationId: checkGCashStatus
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - referenceId
+              properties:
+                referenceId:
+                  type: string
+                  example: "ref_11b21e4de1a33b1d"
+      responses:
+        '200':
+          description: Payment status checked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: string
+                    example: "pending"
+                  gcashStatus:
+                    type: string
+                    example: "PENDING"
+                  directPayStatus:
+                    type: string
+                    example: "PENDING"
+                  transactionReference:
+                    type: string
+                    example: "ref_11b21e4de1a33b1d"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /webhooks/directpay:
+    post:
+      tags:
+        - Webhooks
+      summary: Receive DirectPay payment webhooks
+      operationId: directPayWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookPayload'
+      responses:
+        '200':
+          description: Webhook received successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Webhook processed successfully"
+        '400':
+          description: Invalid webhook payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /casino/balance-realtime:
+    post:
+      tags:
+        - Casino Integration
+      summary: Get real-time casino balance for a user
+      operationId: getCasinoBalance
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "Athan45"
+      responses:
+        '200':
+          description: Casino balance retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  balance:
+                    type: string
+                    example: "1500.00"
+                  currency:
+                    type: string
+                    example: "PHP"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /casino/user-hierarchy:
+    post:
+      tags:
+        - Casino Integration
+      summary: Get user hierarchy information from casino
+      operationId: getUserHierarchy
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: "Athan45"
+                isAgent:
+                  type: boolean
+                  example: false
+      responses:
+        '200':
+          description: User hierarchy retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  hierarchy:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 242975
+                        clientId:
+                          type: integer
+                          example: 535901599
+                        username:
+                          type: string
+                          example: "Athan45"
+                        parentClientId:
+                          type: integer
+                          example: 459391
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 242975
+                      clientId:
+                        type: integer
+                        example: 535901599
+                      username:
+                        type: string
+                        example: "Athan45"
+                      parentClientId:
+                        type: integer
+                        example: 459391
+                  message:
+                    type: string
+                    example: "Hierarchy fetched successfully"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /casino/user-stats/{username}:
+    get:
+      tags:
+        - Casino Integration
+      summary: Get casino user statistics
+      operationId: getUserStats
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      parameters:
+        - name: username
+          in: path
+          description: Casino username
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  clientId:
+                    type: integer
+                    example: 535901599
+                  username:
+                    type: string
+                    example: "Athan45"
+                  stats:
+                    type: object
+                    properties:
+                      totalDeposits:
+                        type: number
+                        example: 500
+                      totalWithdrawals:
+                        type: number
+                        example: 200
+                      totalWagers:
+                        type: number
+                        example: 1000
+                      totalWinnings:
+                        type: number
+                        example: 1200
+                      totalBets:
+                        type: integer
+                        example: 50
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
