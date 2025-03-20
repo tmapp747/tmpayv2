@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import NewBalanceCard from '@/components/NewBalanceCard';
 import MobileLayout from '@/components/MobileLayout';
-import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, CreditCard, CheckCircle2, BarChart3 } from 'lucide-react';
-import { Link } from 'wouter';
+import { ChevronRight, SquareStack, ChevronDown, ArrowDownToLine, ScanLine, CreditCard, CheckCircle2, BarChart3, LogOut } from 'lucide-react';
+import { Link, useLocation } from 'wouter';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '@/lib/types';
 import MobileTransactionsList from '@/components/mobile/MobileTransactionsList';
 import MobileCasinoStats from '@/components/mobile/MobileCasinoStats';
+import { useAuth } from '@/hooks/use-auth';
 import teamMarcLogo from "../assets/Logo teammarc.png";
 
 export default function MobileDashboard() {
@@ -19,6 +20,8 @@ export default function MobileDashboard() {
   const queryClient = useQueryClient();
   const [swipeIndex, setSwipeIndex] = useState(0);
   const [paginationDots, setPaginationDots] = useState([true, false, false]);
+  const [, navigate] = useLocation();
+  const { logout } = useAuth();
   
   // Fetch user data
   const { data, isLoading, error } = useQuery<{ user: User }>({
@@ -83,24 +86,38 @@ export default function MobileDashboard() {
 
   // Custom header with user profile
   const headerContent = (
-    <div className="flex flex-col">
-      {/* 747 Logo with enhanced glow effect */}
-      <div className="flex justify-center mt-2 mb-4">
+    <div className="flex flex-col w-full">
+      {/* Top navigation bar with logo on left */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        {/* 747 Logo with glow effect - now on left */}
         <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-xl transform scale-110"></div>
-          <div className="absolute inset-0 rounded-full bg-white/20 blur-md"></div>
+          <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-lg transform scale-110"></div>
+          <div className="absolute inset-0 rounded-full bg-white/20 blur-sm"></div>
           <img 
             src="/assets/logos/747-logo.png" 
-            alt="747 Logo" 
-            className="h-14 object-contain relative z-10 drop-shadow-lg"
+            alt="747 Casino" 
+            className="h-10 w-auto object-contain relative z-10 drop-shadow-lg"
           />
+        </div>
+        
+        {/* Right side actions */}
+        <div className="flex items-center gap-3">
+          {/* Menu button */}
+          <button className="p-2 with-ripple rounded-full hover:bg-white/10 transition-all">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+              <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+            </svg>
+          </button>
         </div>
       </div>
       
-      {/* User profile and menu */}
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+      {/* User profile section - separate row */}
+      <div className="flex items-center px-4 py-3 bg-[#001d4d] rounded-b-xl shadow-md">
+        <div className="flex items-center gap-3" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
+          <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden shadow-md border-2 border-blue-400">
             <img 
               src="/assets/logos/user-avatar.png" 
               alt="Profile" 
@@ -114,24 +131,70 @@ export default function MobileDashboard() {
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="flex items-center" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
-            <span className="font-medium">
-              {data?.user?.username || 'User'}
-            </span>
-            <ChevronDown size={16} className="ml-1" />
+          <div className="flex flex-col">
+            <span className="font-medium text-sm text-blue-100">Welcome</span>
+            <div className="flex items-center">
+              <span className="font-bold text-white">
+                {data?.user?.username || 'User'}
+              </span>
+              <ChevronDown size={16} className="ml-1 text-blue-300" />
+            </div>
           </div>
         </div>
-        <div>
-          <button className="p-2 with-ripple">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-            </svg>
-          </button>
+        <div className="ml-auto">
+          <div className="bg-blue-900/50 px-3 py-1 rounded-full text-xs text-blue-100 font-medium">
+            Player
+          </div>
         </div>
       </div>
+      
+      {/* User menu - conditionally rendered */}
+      <AnimatePresence>
+        {profileMenuOpen && (
+          <motion.div 
+            className="absolute top-[110px] left-4 right-4 bg-[#00174F] shadow-xl rounded-xl z-50 border border-blue-400/20"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className="p-3 border-b border-blue-800">
+              <Link href="/mobile/profile" className="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-800/30">
+                <div className="w-8 h-8 rounded-full bg-blue-600/30 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="8" r="5" stroke="white" strokeWidth="2"/>
+                    <path d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21" stroke="white" strokeWidth="2"/>
+                  </svg>
+                </div>
+                <span>My Profile</span>
+              </Link>
+            </div>
+            <div className="p-2">
+              <button 
+                className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-blue-800/30 text-left"
+                onClick={async () => {
+                  try {
+                    await logout();
+                    // Redirect to login after successful logout
+                    navigate('/mobile/auth');
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                  } finally {
+                    setProfileMenuOpen(false);
+                  }
+                }}
+              >
+                <div className="w-8 h-8 rounded-full bg-red-600/30 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 4H18C19.1046 4 20 4.89543 20 6V18C20 19.1046 19.1046 20 18 20H15" stroke="white" strokeWidth="2"/>
+                    <path d="M8 8L4 12M4 12L8 16M4 12H16" stroke="white" strokeWidth="2"/>
+                  </svg>
+                </div>
+                <span>Log Out</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
   
