@@ -21,7 +21,7 @@ const router = Router();
  */
 router.get('/user/payment-methods', async (req: Request, res: Response) => {
   try {
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
@@ -43,7 +43,7 @@ router.get('/user/payment-methods', async (req: Request, res: Response) => {
  */
 router.post('/user/payment-methods', async (req: Request, res: Response) => {
   try {
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
@@ -96,7 +96,7 @@ router.post('/user/payment-methods', async (req: Request, res: Response) => {
  */
 router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
   try {
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
@@ -163,7 +163,7 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
  */
 router.delete('/user/payment-methods/:id', async (req: Request, res: Response) => {
   try {
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
@@ -196,7 +196,7 @@ router.delete('/user/payment-methods/:id', async (req: Request, res: Response) =
  */
 router.post('/user/payment-methods/:id/default', async (req: Request, res: Response) => {
   try {
-    const userId = req.session.user?.id;
+    const userId = (req.user as any)?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }

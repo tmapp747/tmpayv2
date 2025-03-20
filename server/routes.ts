@@ -443,6 +443,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication with Passport and session support
   setupAuth(app);
   
+  // Register payment methods routes
+  app.use("/api", paymentMethodsRoutes);
+  
   // The list of allowed top managers
   const ALLOWED_TOP_MANAGERS = ['Marcthepogi', 'bossmarc747', 'teammarc'];
 
