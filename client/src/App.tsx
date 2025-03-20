@@ -19,6 +19,9 @@ import MobileProfile from "@/pages/MobileProfile";
 import MobileDepositPage from "@/pages/mobile-deposit";
 import MobileHistoryPage from "@/pages/mobile/MobileHistoryPage";
 import MobileThankYouPage from "@/pages/mobile/MobileThankYouPage";
+import PortalSelector from "@/pages/PortalSelector";
+import PlayerPortal from "@/pages/PlayerPortal";
+import AgentPortal from "@/pages/AgentPortal";
 import BottomNavBar from "@/components/navigation/BottomNavBar";
 import Layout from "@/components/Layout";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -149,6 +152,11 @@ function Router() {
           <div className="animate-pulse">Redirecting...</div>
         </div>;
       }} />
+      
+      {/* Portal routes */}
+      <ProtectedRoute path="/portals" component={PortalSelector} />
+      <ProtectedRoute path="/player" component={PlayerPortal} />
+      <ProtectedRoute path="/agent" component={AgentPortal} />
       
       {/* Admin routes */}
       <Route path="/admin/auth" component={AdminAuth} />
