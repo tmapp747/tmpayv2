@@ -48,23 +48,57 @@ router.post('/user/payment-methods', async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    // Validate the request body
+    // Validate the request body with enhanced schema for Philippine banking features
     const validationSchema = insertUserPaymentMethodSchema.extend({
       type: z.enum(['bank', 'wallet', 'crypto', 'instapay', 'pesonet', 'remittance', 'other']),
       name: z.string().min(2).max(50),
       accountName: z.string().min(2).max(100),
       accountNumber: z.string().min(4).max(30),
-      // Philippine-specific fields
+      
+      // Philippine-specific fields with proper type handling for numeric fields
       instapayEnabled: z.boolean().optional(),
       pesonetEnabled: z.boolean().optional(),
       qrPhEnabled: z.boolean().optional(),
-      dailyTransferLimit: z.number().optional().nullable(),
-      perTransactionLimit: z.number().optional().nullable(),
-      eWalletProvider: z.string().optional().nullable(),
-      eWalletLinkedMobile: z.string().optional().nullable(),
+      
+      // Handle both string and number inputs for numeric fields
+      dailyTransferLimit: z.union([
+        z.number(),
+        z.string().transform(val => val === "" ? null : parseFloat(val))
+      ]).nullable().optional(),
+      
+      perTransactionLimit: z.union([
+        z.number(),
+        z.string().transform(val => val === "" ? null : parseFloat(val))
+      ]).nullable().optional(),
+      
+      // E-wallet specific fields
+      eWalletProvider: z.string().nullable().optional(),
+      eWalletLinkedMobile: z.string().nullable().optional(),
+      
+      // Remittance fields
+      remittanceProvider: z.string().nullable().optional(),
+      remittancePhoneNumber: z.string().nullable().optional(),
+      
+      // Verification fields
+      verificationMethod: z.string().nullable().optional(),
       verificationStatus: z.string().optional(),
-      verificationData: z.record(z.any()).optional().nullable(),
-      additionalInfo: z.record(z.any()).optional().nullable(),
+      
+      // JSON fields properly handled
+      verificationData: z.union([
+        z.record(z.any()),
+        z.string().transform(val => {
+          try { return JSON.parse(val); } 
+          catch { return {}; }
+        })
+      ]).nullable().optional(),
+      
+      additionalInfo: z.union([
+        z.record(z.any()),
+        z.string().transform(val => {
+          try { return JSON.parse(val); } 
+          catch { return {}; }
+        })
+      ]).nullable().optional(),
     });
 
     const validatedData = validationSchema.parse({
@@ -123,30 +157,64 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Payment method not found' });
     }
 
-    // Validate the request body
+    // Validate the request body with enhanced schema for Philippine banking features
     const validationSchema = z.object({
       name: z.string().min(2).max(50).optional(),
       accountName: z.string().min(2).max(100).optional(),
       accountNumber: z.string().min(4).max(30).optional(),
+      
+      // Bank fields
       bankName: z.string().nullable().optional(),
       branchName: z.string().nullable().optional(),
       swiftCode: z.string().nullable().optional(),
       routingNumber: z.string().nullable().optional(),
       blockchainNetwork: z.string().nullable().optional(),
+      
       // Philippine-specific fields
       instapayEnabled: z.boolean().optional(),
       pesonetEnabled: z.boolean().optional(),
       qrPhEnabled: z.boolean().optional(),
-      dailyTransferLimit: z.number().optional().nullable(),
-      perTransactionLimit: z.number().optional().nullable(),
-      eWalletProvider: z.string().optional().nullable(),
-      eWalletLinkedMobile: z.string().optional().nullable(),
-      remittanceProvider: z.string().optional().nullable(),
-      remittancePhoneNumber: z.string().optional().nullable(),
-      verificationMethod: z.string().optional().nullable(),
+      
+      // Handle both string and number inputs for numeric fields
+      dailyTransferLimit: z.union([
+        z.number(),
+        z.string().transform(val => val === "" ? null : parseFloat(val))
+      ]).nullable().optional(),
+      
+      perTransactionLimit: z.union([
+        z.number(),
+        z.string().transform(val => val === "" ? null : parseFloat(val))
+      ]).nullable().optional(),
+      
+      // E-wallet specific fields
+      eWalletProvider: z.string().nullable().optional(),
+      eWalletLinkedMobile: z.string().nullable().optional(),
+      
+      // Remittance fields
+      remittanceProvider: z.string().nullable().optional(),
+      remittancePhoneNumber: z.string().nullable().optional(),
+      
+      // Verification fields
+      verificationMethod: z.string().nullable().optional(),
       verificationStatus: z.string().optional(),
-      verificationData: z.record(z.any()).optional().nullable(),
-      additionalInfo: z.record(z.any()).nullable().optional(),
+      
+      // JSON fields properly handled
+      verificationData: z.union([
+        z.record(z.any()),
+        z.string().transform(val => {
+          try { return JSON.parse(val); } 
+          catch { return {}; }
+        })
+      ]).nullable().optional(),
+      
+      additionalInfo: z.union([
+        z.record(z.any()),
+        z.string().transform(val => {
+          try { return JSON.parse(val); } 
+          catch { return {}; }
+        })
+      ]).nullable().optional(),
+      
       isDefault: z.boolean().optional(),
     });
 
