@@ -20,6 +20,7 @@ import MobileDepositPage from "@/pages/mobile-deposit";
 import MobileHistoryPage from "@/pages/mobile/MobileHistoryPage";
 import MobileThankYouPage from "@/pages/mobile/MobileThankYouPage";
 import MobilePaymentMethodsPage from "@/pages/mobile/MobilePaymentMethodsPage";
+import MobileBankingPage from "@/pages/mobile/MobileBankingPage";
 import PortalSelector from "@/pages/PortalSelector";
 import PlayerPortal from "@/pages/PlayerPortal";
 import AgentPortal from "@/pages/AgentPortal";
@@ -127,6 +128,7 @@ function Router() {
       <ProtectedRoute path="/mobile/deposit" component={MobileDepositPage} />
       <ProtectedRoute path="/mobile/history" component={MobileHistoryPage} />
       <ProtectedRoute path="/mobile/payment-methods" component={MobilePaymentMethodsPage} />
+      <ProtectedRoute path="/mobile/banking" component={MobileBankingPage} />
       
       {/* Legacy mobile route patterns for backward compatibility */}
       <ProtectedRoute path="/mobile-wallet" component={() => {
