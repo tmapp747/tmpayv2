@@ -84,48 +84,11 @@ export default function MobileDashboard() {
     setPaginationDots(newDots);
   };
 
-  // Custom header with user profile
-  const headerContent = (
-    <div className="flex flex-col w-full">
-      {/* Top navigation bar with logo on left */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        {/* Enhanced 747 Logo with premium glowing effect - positioned on left */}
-        <div className="relative flex items-center justify-center h-10 w-auto overflow-visible">
-          {/* Multi-layered dynamic glow effects */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-300/40 to-amber-500/30 blur-xl transform scale-[1.4] animate-pulse-slow opacity-70"></div>
-          <div className="absolute inset-0 rounded-full bg-white/30 blur-lg transform scale-[1.2]"></div>
-          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 via-purple-400/10 to-amber-500/20 blur-md transform scale-[1.1] animate-pulse-slower"></div>
-          
-          {/* Light rays shining effect */}
-          <div className="absolute inset-0 overflow-hidden rounded-full">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -rotate-45 translate-x-full animate-shine"></div>
-          </div>
-          
-          {/* Logo image with enhanced drop shadow and transparent background */}
-          <img 
-            src="/assets/logos/747-logo.png" 
-            alt="747 Casino" 
-            className="h-10 w-auto object-contain relative z-10 drop-shadow-xl"
-            style={{filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.4))'}}
-          />
-        </div>
-        
-        {/* Right side actions */}
-        <div className="flex items-center gap-3">
-          {/* Menu button */}
-          <button className="p-2 with-ripple rounded-full hover:bg-white/10 transition-all">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-              <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      {/* User profile section - separate row */}
-      <div className="flex items-center px-4 py-3 bg-[#001d4d] rounded-b-xl shadow-md">
+  // User profile component for the dashboard
+  const userProfileSection = (
+    <div className="w-full">
+      {/* User profile section */}
+      <div className="flex items-center px-4 py-3 bg-[#001d4d] rounded-b-xl shadow-md mt-2">
         <div className="flex items-center gap-3" onClick={() => setProfileMenuOpen(!profileMenuOpen)}>
           <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden shadow-md border-2 border-blue-400">
             <img 
@@ -208,13 +171,28 @@ export default function MobileDashboard() {
     </div>
   );
   
+  // Custom menu button for header right side
+  const menuButton = (
+    <button className="p-2 with-ripple rounded-full hover:bg-white/10 transition-all">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+        <rect x="4" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+        <rect x="14" y="4" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+        <rect x="14" y="14" width="6" height="6" rx="1" stroke="white" strokeWidth="2"/>
+      </svg>
+    </button>
+  );
+  
   return (
     <MobileLayout
       title="Dashboard"
       showNav={true}
       padding={false}
       transparentHeader={true}
+      headerContent={menuButton}
     >
+      {/* User profile section */}
+      {userProfileSection}
       {/* Pull-to-refresh indicator */}
       <div 
         className="absolute top-0 left-0 w-full flex justify-center items-center pointer-events-none z-50 transition-transform duration-300"

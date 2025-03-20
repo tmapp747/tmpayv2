@@ -46,51 +46,11 @@ export default function MobileProfile() {
     );
   }
   
-  // Custom header with 747 logo and settings button
-  const headerContent = (
-    <div className="flex items-center justify-between w-full px-1">
-      {/* 747 Logo with enhanced shining effect on left */}
-      <div className="relative">
-        <div className="absolute w-14 h-14 bg-blue-500/20 rounded-full filter blur-xl animate-pulse"></div>
-        <motion.div
-          animate={{
-            boxShadow: [
-              "0 0 15px 2px rgba(255, 255, 255, 0.5)",
-              "0 0 25px 5px rgba(59, 130, 246, 0.7)",
-              "0 0 15px 2px rgba(255, 255, 255, 0.5)",
-            ],
-          }}
-          transition={{
-            duration: 2.5,
-            repeat: Infinity,
-            repeatType: "reverse",
-          }}
-          className="relative z-10 w-10 h-10 flex items-center justify-center"
-        >
-          <img 
-            src={sevenLogo} 
-            alt="747 Logo" 
-            className="h-8 object-contain" 
-            style={{ 
-              filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))',
-              mixBlendMode: 'screen'
-            }}
-          />
-        </motion.div>
-      </div>
-      
-      {/* Title in center */}
-      <div className="flex-1 flex justify-center items-center">
-        <h2 className="text-xl font-semibold text-white">Profile</h2>
-      </div>
-      
-      {/* Better visible settings button on right */}
-      <div className="flex justify-end items-center">
-        <button className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600/50 to-indigo-600/50 backdrop-blur-md shadow-md">
-          <Settings className="h-4 w-4 text-white" />
-        </button>
-      </div>
-    </div>
+  // Settings button for right side of header
+  const settingsButton = (
+    <button className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600/50 to-indigo-600/50 backdrop-blur-md shadow-md">
+      <Settings className="h-4 w-4 text-white" />
+    </button>
   );
   
   return (
@@ -98,6 +58,7 @@ export default function MobileProfile() {
       title="Profile"
       showNav={true}
       transparentHeader={true}
+      headerContent={settingsButton}
     >
       <div className="space-y-6 pt-5">
         {/* Profile Card */}
