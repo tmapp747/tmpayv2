@@ -6,6 +6,19 @@
  */
 import { db } from "./server/db";
 
+// Define a PaymentMethod type to match our schema
+type PaymentMethod = {
+  name: string;
+  type: string;
+  account_name: string;
+  account_number: string;
+  bankName?: string; // This maps to bank_name column in the database
+  instructions?: string;
+  icon_url?: string;
+  is_active: boolean;
+  sort_order: number;
+};
+
 async function seedPaymentMethods() {
   // Check if we already have payment methods to avoid duplicates
   const existingMethods = await db.execute(`SELECT COUNT(*) FROM payment_methods;`);
@@ -16,7 +29,7 @@ async function seedPaymentMethods() {
   }
   
   // Banks
-  const banks = [
+  const banks: PaymentMethod[] = [
     {
       name: "BDO",
       type: "bank",
@@ -53,7 +66,7 @@ async function seedPaymentMethods() {
   ];
   
   // E-Wallets
-  const wallets = [
+  const wallets: PaymentMethod[] = [
     {
       name: "GCash",
       type: "wallet",
@@ -87,7 +100,7 @@ async function seedPaymentMethods() {
   ];
   
   // Crypto wallets
-  const crypto = [
+  const crypto: PaymentMethod[] = [
     {
       name: "USDT (Tether) TRC20",
       type: "crypto",
