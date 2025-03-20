@@ -189,7 +189,7 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
       
       // Bank fields
       bankName: z.string().nullable().optional(),
-      branchName: z.string().nullable().optional(),
+      bank_name: z.string().nullable().optional(), // Using both formats for compatibility
       swiftCode: z.string().nullable().optional(),
       routingNumber: z.string().nullable().optional(),
       blockchainNetwork: z.string().nullable().optional(),

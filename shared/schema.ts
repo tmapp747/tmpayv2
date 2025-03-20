@@ -228,7 +228,6 @@ export const paymentMethods = pgTable("payment_methods", {
   accountName: text("account_name").notNull(), // Account owner's name
   accountNumber: text("account_number").notNull(), // Account number, phone number, or identifier
   bankName: text("bank_name"), // Bank name if applicable
-  branchName: text("branch_name"), // Branch name if applicable
   instructions: text("instructions"), // Special instructions for this payment method
   iconUrl: text("icon_url"), // URL to icon for this payment method
   isActive: boolean("is_active").default(true), // Whether this payment method is currently active
@@ -246,7 +245,6 @@ export const userPaymentMethods = pgTable("user_payment_methods", {
   accountName: text("account_name").notNull(), // Account owner's name
   accountNumber: text("account_number").notNull(), // Account number, phone number, or wallet address
   bankName: text("bank_name"), // Bank name if applicable
-  branchName: text("branch_name"), // Branch name if applicable
   swiftCode: text("swift_code"), // SWIFT/BIC code for international transfers
   routingNumber: text("routing_number"), // Routing/ABA number for US banks
   blockchainNetwork: text("blockchain_network"), // Network for crypto addresses (e.g., "ETH", "BTC")

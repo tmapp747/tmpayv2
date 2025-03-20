@@ -10,7 +10,7 @@ async function seedPaymentMethods() {
   // Check if we already have payment methods to avoid duplicates
   const existingMethods = await db.execute(`SELECT COUNT(*) FROM payment_methods;`);
   
-  if (parseInt(existingMethods.rows[0]?.count) > 0) {
+  if (parseInt(existingMethods.rows[0]?.count as string) > 0) {
     console.log(`Found ${existingMethods.rows[0]?.count} existing payment methods, skipping seed.`);
     return;
   }
