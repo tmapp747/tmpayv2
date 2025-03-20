@@ -42,6 +42,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<{ user: User, message: string }, Error, LoginData>;
   logoutMutation: UseMutationResult<{ success: boolean, message: string }, Error, void>;
   registerMutation: UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
+  logout: () => Promise<boolean>;
 };
 
 // Login form data type
@@ -334,6 +335,17 @@ function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Simple logout function for components to use
+  const logout = async (): Promise<boolean> => {
+    try {
+      await logoutMutation.mutateAsync();
+      return true;
+    } catch (error) {
+      console.error("Logout failed:", error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -344,6 +356,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        logout,
       }}
     >
       {children}
@@ -357,6 +370,7 @@ function useAuth() {
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+  
   return context;
 }
 
