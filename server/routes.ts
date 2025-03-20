@@ -2764,9 +2764,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      try {
-        // Force a fresh request to the casino API
-        const balanceResult = await casino747Api.getUserBalance(effectiveClientId, effectiveUsername);
+      // Add diagnostic info
+      console.log(`🔧 CASINO API DIAGNOSTICS:
+      - Username: ${effectiveUsername}
+      - ClientID: ${effectiveClientId}
+      - User object in request: ${JSON.stringify(req.body, null, 2)}
+      `);
+      
+      // Try all tokens with diagnostics
+      const allTopManagers = ['Marcthepogi', 'teammarc', 'bossmarc747'];
+      let balanceResult = null;
+      let lastError = null;
+      let successfulManager = null;
+      
+      // Try each manager token
+      for (const manager of allTopManagers) {
+        try {
+          console.log(`⚡ Attempting balance check with ${manager}'s token`);
+          
+          // Find user in database to update top manager temporarily
+          const localUser = await storage.getUserByCasinoUsername(effectiveUsername);
+          if (localUser) {
+            // Store original top manager
+            const originalManager = localUser.topManager;
+            
+            // Temporarily override top manager
+            await storage.updateUserHierarchyInfo(
+              localUser.id,
+              manager,
+              localUser.immediateManager || '',
+              localUser.casinoUserType || 'player'
+            );
+            
+            try {
+              // Force a fresh request to the casino API
+              balanceResult = await casino747Api.getUserBalance(effectiveClientId, effectiveUsername);
+              successfulManager = manager;
+              console.log(`✅ Successfully got balance with ${manager}'s token!`);
+              
+              // Keep this manager if it worked
+              if (originalManager !== manager) {
+                console.log(`📝 Permanently updating top manager from ${originalManager} to ${manager}`);
+              }
+              
+              break; // Exit the loop on success
+            } catch (managerError) {
+              console.warn(`❌ Failed with ${manager}'s token: ${managerError instanceof Error ? managerError.message : 'Unknown error'}`);
+              lastError = managerError;
+              
+              // Reset original manager if this failed
+              await storage.updateUserHierarchyInfo(
+                localUser.id,
+                originalManager || 'Marcthepogi',
+                localUser.immediateManager || '',
+                localUser.casinoUserType || 'player'
+              );
+            }
+          } else {
+            console.warn(`⚠️ Could not find ${effectiveUsername} in local database`);
+          }
+        } catch (error) {
+          console.error(`Error during top manager switching for ${manager}:`, error);
+          lastError = error;
+        }
+      }
+      
+      // If we succeeded with any manager
+      if (balanceResult) {
+        console.log(`✅ Successfully got balance with manager: ${successfulManager}`);
         
         // Find user in our database to update their casino balance
         const localUser = await storage.getUserByCasinoUsername(effectiveUsername);
@@ -2781,13 +2846,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           balance: balanceResult.balance,
           currency: balanceResult.currency,
           timestamp: new Date().toISOString(),
-          realtime: true
+          realtime: true,
+          manager: successfulManager
         });
-      } catch (casinoError) {
-        console.error("Error fetching real-time balance from casino API:", casinoError);
-        return res.status(400).json({ 
+      } else {
+        // All attempts failed
+        console.error('❌ All top manager attempts failed to fetch balance');
+        return res.status(400).json({
           success: false,
-          message: "Failed to fetch real-time balance from casino system" 
+          message: `Failed to fetch real-time balance with all top managers: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`
         });
       }
     } catch (error) {
