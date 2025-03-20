@@ -54,7 +54,7 @@ interface UserPaymentMethod {
   verificationMethod: string | null;
   verificationStatus: string;
   verificationDate: Date | string | null;
-  verificationData: Record<string, any>;
+  verificationData: Record<string, any> | null;
   
   // Remittance-specific fields
   remittanceProvider: string | null;
@@ -65,7 +65,7 @@ interface UserPaymentMethod {
   eWalletProvider: string | null;
   eWalletLinkedMobile: string | null;
   
-  additionalInfo: string | null;
+  additionalInfo: Record<string, any>;
   isDefault: boolean;
   isVerified: boolean;
   createdAt: Date | string;
@@ -378,7 +378,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       eWalletProvider: eWalletProvider || null,
       eWalletLinkedMobile: eWalletMobile || null,
       verificationStatus: 'pending',
-      verificationData: {}
+      verificationData: {} as Record<string, any>
     });
   };
 
