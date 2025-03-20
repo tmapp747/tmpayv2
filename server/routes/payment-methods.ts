@@ -50,10 +50,21 @@ router.post('/user/payment-methods', async (req: Request, res: Response) => {
 
     // Validate the request body
     const validationSchema = insertUserPaymentMethodSchema.extend({
-      type: z.enum(['bank', 'wallet', 'crypto', 'other']),
+      type: z.enum(['bank', 'wallet', 'crypto', 'instapay', 'pesonet', 'remittance', 'other']),
       name: z.string().min(2).max(50),
       accountName: z.string().min(2).max(100),
       accountNumber: z.string().min(4).max(30),
+      // Philippine-specific fields
+      instapayEnabled: z.boolean().optional(),
+      pesonetEnabled: z.boolean().optional(),
+      qrPhEnabled: z.boolean().optional(),
+      dailyTransferLimit: z.number().optional().nullable(),
+      perTransactionLimit: z.number().optional().nullable(),
+      eWalletProvider: z.string().optional().nullable(),
+      eWalletLinkedMobile: z.string().optional().nullable(),
+      verificationStatus: z.string().optional(),
+      verificationData: z.record(z.any()).optional().nullable(),
+      additionalInfo: z.record(z.any()).optional().nullable(),
     });
 
     const validatedData = validationSchema.parse({
@@ -122,7 +133,20 @@ router.put('/user/payment-methods/:id', async (req: Request, res: Response) => {
       swiftCode: z.string().nullable().optional(),
       routingNumber: z.string().nullable().optional(),
       blockchainNetwork: z.string().nullable().optional(),
-      additionalInfo: z.string().nullable().optional(),
+      // Philippine-specific fields
+      instapayEnabled: z.boolean().optional(),
+      pesonetEnabled: z.boolean().optional(),
+      qrPhEnabled: z.boolean().optional(),
+      dailyTransferLimit: z.number().optional().nullable(),
+      perTransactionLimit: z.number().optional().nullable(),
+      eWalletProvider: z.string().optional().nullable(),
+      eWalletLinkedMobile: z.string().optional().nullable(),
+      remittanceProvider: z.string().optional().nullable(),
+      remittancePhoneNumber: z.string().optional().nullable(),
+      verificationMethod: z.string().optional().nullable(),
+      verificationStatus: z.string().optional(),
+      verificationData: z.record(z.any()).optional().nullable(),
+      additionalInfo: z.record(z.any()).nullable().optional(),
       isDefault: z.boolean().optional(),
     });
 
