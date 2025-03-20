@@ -4,15 +4,7 @@
  * This utility provides functions to map between our database fields and external API fields,
  * ensuring consistent data transformation across the application.
  */
-
-import { 
-  directPayApiFields, 
-  casino747ApiFields, 
-  paygramApiFields, 
-  manualPaymentFields,
-  transactionStatusMapping,
-  transactionTimelineStatusMapping
-} from '../../shared/api-mapping';
+import { directPayApiFields, casino747ApiFields, paygramApiFields } from '../../shared/api-mapping';
 
 /**
  * Maps DirectPay API response to our database fields
@@ -22,16 +14,15 @@ import {
 export function mapDirectPayResponseToDbFields(directPayResponse: Record<string, any>): Record<string, any> {
   const mappedResponse: Record<string, any> = {};
   
-  for (const [directPayField, dbField] of Object.entries(directPayApiFields.responseFields)) {
-    if (directPayResponse[directPayField] !== undefined) {
-      mappedResponse[dbField] = directPayResponse[directPayField];
+  // Loop through each field mapping and apply it
+  Object.entries(directPayApiFields).forEach(([ourField, directPayField]) => {
+    if (directPayResponse.hasOwnProperty(directPayField)) {
+      mappedResponse[ourField] = directPayResponse[directPayField];
     }
-  }
+  });
   
-  // Map payment status if present
-  if (directPayResponse.status && directPayApiFields.paymentStatusMapping[directPayResponse.status]) {
-    mappedResponse.status = directPayApiFields.paymentStatusMapping[directPayResponse.status];
-  }
+  // Add original response as a nested object for reference
+  mappedResponse.originalResponse = directPayResponse;
   
   return mappedResponse;
 }
@@ -44,11 +35,12 @@ export function mapDirectPayResponseToDbFields(directPayResponse: Record<string,
 export function mapDbFieldsToDirectPayRequest(dbFields: Record<string, any>): Record<string, any> {
   const mappedRequest: Record<string, any> = {};
   
-  for (const [dbField, directPayField] of Object.entries(directPayApiFields.requestFields)) {
-    if (dbFields[dbField] !== undefined) {
-      mappedRequest[directPayField] = dbFields[dbField];
+  // Reverse mapping from our fields to DirectPay fields
+  Object.entries(directPayApiFields).forEach(([ourField, directPayField]) => {
+    if (dbFields.hasOwnProperty(ourField)) {
+      mappedRequest[directPayField] = dbFields[ourField];
     }
-  }
+  });
   
   return mappedRequest;
 }
@@ -59,132 +51,81 @@ export function mapDbFieldsToDirectPayRequest(dbFields: Record<string, any>): Re
  * @returns Mapped payload with our field names
  */
 export function mapDirectPayWebhookToDbFields(webhookPayload: Record<string, any>): Record<string, any> {
-  const mappedPayload: Record<string, any> = {};
+  const mappedPayload: Record<string, any> = {
+    webhookReceivedAt: new Date().toISOString(),
+    webhookPayload: webhookPayload,
+  };
   
-  for (const [webhookField, dbField] of Object.entries(directPayApiFields.webhookFields)) {
-    if (webhookPayload[webhookField] !== undefined) {
-      mappedPayload[dbField] = webhookPayload[webhookField];
-    }
+  // Extract reference ID (critical field)
+  if (webhookPayload.refId) {
+    mappedPayload.reference = webhookPayload.refId;
   }
   
-  // Map payment status if present
-  if (webhookPayload.status && directPayApiFields.paymentStatusMapping[webhookPayload.status]) {
-    mappedPayload.status = directPayApiFields.paymentStatusMapping[webhookPayload.status];
+  // Extract payment status
+  if (webhookPayload.status) {
+    mappedPayload.paymentStatus = webhookPayload.status;
+  }
+  
+  // Extract transaction amount if available
+  if (webhookPayload.transactionAmount) {
+    mappedPayload.confirmedAmount = parseFloat(webhookPayload.transactionAmount);
+  }
+  
+  // Extract fee if available
+  if (webhookPayload.fee) {
+    mappedPayload.fee = parseFloat(webhookPayload.fee);
+  }
+  
+  // Add any additional fields from the extra object
+  if (webhookPayload.extra && typeof webhookPayload.extra === 'object') {
+    Object.entries(webhookPayload.extra).forEach(([key, value]) => {
+      mappedPayload[`extra_${key}`] = value;
+    });
   }
   
   return mappedPayload;
 }
 
 /**
- * Maps 747 Casino API user response to our database fields
- * @param casinoResponse The user response from 747 Casino API
- * @returns Mapped user with our field names
- */
-export function mapCasinoUserToDbFields(casinoResponse: Record<string, any>): Record<string, any> {
-  const mappedUser: Record<string, any> = {};
-  
-  for (const [casinoField, dbField] of Object.entries(casino747ApiFields.userFields)) {
-    if (casinoResponse[casinoField] !== undefined) {
-      mappedUser[dbField] = casinoResponse[casinoField];
-    }
-  }
-  
-  return mappedUser;
-}
-
-/**
- * Maps our database fields to 747 Casino API deposit request format
- * @param dbFields Our database fields
- * @returns Mapped request with Casino field names
- */
-export function mapDbFieldsToCasinoDeposit(dbFields: Record<string, any>): Record<string, any> {
-  const mappedRequest: Record<string, any> = {};
-  
-  for (const [dbField, casinoField] of Object.entries(casino747ApiFields.depositFields)) {
-    if (dbFields[dbField] !== undefined) {
-      mappedRequest[casinoField] = dbFields[dbField];
-    }
-  }
-  
-  return mappedRequest;
-}
-
-/**
- * Maps 747 Casino API deposit response to our database fields
- * @param casinoResponse The deposit response from 747 Casino API
+ * Maps Casino 747 API response to our database fields
+ * @param casinoResponse The response from Casino 747 API
  * @returns Mapped response with our field names
  */
-export function mapCasinoDepositResponseToDbFields(casinoResponse: Record<string, any>): Record<string, any> {
+export function mapCasino747ResponseToDbFields(casinoResponse: Record<string, any>): Record<string, any> {
   const mappedResponse: Record<string, any> = {};
   
-  for (const [casinoField, dbField] of Object.entries(casino747ApiFields.depositResponseFields)) {
-    if (casinoResponse[casinoField] !== undefined) {
-      mappedResponse[dbField] = casinoResponse[casinoField];
+  // Loop through each field mapping and apply it
+  Object.entries(casino747ApiFields).forEach(([ourField, casinoField]) => {
+    if (casinoResponse.hasOwnProperty(casinoField)) {
+      mappedResponse[ourField] = casinoResponse[casinoField];
     }
-  }
+  });
   
-  // Map transfer status if present
-  if (casinoResponse.status && casino747ApiFields.transferStatusMapping[casinoResponse.status]) {
-    mappedResponse.casinoTransferStatus = casino747ApiFields.transferStatusMapping[casinoResponse.status];
-  }
+  // Add original response as a nested object for reference
+  mappedResponse.originalResponse = casinoResponse;
   
   return mappedResponse;
 }
 
 /**
- * Maps our database fields to 747 Casino API transfer request format
- * @param dbFields Our database fields
- * @returns Mapped request with Casino field names
- */
-export function mapDbFieldsToCasinoTransfer(dbFields: Record<string, any>): Record<string, any> {
-  const mappedRequest: Record<string, any> = {};
-  
-  for (const [dbField, casinoField] of Object.entries(casino747ApiFields.transferFields)) {
-    if (dbFields[dbField] !== undefined) {
-      mappedRequest[casinoField] = dbFields[dbField];
-    }
-  }
-  
-  return mappedRequest;
-}
-
-/**
- * Maps Paygram (Telegram) API response to our database fields
+ * Maps Paygram API response to our database fields
  * @param paygramResponse The response from Paygram API
  * @returns Mapped response with our field names
  */
 export function mapPaygramResponseToDbFields(paygramResponse: Record<string, any>): Record<string, any> {
   const mappedResponse: Record<string, any> = {};
   
-  for (const [paygramField, dbField] of Object.entries(paygramApiFields.responseFields)) {
-    if (paygramResponse[paygramField] !== undefined) {
-      mappedResponse[dbField] = paygramResponse[paygramField];
+  // Loop through each field mapping and apply it
+  Object.entries(paygramApiFields).forEach(([ourField, paygramField]) => {
+    if (paygramResponse.hasOwnProperty(paygramField)) {
+      mappedResponse[ourField] = paygramResponse[paygramField];
     }
-  }
+  });
   
-  // Map payment status if present
-  if (paygramResponse.status && paygramApiFields.paymentStatusMapping[paygramResponse.status]) {
-    mappedResponse.status = paygramApiFields.paymentStatusMapping[paygramResponse.status];
-  }
+  // Add original response as a nested object for reference
+  mappedResponse.originalResponse = paygramResponse;
   
   return mappedResponse;
-}
-
-/**
- * Maps our database fields to Paygram API request format
- * @param dbFields Our database fields
- * @returns Mapped request with Paygram field names
- */
-export function mapDbFieldsToPaygramRequest(dbFields: Record<string, any>): Record<string, any> {
-  const mappedRequest: Record<string, any> = {};
-  
-  for (const [dbField, paygramField] of Object.entries(paygramApiFields.requestFields)) {
-    if (dbFields[dbField] !== undefined) {
-      mappedRequest[paygramField] = dbFields[dbField];
-    }
-  }
-  
-  return mappedRequest;
 }
 
 /**
@@ -193,98 +134,35 @@ export function mapDbFieldsToPaygramRequest(dbFields: Record<string, any>): Reco
  * @returns Mapped payload with our field names
  */
 export function mapPaygramWebhookToDbFields(webhookPayload: Record<string, any>): Record<string, any> {
-  const mappedPayload: Record<string, any> = {};
+  const mappedPayload: Record<string, any> = {
+    webhookReceivedAt: new Date().toISOString(),
+    webhookPayload: webhookPayload,
+  };
   
-  for (const [webhookField, dbField] of Object.entries(paygramApiFields.webhookFields)) {
-    if (webhookPayload[webhookField] !== undefined) {
-      mappedPayload[dbField] = webhookPayload[webhookField];
-    }
+  // Extract invoice code
+  if (webhookPayload.invoiceCode) {
+    mappedPayload.invoiceCode = webhookPayload.invoiceCode;
   }
   
-  // Map payment status if present
-  if (webhookPayload.status && paygramApiFields.paymentStatusMapping[webhookPayload.status]) {
-    mappedPayload.status = paygramApiFields.paymentStatusMapping[webhookPayload.status];
+  // Extract reference ID (if available)
+  if (webhookPayload.referenceId) {
+    mappedPayload.reference = webhookPayload.referenceId;
+  }
+  
+  // Extract payment status
+  if (webhookPayload.status) {
+    mappedPayload.paymentStatus = webhookPayload.status;
+  }
+  
+  // Extract transaction amount if available
+  if (webhookPayload.amount) {
+    mappedPayload.confirmedAmount = parseFloat(webhookPayload.amount);
+  }
+  
+  // Extract currency if available
+  if (webhookPayload.currency) {
+    mappedPayload.currency = webhookPayload.currency;
   }
   
   return mappedPayload;
-}
-
-/**
- * Maps manual payment request to our database fields
- * @param manualPaymentRequest The manual payment request
- * @returns Mapped request with our field names
- */
-export function mapManualPaymentRequestToDbFields(manualPaymentRequest: Record<string, any>): Record<string, any> {
-  const mappedRequest: Record<string, any> = {};
-  
-  for (const [requestField, dbField] of Object.entries(manualPaymentFields.requestFields)) {
-    if (manualPaymentRequest[requestField] !== undefined) {
-      mappedRequest[dbField] = manualPaymentRequest[requestField];
-    }
-  }
-  
-  return mappedRequest;
-}
-
-/**
- * Generates transaction timeline entries based on status changes
- * @param currentStatus The current transaction status
- * @param previousStatus The previous transaction status (if any)
- * @param metadata Additional metadata for the timeline entry
- * @returns Timeline entry object
- */
-export function generateTransactionTimelineEntry(
-  currentStatus: string,
-  previousStatus?: string,
-  metadata?: Record<string, any>
-): Record<string, any> {
-  // Get timeline status mapping
-  const statusInfo = transactionTimelineStatusMapping[currentStatus] || {
-    label: `Status: ${currentStatus}`,
-    description: `Transaction status changed to ${currentStatus}`
-  };
-  
-  return {
-    status: currentStatus,
-    label: statusInfo.label,
-    description: statusInfo.description,
-    timestamp: new Date().toISOString(),
-    metadata: metadata || {}
-  };
-}
-
-/**
- * Gets the next transaction status based on current status and event
- * @param currentStatus The current transaction status
- * @param event The event that occurred (payment_completed, payment_failed, etc.)
- * @returns The next transaction status
- */
-export function getNextTransactionStatus(currentStatus: string, event: string): string {
-  // Define status transitions based on current status and event
-  const statusTransitions: Record<string, Record<string, string>> = {
-    'pending': {
-      'payment_completed': 'payment_completed',
-      'payment_failed': 'failed',
-      'payment_expired': 'expired',
-      'payment_cancelled': 'cancelled'
-    },
-    'processing': {
-      'payment_completed': 'payment_completed',
-      'payment_failed': 'failed',
-      'payment_expired': 'expired',
-      'payment_cancelled': 'cancelled'
-    },
-    'payment_completed': {
-      'casino_transfer_completed': 'completed',
-      'casino_transfer_failed': 'payment_completed', // Payment completed but casino transfer failed
-      'refund_initiated': 'refunded'
-    },
-    'completed': {
-      'refund_initiated': 'refunded',
-      'dispute_opened': 'disputed'
-    }
-  };
-  
-  // Return next status if defined, otherwise keep current status
-  return statusTransitions[currentStatus]?.[event] || currentStatus;
 }
