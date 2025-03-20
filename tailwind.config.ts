@@ -93,6 +93,11 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      animation: {
+        "shine": "shine 3s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 3s ease-in-out infinite",
+        "pulse-slower": "pulse-slower 5s ease-in-out infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

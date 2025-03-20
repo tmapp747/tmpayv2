@@ -89,14 +89,24 @@ export default function MobileDashboard() {
     <div className="flex flex-col w-full">
       {/* Top navigation bar with logo on left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        {/* 747 Logo with glow effect - now on left */}
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full bg-yellow-400/30 blur-lg transform scale-110"></div>
-          <div className="absolute inset-0 rounded-full bg-white/20 blur-sm"></div>
+        {/* Enhanced 747 Logo with premium glowing effect - positioned on left */}
+        <div className="relative flex items-center justify-center h-10 w-auto overflow-visible">
+          {/* Multi-layered dynamic glow effects */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-300/40 to-amber-500/30 blur-xl transform scale-[1.4] animate-pulse-slow opacity-70"></div>
+          <div className="absolute inset-0 rounded-full bg-white/30 blur-lg transform scale-[1.2]"></div>
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-500/20 via-purple-400/10 to-amber-500/20 blur-md transform scale-[1.1] animate-pulse-slower"></div>
+          
+          {/* Light rays shining effect */}
+          <div className="absolute inset-0 overflow-hidden rounded-full">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -rotate-45 translate-x-full animate-shine"></div>
+          </div>
+          
+          {/* Logo image with enhanced drop shadow and transparent background */}
           <img 
             src="/assets/logos/747-logo.png" 
             alt="747 Casino" 
-            className="h-10 w-auto object-contain relative z-10 drop-shadow-lg"
+            className="h-10 w-auto object-contain relative z-10 drop-shadow-xl"
+            style={{filter: 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.4))'}}
           />
         </div>
         
