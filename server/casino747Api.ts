@@ -1003,50 +1003,44 @@ export class Casino747Api {
    * @private
    */
   private async fetchNewAuthToken(topManager: string): Promise<{ token: string, expiry: Date }> {
-    // This is a placeholder for the real implementation
-    // In a real environment, you would:
-    // 1. Make a POST request to the auth endpoint with manager credentials
-    // 2. Get the token and expiry from the response
-    // 3. Return them
-    
     try {
-      // Simulate API call
-      console.log(`Fetching new auth token for manager: ${topManager}`);
+      console.log(`🔄 [CASINO747] Fetching auth token for manager: ${topManager}`);
       
       // Make the comparison case-insensitive
       const topManagerLower = topManager.toLowerCase();
-      let token: string | undefined;
+      let secretToken: string | undefined;
       
+      // Get the permanent token from environment variable
       if (topManagerLower === 'marcthepogi') {
-        token = process.env.CASINO_TOKEN_MARCTHEPOGI;
-        console.log(`DEBUG: Attempting to fetch token for Marcthepogi: ${token ? 'Token found' : 'No token in env'}`);
-        // For debugging - show limited part of token if available
-        if (token) {
-          console.log(`Marcthepogi token starts with: ${token.substring(0, 5)}... and ends with: ...${token.substring(token.length - 5)}`);
-        }
+        secretToken = process.env.CASINO_TOKEN_MARCTHEPOGI;
+        console.log(`🔑 [CASINO747] Found env token for Marcthepogi: ${secretToken ? 'Available' : 'Not available'}`);
       } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
-        token = process.env.CASINO_TOKEN_BOSSMARC747;
-        console.log(`DEBUG: Attempting to fetch token for bossmarc747: ${token ? 'Token found' : 'No token in env'}`);
+        secretToken = process.env.CASINO_TOKEN_BOSSMARC747;
+        console.log(`🔑 [CASINO747] Found env token for Bossmarc747: ${secretToken ? 'Available' : 'Not available'}`);
       } else if (topManagerLower === 'teammarc') {
-        token = process.env.CASINO_TOKEN_TEAMMARC;
-        console.log(`DEBUG: Attempting to fetch token for teammarc: ${token ? 'Token found' : 'No token in env'}`);
+        secretToken = process.env.CASINO_TOKEN_TEAMMARC;
+        console.log(`🔑 [CASINO747] Found env token for Teammarc: ${secretToken ? 'Available' : 'Not available'}`);
       }
       
-      if (!token) {
+      if (!secretToken) {
         throw new Error(`No auth token found in environment for manager: ${topManager}`);
       }
       
-      // Calculate expiry (30 minutes from now)
+      // Since the user confirmed the tokens in env don't expire, 
+      // we'll use them directly instead of trying to get a temporary token
+      console.log(`✅ [CASINO747] Using permanent token directly for ${topManager}`);
+      
+      // Set expiry far in the future since these tokens don't expire
       const expiryDate = new Date();
-      expiryDate.setMinutes(expiryDate.getMinutes() + this.tokenExpiryMinutes);
+      expiryDate.setMonth(expiryDate.getMonth() + 6); // 6 months in the future
       
       return {
-        token,
+        token: secretToken,
         expiry: expiryDate
       };
     } catch (error) {
-      console.error(`Error fetching new auth token for manager ${topManager}:`, error);
-      throw new Error(`Failed to fetch new auth token: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error(`❌ [CASINO747] Error fetching auth token for manager ${topManager}:`, error);
+      throw new Error(`Failed to fetch auth token: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

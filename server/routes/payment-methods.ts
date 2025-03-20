@@ -10,6 +10,30 @@ import { z } from 'zod';
 import { storage } from '../storage';
 import { insertPaymentMethodSchema, insertUserPaymentMethodSchema } from '../../shared/schema';
 
+/**
+ * Helper function to format numeric fields for database storage
+ * 
+ * This solves the type inconsistency between numeric/decimal fields in the database schema
+ * (which may be string in PostgreSQL) and the TypeScript interface (which expects numbers).
+ * 
+ * @param data The data object with possible numeric fields
+ * @returns The same object with formatted numeric fields
+ */
+function formatNumericFields(data: any): any {
+  const formattedData = { ...data };
+  
+  // Convert numeric fields to strings to match PostgreSQL's numeric type
+  if (formattedData.dailyTransferLimit !== undefined && formattedData.dailyTransferLimit !== null) {
+    formattedData.dailyTransferLimit = String(formattedData.dailyTransferLimit);
+  }
+  
+  if (formattedData.perTransactionLimit !== undefined && formattedData.perTransactionLimit !== null) {
+    formattedData.perTransactionLimit = String(formattedData.perTransactionLimit);
+  }
+  
+  return formattedData;
+}
+
 const router = Router();
 
 // AUTH MIDDLEWARE - Already applied in main routes file
@@ -37,28 +61,6 @@ router.get('/user/payment-methods', async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch payment methods' });
   }
 });
-
-/**
- * Create a new payment method for the current user
- */
-/**
- * Helper function to format numeric fields for database storage
- * Converts numbers to strings as required by the numeric columns in PostgreSQL
- */
-function formatNumericFields(data: any): any {
-  const formattedData = { ...data };
-  
-  // Convert numeric fields to strings to match PostgreSQL's numeric type
-  if (formattedData.dailyTransferLimit !== undefined && formattedData.dailyTransferLimit !== null) {
-    formattedData.dailyTransferLimit = String(formattedData.dailyTransferLimit);
-  }
-  
-  if (formattedData.perTransactionLimit !== undefined && formattedData.perTransactionLimit !== null) {
-    formattedData.perTransactionLimit = String(formattedData.perTransactionLimit);
-  }
-  
-  return formattedData;
-}
 
 router.post('/user/payment-methods', async (req: Request, res: Response) => {
   try {

@@ -33,7 +33,7 @@ import {
 } from "@shared/api-mapping";
 import { ZodError, z } from "zod";
 import { randomUUID, randomBytes, createHash } from "crypto";
-import { casino747Api } from "./casino747Api";
+import { casino747Api } from "./casino747Api-simplified";
 import { directPayApi } from "./directPayApi";
 import { paygramApi } from "./paygramApi";
 import { setupAuth, hashPassword, comparePasswords, isPasswordHashed } from "./auth";
