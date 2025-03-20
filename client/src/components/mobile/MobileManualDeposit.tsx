@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSwipe } from '@/hooks/use-swipe';
 import SuccessScreen from '@/components/mobile/SuccessScreen';
 import { 
@@ -15,7 +15,9 @@ import {
   X, 
   AlertCircle, 
   Info, 
-  CheckCircle 
+  CheckCircle,
+  Loader2,
+  BanknoteIcon
 } from 'lucide-react';
 import { generateTransactionReference } from '@/lib/utils';
 
@@ -32,12 +34,25 @@ const manualPaymentSchema = z.object({
 
 type ManualPaymentFormValues = z.infer<typeof manualPaymentSchema>;
 
+// Define payment method type that comes from the API
+interface PaymentMethod {
+  id: number;
+  name: string;
+  type: string;
+  isActive: boolean;
+  accountName: string;
+  accountNumber: string;
+  bankName?: string | null;
+  instructions?: string | null;
+}
+
 export default function MobileManualDeposit() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [proofImage, setProofImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [selectedPaymentMethodDetails, setSelectedPaymentMethodDetails] = useState<PaymentMethod | null>(null);
   
   // Define interface for transaction success data
   interface SuccessData {
@@ -56,12 +71,24 @@ export default function MobileManualDeposit() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch available payment methods from the server
+  const { data: paymentMethodsData, isLoading: isLoadingPaymentMethods } = useQuery({
+    queryKey: ['/api/payment-methods'],
+    queryFn: async () => {
+      const response = await fetch('/api/payment-methods?isActive=true');
+      if (!response.ok) {
+        throw new Error('Failed to fetch payment methods');
+      }
+      return response.json();
+    }
+  });
+
   // Setup form
   const form = useForm<ManualPaymentFormValues>({
     resolver: zodResolver(manualPaymentSchema),
     defaultValues: {
       amount: 0,
-      paymentMethod: "gcash",
+      paymentMethod: "",
       notes: "",
     },
   });
@@ -87,6 +114,28 @@ export default function MobileManualDeposit() {
     setSelectedAmount(value);
     form.setValue("amount", value);
   };
+
+  // Set first payment method as default when data is loaded
+  useEffect(() => {
+    if (paymentMethodsData?.methods?.length > 0 && !form.watch("paymentMethod")) {
+      const firstMethod = paymentMethodsData.methods[0];
+      form.setValue("paymentMethod", firstMethod.id.toString());
+      setSelectedPaymentMethodDetails(firstMethod);
+    }
+  }, [paymentMethodsData, form]);
+
+  // Update selected payment method details when payment method changes
+  useEffect(() => {
+    const methodId = form.watch("paymentMethod");
+    if (methodId && paymentMethodsData?.methods) {
+      const selectedMethod = paymentMethodsData.methods.find(
+        (method: PaymentMethod) => method.id.toString() === methodId
+      );
+      if (selectedMethod) {
+        setSelectedPaymentMethodDetails(selectedMethod);
+      }
+    }
+  }, [form.watch("paymentMethod"), paymentMethodsData]);
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,7 +192,7 @@ export default function MobileManualDeposit() {
         newBalance: responseData.transaction?.id || "Pending",
         transactionId: responseData.transaction?.id || "Pending",
         timestamp: new Date().toISOString(),
-        paymentMethod: data.paymentMethod,
+        paymentMethod: selectedPaymentMethodDetails?.name || data.paymentMethod,
       });
       
       setIsSuccess(true);
@@ -250,30 +299,44 @@ export default function MobileManualDeposit() {
             {/* Payment Method Selection */}
             <div>
               <label className="block text-sm font-medium text-white/90 mb-3">Payment Method</label>
-              <div className="space-y-2">
-                {[
-                  { id: "gcash", name: "GCash" },
-                  { id: "paymaya", name: "PayMaya" },
-                  { id: "bank_transfer", name: "Bank Transfer" },
-                  { id: "remittance", name: "Remittance" },
-                ].map((method) => (
-                  <button
-                    key={method.id}
-                    type="button"
-                    onClick={() => form.setValue("paymentMethod", method.id)}
-                    className={`w-full p-3 rounded-lg border text-left transition-all flex items-center ${
-                      form.watch("paymentMethod") === method.id
-                        ? "bg-blue-600 border-blue-400 text-white"
-                        : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
-                    }`}
-                  >
-                    <span className="flex-1">{method.name}</span>
-                    {form.watch("paymentMethod") === method.id && (
-                      <CheckCircle className="h-5 w-5 text-white" />
-                    )}
-                  </button>
-                ))}
-              </div>
+              
+              {isLoadingPaymentMethods ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-400 mr-2" />
+                  <span className="text-white/80">Loading payment methods...</span>
+                </div>
+              ) : paymentMethodsData?.methods?.length > 0 ? (
+                <div className="space-y-2">
+                  {paymentMethodsData.methods.map((method: PaymentMethod) => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => {
+                        form.setValue("paymentMethod", method.id.toString());
+                        setSelectedPaymentMethodDetails(method);
+                      }}
+                      className={`w-full p-3 rounded-lg border text-left transition-all flex items-center ${
+                        form.watch("paymentMethod") === method.id.toString()
+                          ? "bg-blue-600 border-blue-400 text-white"
+                          : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
+                      }`}
+                    >
+                      <span className="flex-1">{method.name}</span>
+                      {form.watch("paymentMethod") === method.id.toString() && (
+                        <CheckCircle className="h-5 w-5 text-white" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-orange-950/30 p-4 rounded-lg border border-orange-500/30 text-center">
+                  <AlertCircle className="h-5 w-5 mx-auto mb-2 text-orange-400" />
+                  <p className="text-orange-200 text-sm">No payment methods available</p>
+                  <p className="text-orange-200/70 text-xs mt-1">
+                    Please try again later or contact support
+                  </p>
+                </div>
+              )}
               
               {form.formState.errors.paymentMethod && (
                 <p className="mt-1 text-red-400 text-sm flex items-center">
@@ -282,6 +345,42 @@ export default function MobileManualDeposit() {
                 </p>
               )}
             </div>
+            
+            {/* Selected Payment Method Details (if available) */}
+            {selectedPaymentMethodDetails && (
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-white/90 mb-2 flex items-center">
+                  <BanknoteIcon className="h-4 w-4 mr-2 text-blue-300" />
+                  Payment Details
+                </h4>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="grid grid-cols-3 gap-1">
+                    <span className="text-white/60">Account Name:</span>
+                    <span className="text-white col-span-2">{selectedPaymentMethodDetails.accountName}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-1">
+                    <span className="text-white/60">Account Number:</span>
+                    <span className="text-white col-span-2">{selectedPaymentMethodDetails.accountNumber}</span>
+                  </div>
+                  
+                  {selectedPaymentMethodDetails.bankName && (
+                    <div className="grid grid-cols-3 gap-1">
+                      <span className="text-white/60">Bank:</span>
+                      <span className="text-white col-span-2">{selectedPaymentMethodDetails.bankName}</span>
+                    </div>
+                  )}
+                  
+                  {selectedPaymentMethodDetails.instructions && (
+                    <div className="mt-2 pt-2 border-t border-white/10">
+                      <span className="text-white/60 block mb-1">Instructions:</span>
+                      <p className="text-white/90">{selectedPaymentMethodDetails.instructions}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* Payment Proof Upload */}
             <div>
@@ -350,7 +449,7 @@ export default function MobileManualDeposit() {
             {/* Submit Button */}
             <button
               onClick={form.handleSubmit(onSubmit)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !paymentMethodsData?.methods?.length}
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 py-4 rounded-xl text-white font-medium shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-70 flex items-center justify-center"
             >
               {isSubmitting ? (
