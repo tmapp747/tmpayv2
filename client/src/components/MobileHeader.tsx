@@ -56,14 +56,21 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
 
   return (
     <header className={`
-      sticky top-0 z-50 w-full
+      sticky top-0 z-50 
       ${transparent ? 'bg-[#00174F]/80' : 'bg-[#00174F]/95'} 
       backdrop-blur-md
-      px-4 py-3 
+      py-3 
       transition-all duration-300
+      w-[100vw] left-0 right-0 
       ${customClassName}
-    `}>
-      <div className="flex items-center justify-between">
+    `}
+    style={{
+      marginLeft: 'calc(-50vw + 50%)',
+      marginRight: 'calc(-50vw + 50%)',
+      position: 'relative',
+      width: '100vw',
+    }}>
+      <div className="flex items-center justify-between mx-4">
         {/* Left - Logo */}
         <Logo />
         

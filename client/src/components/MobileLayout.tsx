@@ -52,7 +52,7 @@ export const MobileLayout = ({
           title={title} 
           transparent={transparentHeader}
           showLogout={showLogout}
-          customClassName={padding ? "-mx-4 px-4" : ""}
+          customClassName=""
         />
       )}
       
