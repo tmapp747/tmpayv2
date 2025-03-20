@@ -39,6 +39,7 @@ import { paygramApi } from "./paygramApi";
 import { setupAuth, hashPassword, comparePasswords, isPasswordHashed } from "./auth";
 import { db, pool } from "./db";
 import { sql } from "drizzle-orm";
+import paymentMethodsRoutes from "./routes/payment-methods";
 
 // Real DirectPay function to generate QR code using DirectPay API
 async function directPayGenerateQRCode(amount: number, reference: string, username: string) {
