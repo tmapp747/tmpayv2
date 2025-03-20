@@ -361,16 +361,12 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       return;
     }
 
-    // Since we removed the payment provider dropdown, we'll just use the first available payment method
-    // of the selected type, or null if none exists
-    const defaultMethodId = availablePaymentMethods.find(m => m.type === type)?.id || null;
-
+    // Payment method is just for storing user's banking details - not for integration
     addPaymentMethodMutation.mutate({
       name,
       type,
       accountNumber,
       accountName,
-      paymentMethodId: defaultMethodId, // Use the first available method of the selected type
       isDefault: false,
       // Include Philippine-specific fields
       instapayEnabled,
@@ -380,7 +376,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       perTransactionLimit: perTransactionLimit ? parseFloat(perTransactionLimit) : null,
       eWalletProvider: eWalletProvider || null,
       eWalletLinkedMobile: eWalletMobile || null,
-      verificationStatus: 'pending',
+      verificationStatus: 'pending', 
       verificationData: {} as Record<string, any>
     });
   };
