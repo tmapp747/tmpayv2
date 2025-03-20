@@ -422,33 +422,57 @@ export class Casino747Api {
     const topManagerLower = topManager.toLowerCase();
     let secretToken: string | undefined;
     
-    // Get the permanent token from environment variable
+    // Function to get token from environment with proper logging
+    const getTokenFromEnv = (envVar: string, managerName: string): string | undefined => {
+      const token = process.env[envVar];
+      console.log(`🔄 [CASINO747] Getting auth token from environment for ${managerName} using ${envVar}`);
+      
+      if (token) {
+        console.log(`✅ [CASINO747] Found token for ${managerName} in environment variable ${envVar}`);
+        return token;
+      }
+      
+      console.log(`❌ [CASINO747] No token found in ${envVar} for ${managerName}`);
+      return undefined;
+    };
+    
+    // Try to get the specific token for this manager first
     if (topManagerLower === 'marcthepogi') {
-      secretToken = process.env.CASINO_TOKEN_MARCTHEPOGI;
-      console.log(`🔄 [CASINO747] Getting auth token from environment for top manager: ${topManager}`);
-      if (secretToken) {
-        console.log(`✅ [CASINO747] Found exact match token for ${topManager} in environment variable CASINO_TOKEN_MARCTHEPOGI`);
-      }
+      secretToken = getTokenFromEnv('CASINO_TOKEN_MARCTHEPOGI', topManager);
     } else if (topManagerLower === 'bossmarc747' || topManagerLower === 'bossmarc') {
-      secretToken = process.env.CASINO_TOKEN_BOSSMARC747;
-      console.log(`🔄 [CASINO747] Getting auth token from environment for top manager: ${topManager}`);
-      if (secretToken) {
-        console.log(`✅ [CASINO747] Found exact match token for ${topManager} in environment variable CASINO_TOKEN_BOSSMARC747`);
-      }
+      secretToken = getTokenFromEnv('CASINO_TOKEN_BOSSMARC747', topManager);
     } else if (topManagerLower === 'teammarc') {
-      secretToken = process.env.CASINO_TOKEN_TEAMMARC;
-      console.log(`🔄 [CASINO747] Getting auth token from environment for top manager: ${topManager}`);
-      if (secretToken) {
-        console.log(`✅ [CASINO747] Found exact match token for ${topManager} in environment variable CASINO_TOKEN_TEAMMARC`);
+      secretToken = getTokenFromEnv('CASINO_TOKEN_TEAMMARC', topManager);
+    }
+    
+    // If we didn't find a token for the requested manager, try the default managers
+    if (!secretToken) {
+      console.log(`⚠️ [CASINO747] No specific token found for ${topManager}, trying fallback tokens...`);
+      
+      // Try each of our default managers' tokens in order
+      for (const fallbackManager of this.defaultTopManagers) {
+        if (fallbackManager.toLowerCase() === 'marcthepogi') {
+          secretToken = getTokenFromEnv('CASINO_TOKEN_MARCTHEPOGI', fallbackManager);
+        } else if (fallbackManager.toLowerCase() === 'bossmarc747') {
+          secretToken = getTokenFromEnv('CASINO_TOKEN_BOSSMARC747', fallbackManager);
+        } else if (fallbackManager.toLowerCase() === 'teammarc') {
+          secretToken = getTokenFromEnv('CASINO_TOKEN_TEAMMARC', fallbackManager);
+        }
+        
+        if (secretToken) {
+          console.log(`🔄 [CASINO747] Using ${fallbackManager}'s token as fallback for ${topManager}`);
+          break;
+        }
       }
     }
     
+    // Final check if we found a token
     if (!secretToken) {
-      console.error(`❌ [CASINO747] No token found in environment for manager: ${topManager}`);
-      throw new Error(`No auth token found in environment for manager: ${topManager}`);
+      console.error(`❌ [CASINO747] No token found for ${topManager} or any fallback managers`);
+      throw new Error(`No auth token found for ${topManager} or any fallback managers. Check environment variables.`);
     }
     
-    console.log(`🔑 Successfully obtained auth token for ${topManager}`);
+    console.log(`🔑 [CASINO747] Successfully obtained auth token for ${topManager}`);
     return secretToken;
   }
 }
