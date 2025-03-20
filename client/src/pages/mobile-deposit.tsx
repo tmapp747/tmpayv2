@@ -23,7 +23,11 @@ export default function MobileDepositPage() {
   }
 
   return (
-    <MobileLayout title="Deposit" showNav={true}>
+    <MobileLayout 
+      title="Deposit" 
+      showNav={true}
+      transparentHeader={true}
+    >
       <MobileGCashDeposit />
     </MobileLayout>
   );

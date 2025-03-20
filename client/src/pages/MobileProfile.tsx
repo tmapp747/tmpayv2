@@ -96,8 +96,8 @@ export default function MobileProfile() {
   return (
     <MobileLayout
       title="Profile"
-      headerContent={headerContent}
       showNav={true}
+      transparentHeader={true}
     >
       <div className="space-y-6 pt-5">
         {/* Profile Card */}

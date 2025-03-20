@@ -128,9 +128,8 @@ export default function MobileHistoryPage() {
   return (
     <MobileLayout
       title="Transaction History"
-      headerContent={headerContent}
       showNav={true}
-      gradient={false}
+      transparentHeader={true}
     >
       {/* Transaction stats summary - only show if we have transactions */}
       {!isLoading && transactions.length > 0 && (
