@@ -8,6 +8,8 @@ import { registerRoutes } from "./routes";
 import { setupAuth } from "./auth";
 // Import webhook routes for payment integrations
 import webhookRoutes from './routes/webhooks';
+// Import Swagger documentation setup
+import { setupSwagger } from './swagger';
 
 const app = express();
 app.use(express.json());
@@ -65,6 +67,9 @@ app.use((req, res, next) => {
   // Register webhook routes (no authentication required for external service callbacks)
   // These need to be defined before the main routes to ensure proper handling
   app.use('/api/webhook', webhookRoutes);
+  
+  // Setup Swagger documentation
+  setupSwagger(app);
   
   // Use the original routes system temporarily
   await registerRoutes(app);
