@@ -2589,11 +2589,11 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(users)
         .set({
-          top_manager: topManager,
-          immediate_manager: immediateManager,
-          casino_user_type: userType,
-          hierarchy_level: user.hierarchyLevel,
-          updated_at: new Date()
+          topManager: topManager,
+          immediateManager: immediateManager,
+          casinoUserType: userType,
+          hierarchyLevel: user.hierarchyLevel,
+          updatedAt: new Date()
         })
         .where(eq(users.id, id));
       
@@ -2614,8 +2614,8 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(users)
         .set({
-          allowed_top_managers: allowedTopManagers,
-          updated_at: new Date()
+          allowedTopManagers: allowedTopManagers,
+          updatedAt: new Date()
         })
         .where(eq(users.id, id));
       
@@ -2636,9 +2636,9 @@ export class DbStorage extends MemStorage {
     try {
       await this.dbInstance.update(users)
         .set({
-          casino_auth_token: token,
-          casino_auth_token_expiry: expiryDate,
-          updated_at: new Date()
+          casinoAuthToken: token,
+          casinoAuthTokenExpiry: expiryDate,
+          updatedAt: new Date()
         })
         .where(eq(users.id, id));
       
