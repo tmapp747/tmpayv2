@@ -140,6 +140,7 @@ export default function MobileProfile() {
             <motion.div 
               className="bg-white/5 backdrop-blur-md rounded-xl p-3 flex items-center justify-between"
               whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/mobile/payment-methods')}
             >
               <div className="flex items-center">
                 <div className="w-9 h-9 rounded-full bg-green-600/30 flex items-center justify-center mr-3">
