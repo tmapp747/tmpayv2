@@ -269,14 +269,12 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
     });
     
     // Complete the topup using the Casino747 API's transfer funds function
-    // Transfer from top manager to user instead of from system
+    // Using the simplified API that only takes amount, clientId, username and reference
     const transferResult = await casino747Api.transferFunds(
       amount,
       parseInt(casinoId),
       effectiveCasinoUsername,
-      "PHP", // Use PHP currency for GCash deposits
-      topManager, // Use top manager account to transfer funds
-      comment
+      reference
     );
     
     console.log(`✅ Casino747: Transfer completed successfully from ${topManager} to ${effectiveCasinoUsername}:`, {
@@ -406,9 +404,7 @@ export async function casino747CompleteTopup(casinoId: string, amount: number, r
               amount,
               parseInt(casinoId),
               effectiveCasinoUsername,
-              "PHP",
-              fallbackManager,
-              fallbackComment
+              `${reference}-fallback-${fallbackManager}`
             );
             
             console.log(`✅ Fallback transfer successful with manager ${fallbackManager}:`, fallbackResult);
