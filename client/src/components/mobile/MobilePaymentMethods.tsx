@@ -315,7 +315,6 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
   const [type, setType] = useState('bank');
-  const [methodId, setMethodId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('basic');
   
   // New Philippine-specific fields
@@ -353,7 +352,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !type || !accountNumber || !methodId) {
+    if (!name || !type || !accountNumber) {
       toast({
         title: "Missing information",
         description: "Please fill out all required fields",
@@ -362,12 +361,16 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
       return;
     }
 
+    // Since we removed the payment provider dropdown, we'll just use the first available payment method
+    // of the selected type, or null if none exists
+    const defaultMethodId = availablePaymentMethods.find(m => m.type === type)?.id || null;
+
     addPaymentMethodMutation.mutate({
       name,
       type,
       accountNumber,
       accountName,
-      paymentMethodId: methodId,
+      paymentMethodId: defaultMethodId, // Use the first available method of the selected type
       isDefault: false,
       // Include Philippine-specific fields
       instapayEnabled,
@@ -438,28 +441,7 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({ onCancel, a
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-white/90 mb-1.5">Payment Provider</label>
-                <div className="relative">
-                  <select
-                    value={methodId || ''}
-                    onChange={(e) => setMethodId(parseInt(e.target.value))}
-                    className="w-full bg-white/10 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-                  >
-                    <option value="">Select a payment method</option>
-                    {availablePaymentMethods
-                      .filter(method => method.isActive)
-                      .map(method => (
-                        <option key={method.id} value={method.id}>
-                          {method.name}
-                        </option>
-                      ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <ChevronDown className="h-5 w-5 text-white/70" />
-                  </div>
-                </div>
-              </div>
+              {/* Payment Provider dropdown removed as requested */}
               
               <div>
                 <label className="block text-sm font-medium text-white/90 mb-1.5">Name / Alias</label>
