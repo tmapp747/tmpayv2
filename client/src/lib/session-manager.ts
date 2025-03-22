@@ -196,6 +196,24 @@ class SessionManager {
     }
   }
   
+  // Redirect to login page and clear session data
+  redirectToLogin(): void {
+    // Clear any session-related data
+    localStorage.removeItem('lastActive');
+    
+    // Set session status to expired
+    this.setSessionStatus('expired');
+    
+    // Redirect to login page
+    window.location.href = '/auth';
+    console.log('Redirecting to login page due to expired session');
+  }
+  
+  // Update last active timestamp
+  updateLastActiveTimestamp(): void {
+    localStorage.setItem('lastActive', Date.now().toString());
+  }
+  
   // Cleanup method (for component unmounting)
   cleanup(): void {
     window.removeEventListener('online', this.handleOnline);

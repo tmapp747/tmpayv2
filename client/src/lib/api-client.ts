@@ -273,12 +273,11 @@ async function refreshAccessToken(): Promise<string> {
     
     const data = await res.json();
     
-    // Reset the session expiry timestamp since we successfully refreshed
-    sessionExpiryTimestamp = null;
+    // Reset the session status since we successfully refreshed
+    sessionManager.setSessionStatus('active');
     
-    // Update session state in localStorage
-    localStorage.setItem('sessionState', 'active');
-    localStorage.setItem('lastActive', Date.now().toString());
+    // Update last active timestamp
+    sessionManager.updateLastActiveTimestamp();
     
     console.log('✅ Session refreshed successfully');
     
@@ -289,11 +288,11 @@ async function refreshAccessToken(): Promise<string> {
     // Check if this is a network error (server unreachable)
     if (error instanceof TypeError && (error.message.includes('network') || error.message.includes('fetch'))) {
       console.log('📡 Network error during refresh, server may be restarting');
-      isServerUnreachable = true;
+      sessionManager.setServerUnreachable(true);
       
       // Set a timeout to reset the unreachable status after 30 seconds
       setTimeout(() => {
-        isServerUnreachable = false;
+        sessionManager.setServerUnreachable(false);
         console.log('🔄 Server unreachable status reset, will attempt reconnection');
       }, 30000);
       
@@ -301,7 +300,7 @@ async function refreshAccessToken(): Promise<string> {
     }
     
     // If it's not a network error, mark session as expired
-    sessionExpiryTimestamp = Date.now();
+    sessionManager.setSessionStatus('expired');
     
     throw error;
   } finally {
