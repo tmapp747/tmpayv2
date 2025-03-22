@@ -46,11 +46,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isMobile }) => {
           className="max-w-lg text-center mb-6"
         >
           <h2 className="text-white text-base md:text-lg mb-2">
-            Team Marc's Official E-Wallet Platform
+            747 Online Casino E-Wallet Platform
           </h2>
           <p className="text-gray-300 text-xs md:text-sm">
-            Exclusive for Team Marc's agents and players. Enjoy seamless and fast 
-            cash-in and cash-out transactions using GCash payment methods.
+            An e-wallet designed for agents and players of 747 Online Casino to cater 
+            a fast, secure, and seamless cash-in and cash-out experience.
           </p>
         </motion.div>
         
@@ -154,7 +154,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ isMobile }) => {
         transition={{ delay: 1.2, duration: 0.8 }}
         className="mt-16 text-sm text-white/70 text-center"
       >
-        &copy; {new Date().getFullYear()} TeamMARC. All rights reserved.
+        &copy; {new Date().getFullYear()} 747 E-Wallet | 747ewallet.tmpay.live | All rights reserved.
       </motion.div>
     </div>
   );
