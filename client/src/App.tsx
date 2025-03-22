@@ -12,6 +12,7 @@ import AuthPage from "@/pages/auth-page";
 import MobileAuthPage from "@/pages/mobile-auth-page";
 import LandingPage from "@/pages/landing-page";
 import PaymentThankYou from "@/pages/payment-thank-you";
+import PaymentStatusPage from "@/pages/payment-status";
 import ColorComparison from "@/pages/ColorComparison";
 import MobileDashboard from "@/pages/MobileDashboard";
 import MobileWallet from "@/pages/MobileWallet";
@@ -98,10 +99,10 @@ function Router() {
       )} />
       {/* Payment routes */}
       <Route path="/payment/thank-you" component={PaymentThankYou} />
+      <Route path="/payment/status" component={PaymentStatusPage} />
       <Route path="/mobile/thank-you/:status/:amount/:transactionId?" component={MobileThankYouPage} />
-      <ProtectedRoute path="/payment-status" component={() => 
-        React.createElement(require('@/components/mobile/MobilePaymentStatus').default)
-      } />
+      <ProtectedRoute path="/payment-status" component={PaymentStatusPage} />
+      <ProtectedRoute path="/mobile/payment/status" component={PaymentStatusPage} />
       <ProtectedRoute path="/thank-you" component={() => 
         React.createElement(require('@/components/mobile/MobileThankYou').default)
       } />

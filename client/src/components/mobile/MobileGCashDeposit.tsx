@@ -141,14 +141,16 @@ export default function MobileGCashDeposit() {
           });
         }
         
-        // Show the payment modal
-        setIsModalOpen(true);
-
         // Immediately invalidate transactions query to show the pending transaction
         queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
 
+        // Redirect to the payment status page
+        navigate(`/payment/status?reference=${data.qrPayment.directPayReference}`);
+        
+        // Alternatively, you can still show the modal for immediate payment
+        // setIsModalOpen(true);
         // Start polling for payment status
-        pollPaymentStatus(data.qrPayment.directPayReference);
+        // pollPaymentStatus(data.qrPayment.directPayReference);
       } else {
         toast({
           title: "Error",
