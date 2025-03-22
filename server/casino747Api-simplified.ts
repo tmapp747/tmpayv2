@@ -114,178 +114,99 @@ export class Casino747Api {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deposit Notification - 747 eWallet</title>
   <style>
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background-color: #f0f4f9; 
-            margin: 0; 
-            padding: 0; 
-            color: #333; 
-        }
-        .container { 
-            width: 100%; 
-            max-width: 600px; 
-            margin: 20px auto; 
-            background: linear-gradient(145deg, #ffffff, #f9f9f9); 
-            border-radius: 16px; 
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); 
-            overflow: hidden;
-        }
-        .header { 
-            background: linear-gradient(135deg, #3867d6, #8854d0); 
-            color: #ffffff; 
-            padding: 25px 20px; 
-            text-align: center; 
-            font-size: 22px;
-            letter-spacing: 0.5px;
-            border-bottom: 3px solid rgba(255,255,255,0.2);
-        }
-        .card {
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            margin: 25px;
-            padding: 25px;
-            text-align: center;
-        }
-        .greeting {
-            color: #555;
-            font-size: 16px;
-            margin-bottom: 15px;
-            font-weight: 400;
-        }
-        .message {
-            color: #333;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-        .amount {
-            font-size: 42px;
-            font-weight: 700;
-            color: #2ecc71;
-            margin: 20px 0;
-            text-shadow: 0 2px 4px rgba(46, 204, 113, 0.15);
-        }
-        .username {
-            background: #f1f8ff;
-            color: #3867d6;
-            font-weight: 600;
-            padding: 10px 20px;
-            border-radius: 50px;
-            display: inline-block;
-            margin: 15px 0;
-            font-size: 18px;
-            box-shadow: 0 3px 10px rgba(56, 103, 214, 0.1);
-        }
-        .details {
-            background: #f9f9f9;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: left;
-            border-left: 4px solid #3867d6;
-        }
-        .details .row {
-            display: flex;
-            justify-content: space-between;
-            margin: 10px 0;
-            border-bottom: 1px dashed #eee;
-            padding-bottom: 10px;
-        }
-        .details .row:last-child {
-            border-bottom: none;
-        }
-        .details .label {
-            color: #7f8c8d;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .details .value {
-            color: #34495e;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .success-badge {
-            background: #2ecc71;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 50px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-            margin-left: 10px;
-        }
-        .footer { 
-            background: #2c3e50; 
-            color: #ecf0f1; 
-            text-align: center; 
-            padding: 20px; 
-            font-size: 14px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-        .footer a {
-            color: #3498db;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        .logo {
-            margin-top: 10px;
-            opacity: 0.9;
-        }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(12, 31, 63, 0.15);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #0C1F3F;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .green {
+      color: #00A678;
+    }
+    .white {
+      color: #FFFFFF;
+    }
+    .body {
+      padding: 20px;
+      color: #333333;
+    }
+    .body h2 {
+      color: #00A678;
+      font-size: 20px;
+      margin-top: 0;
+    }
+    .details {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    .details p {
+      margin: 8px 0;
+    }
+    .success-box {
+      background-color: #E8F9F1;
+      border-left: 5px solid #00A678;
+      padding: 15px;
+      margin-top: 20px;
+    }
+    .footer {
+      background-color: #0C1F3F;
+      color: #FFFFFF;
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+    }
+    .footer a {
+      color: #00A678;
+      text-decoration: none;
+    }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <strong>🎮 747 eWallet - Deposit Notification</strong>
-        </div>
-        
-        <div class="card">
-            <p class="greeting">Dear ${finalManager},</p>
-            
-            <p class="message">A deposit has been made using 747 eLoading Wallet for your player:</p>
-            
-            <div class="username">${username}</div>
-            
-            <div class="amount">₱ ${details.amount.toFixed(2)}</div>
-            
-            <div class="details">
-                <div class="row">
-                    <span class="label">Payment Method:</span>
-                    <span class="value">${details.method}</span>
-                </div>
-                <div class="row">
-                    <span class="label">Transaction Reference:</span>
-                    <span class="value">${details.reference}</span>
-                </div>
-                <div class="row">
-                    <span class="label">Requested On:</span>
-                    <span class="value">${formattedDate}</span>
-                </div>
-                <div class="row">
-                    <span class="label">Status:</span>
-                    <span class="value">Completed <span class="success-badge">✓</span></span>
-                </div>
-                <div class="row">
-                    <span class="label">Casino Transfer:</span>
-                    <span class="value">Completed <span class="success-badge">✓</span></span>
-                </div>
-            </div>
-            
-            <p style="color: #7f8c8d; font-size: 14px; margin-top: 30px;">
-                Chips have been successfully transferred to the player's casino wallet.<br>
-                No further action is required.
-            </p>
-        </div>
-        
-        <div class="footer">
-            © ${new Date().getFullYear()} 747 Casino | <a href="#">Support</a> | <a href="#">Terms</a>
-            <div class="logo">Team Marc</div>
-        </div>
+  <div class="email-container">
+    <div class="header">
+      <h1><span class="green">747</span><span class="white"> e-Wallet</span></h1>
     </div>
+    <div class="body">
+      <h2>Deposit Successful! ✅</h2>
+      <p>Dear ${finalManager},</p>
+      <p>Your player <strong>${username}</strong> has successfully deposited funds to their account using the following details:</p>
+      
+      <div class="success-box">
+        <div class="details">
+          <p><strong>Username:</strong> ${username}</p>
+          <p><strong>Amount Deposited:</strong> ₱${details.amount.toFixed(2)}</p>
+          <p><strong>Payment Method:</strong> ${details.method}</p>
+          <p><strong>Transaction Reference:</strong> ${details.reference}</p>
+          <p><strong>Date & Time:</strong> ${formattedDate}</p>
+          <p><strong>Transaction Status:</strong> ✅ Success</p>
+          <p><strong>Casino Wallet Top-Up:</strong> ✅ Completed</p>
+        </div>
+      </div>
+
+      <p>Please inform the player that their transaction has been completed successfully.</p>
+    </div>
+    <div class="footer">
+      © ${new Date().getFullYear()} 747 eWallet Casino | <a href="https://agents.747ph.live/support">Contact Support</a>
+    </div>
+  </div>
 </body>
 </html>`;
       
