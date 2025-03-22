@@ -99,6 +99,12 @@ function Router() {
       {/* Payment routes */}
       <Route path="/payment/thank-you" component={PaymentThankYou} />
       <Route path="/mobile/thank-you/:status/:amount/:transactionId?" component={MobileThankYouPage} />
+      <ProtectedRoute path="/payment-status" component={() => 
+        React.createElement(require('@/components/mobile/MobilePaymentStatus').default)
+      } />
+      <ProtectedRoute path="/thank-you" component={() => 
+        React.createElement(require('@/components/mobile/MobileThankYou').default)
+      } />
       
       {/* Color comparison route */}
       <Route path="/color-comparison" component={() => (

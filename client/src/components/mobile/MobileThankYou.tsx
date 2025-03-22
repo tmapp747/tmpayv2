@@ -11,8 +11,7 @@ import { useToast } from '@/hooks/use-toast';
  * 
  * This component:
  * 1. Displays a success message with transaction details
- * 2. Shows the updated balance
- * 3. Provides a button to return to the dashboard
+ * 2. Provides buttons to return to the dashboard or view transactions
  */
 export default function MobileThankYou() {
   const [location] = useLocation();
@@ -24,7 +23,6 @@ export default function MobileThankYou() {
   const txId = params.get('tx_id');
   
   const [transaction, setTransaction] = useState<any>(null);
-  const [userBalance, setUserBalance] = useState<string | null>(null);
   
   useEffect(() => {
     if (!txId) {
@@ -45,15 +43,6 @@ export default function MobileThankYou() {
         
         if (response.success && response.transaction) {
           setTransaction(response.transaction);
-          
-          // Fetch updated user balance
-          const balanceResponse = await apiRequest('/api/user/balance', {
-            method: 'GET'
-          });
-          
-          if (balanceResponse.success) {
-            setUserBalance(balanceResponse.balance);
-          }
         } else {
           toast({
             title: "Error",
@@ -121,17 +110,6 @@ export default function MobileThankYou() {
               </div>
             )}
           </div>
-          
-          {userBalance !== null && (
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md border border-green-200 dark:border-green-900/30">
-              <div className="flex justify-between items-center">
-                <span className="text-green-700 dark:text-green-300">Updated Balance:</span>
-                <span className="text-xl font-bold text-green-700 dark:text-green-300">
-                  ₱{parseFloat(userBalance).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          )}
         </CardContent>
         
         <CardFooter className="flex flex-col gap-2">

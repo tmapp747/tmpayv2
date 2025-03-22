@@ -1738,6 +1738,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  /**
+   * Check the status of a transaction by its reference ID
+   * 
+   * This endpoint supports the payment status page in the UI,
+   * allowing users to check payment status after GCash redirect.
+   */
+  app.get('/api/payments/check-transaction-status', authMiddleware, async (req: Request, res: Response) => {
+    try {
+      const { tx_id } = req.query;
+      
+      if (!tx_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Transaction ID (tx_id) is required'
+        });
+      }
+
+      // Find transaction by reference ID
+      const transaction = await storage.getTransactionByReference(tx_id as string);
+      
+      if (!transaction) {
+        return res.status(404).json({
+          success: false,
+          message: 'Transaction not found'
+        });
+      }
+      
+      // Verify user owns this transaction
+      if (transaction.userId !== req.user?.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to view this transaction'
+        });
+      }
+      
+      return res.json({
+        success: true,
+        message: 'Transaction found',
+        transaction
+      });
+    } catch (error) {
+      console.error('Error checking transaction status:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to check transaction status'
+      });
+    }
+  });
+
   app.post("/api/payments/gcash/generate-qr", async (req: Request, res: Response) => {
     try {
       // Check if user is authenticated, or use default user for payment processing
