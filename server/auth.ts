@@ -54,12 +54,6 @@ export function isPasswordHashed(password: string): boolean {
  * @returns An object containing the comparison result and whether migration is needed
  */
 export async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
-  // Log password comparison attempt with more details but keeping security in mind
-  console.log(`Password comparison attempt details:`);
-  console.log(`- Supplied password length: ${supplied ? supplied.length : 0}`);
-  console.log(`- Stored password type: ${stored ? (isPasswordHashed(stored) ? 'bcrypt hash' : 'plaintext') : 'missing'}`);
-  console.log(`- Stored password preview: ${stored ? stored.substring(0, 3) + '...' + stored.substring(stored.length - 3) : 'none'}`);
-
   // Immediately fail if either value is missing
   if (!supplied || !stored) {
     console.warn("Password comparison failed: Missing password input");
@@ -69,20 +63,16 @@ export async function comparePasswords(supplied: string, stored: string): Promis
   // If the stored password appears to be a bcrypt hash, use bcrypt.compare
   if (isPasswordHashed(stored)) {
     try {
-      console.log("Using bcrypt.compare for password validation");
       const result = await bcrypt.compare(supplied, stored);
-      console.log(`Bcrypt comparison result: ${result ? 'Success' : 'Failed'}`);
       return result;
     } catch (error) {
-      console.error("Bcrypt comparison error:", error);
-      console.error("Error details:", error instanceof Error ? error.message : String(error));
+      console.error("Bcrypt comparison error:", error instanceof Error ? error.message : String(error));
       return false;
     }
   }
 
   // Special case for legacy accounts with plaintext passwords that need migration
   console.warn("⚠️ SECURITY NOTICE: Plaintext password detected. Password migration required.");
-  console.log("Comparing plaintext password for legacy account");
 
   // Use a constant-time comparison for plaintext to mitigate timing attacks
   let result = true;
@@ -207,14 +197,26 @@ export function setupAuth(app: Express) {
 
   // Enhanced serializer for users - only store the user ID in the session
   passport.serializeUser((user: Express.User, done) => {
-    console.log(`Serializing user: ${user.username} (ID: ${user.id})`);
     done(null, user.id);
   });
 
   // Enhanced deserializer that retrieves the full user info from storage
+  // User cache to reduce database hits during deserialization
+  const userCache = new Map<number, {user: any, timestamp: number}>();
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+  
   passport.deserializeUser(async (id: number, done) => {
     try {
-      console.log(`Deserializing user with ID: ${id}`);
+      // Check cache first
+      const cached = userCache.get(id);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp < CACHE_TTL)) {
+        // Use cached user if not expired
+        return done(null, cached.user);
+      }
+      
+      // Cache miss or expired - fetch from database
       const user = await storage.getUser(id);
 
       if (!user) {
@@ -222,7 +224,9 @@ export function setupAuth(app: Express) {
         return done(null, false);
       }
 
-      console.log(`Successfully deserialized user: ${user.username}`);
+      // Update cache
+      userCache.set(id, {user, timestamp: now});
+      
       done(null, user);
     } catch (error) {
       console.error(`Error deserializing user with ID: ${id}:`, error);
