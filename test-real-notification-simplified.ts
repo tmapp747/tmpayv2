@@ -7,6 +7,8 @@
 
 import { casino747Api } from './server/casino747Api-simplified';
 import { db } from './server/db';
+import { transactions, users } from './shared/schema';
+import { eq, desc } from 'drizzle-orm';
 
 async function testSimplifiedRealNotification() {
   console.log('🧪 Testing simplified real transaction notification');
@@ -15,11 +17,12 @@ async function testSimplifiedRealNotification() {
   try {
     // 1. Get a recent completed transaction directly from the database
     console.log('📊 Fetching the most recent successful transaction...');
-    const recentTransactions = await db.query.transactions.findMany({
-      where: (transactions, { eq }) => eq(transactions.status, 'completed'),
-      orderBy: (transactions, { desc }) => [desc(transactions.createdAt)],
-      limit: 5
-    });
+    const recentTransactions = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.status, 'completed'))
+      .orderBy(desc(transactions.createdAt))
+      .limit(5);
     
     if (!recentTransactions || recentTransactions.length === 0) {
       console.error('❌ No completed transactions found in database');
@@ -29,18 +32,24 @@ async function testSimplifiedRealNotification() {
     // Use the first transaction
     const transaction = recentTransactions[0];
     console.log(`📝 Using transaction #${transaction.id} for testing`);
+    console.log('Transaction structure:', JSON.stringify(transaction, null, 2));
     
     // 2. Get user info
     console.log(`Looking up user with ID ${transaction.userId}...`);
-    const user = await db.query.users.findFirst({
-      where: (users, { eq }) => eq(users.id, transaction.userId)
-    });
+    const userResult = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, transaction.userId))
+      .limit(1);
     
-    if (!user) {
+    if (!userResult || userResult.length === 0) {
       console.error(`❌ User with ID ${transaction.userId} not found`);
       return;
     }
+    
+    const user = userResult[0];
     console.log(`📝 Transaction made by user: ${user.username} (ID: ${user.id})`);
+    console.log('User structure:', JSON.stringify(user, null, 2));
     
     // 3. Prepare simple deposit details (ensuring correct data types)
     console.log('\n📤 Creating simplified deposit details...');
@@ -49,18 +58,29 @@ async function testSimplifiedRealNotification() {
     const amount = parseFloat(transaction.amount);
     console.log(`Amount: ${amount} (${typeof amount})`);
     
-    // Create a proper Date object from the string
-    const timestamp = new Date(transaction.createdAt);
-    console.log(`Timestamp: ${timestamp} (${typeof timestamp})`);
+    // Create a proper Date object
+    const timestamp = new Date();
+    if (transaction.createdAt) {
+      console.log(`Timestamp from DB: ${transaction.createdAt}`);
+    } else {
+      console.log('No timestamp found in transaction, using current time');
+    }
+    console.log(`Using timestamp: ${timestamp} (${typeof timestamp})`);
+    
+    // Determine payment method using method field (as per schema)
+    const paymentMethod = transaction.method || 'gcash';
+    console.log(`Payment method: ${paymentMethod}`);
+    
+    // We don't have reference in the standard schema, so generate one
+    const reference = `tx-${transaction.id}-${Date.now()}`;
+    console.log(`Reference: ${reference}`);
     
     // Create a simplified deposit details object with the correct types
     const depositDetails = {
       amount: amount,
       currency: 'PHP',
-      method: transaction.paymentMethod === 'manual' 
-        ? 'Manual Bank Transfer' 
-        : 'GCash Payment',
-      reference: transaction.reference,
+      method: paymentMethod === 'manual' ? 'Manual Bank Transfer' : 'GCash Payment',
+      reference: reference,
       timestamp: timestamp
     };
     
