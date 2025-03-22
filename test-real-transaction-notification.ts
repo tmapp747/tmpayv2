@@ -163,14 +163,37 @@ async function testNotificationWithTransaction(transaction: any, user: any) {
     console.log(`• Immediate Manager: ${user.immediateManager || 'Not set'}`);
     
     // Create deposit details from transaction
+    // Fix the timestamp format to ensure it's a valid Date object
+    console.log(`Original createdAt type: ${typeof transaction.createdAt}`);
+    console.log(`Original createdAt value: ${transaction.createdAt}`);
+    
+    const timestamp = transaction.createdAt instanceof Date 
+      ? transaction.createdAt 
+      : new Date(transaction.createdAt);
+    
+    console.log(`Converted timestamp: ${timestamp}`);
+    console.log(`Timestamp is valid date: ${!isNaN(timestamp.getTime())}`);
+    
+    // Fix amount format - ensure it's a number
+    console.log(`Original amount type: ${typeof transaction.amount}`);
+    console.log(`Original amount value: ${transaction.amount}`);
+    
+    // Parse the amount to ensure it's a numerical value
+    const amount = typeof transaction.amount === 'string' 
+      ? parseFloat(transaction.amount) 
+      : transaction.amount;
+      
+    console.log(`Converted amount: ${amount}`);
+    console.log(`Amount is number: ${typeof amount === 'number' && !isNaN(amount)}`);
+      
     const depositDetails = {
-      amount: transaction.amount,
+      amount: amount,
       currency: 'PHP',
       method: transaction.paymentMethod === 'manual' 
         ? 'Manual Bank Transfer' 
         : '747 eLoading Wallet via Direct GCash Payment',
       reference: transaction.reference,
-      timestamp: transaction.createdAt
+      timestamp: timestamp
     };
     
     console.log('\n📤 Simulating deposit notification in production mode...');
@@ -187,9 +210,9 @@ async function testNotificationWithTransaction(transaction: any, user: any) {
     
     console.log('\n📧 Sending notification with real production data...');
     
-    // Set a timeout for the API call
+    // Set a shorter timeout for the API call (5 seconds)
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('API call timed out after 15 seconds')), 15000);
+      setTimeout(() => reject(new Error('API call timed out after 5 seconds')), 5000);
     });
     
     try {
