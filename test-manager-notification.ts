@@ -10,8 +10,62 @@ import { storage } from './server/storage';
 import { users } from './shared/schema';
 import { eq } from 'drizzle-orm';
 
+/**
+ * Print help message to the console
+ */
+function showHelp() {
+  console.log(`
+📋 Manager Notification Test Tool
+================================
+
+Tests the functionality to send notifications to managers about player deposits.
+
+Usage:
+  npx tsx test-manager-notification.ts [manager-username] [--userinfo] [--help]
+
+Options:
+  manager-username   The username of the manager to send the notification to (default: Platalyn)
+  --userinfo         Use the userInfo parameter instead of managerOverride (simulates production use)
+  --help             Show this help message
+
+Examples:
+  npx tsx test-manager-notification.ts                      # Uses default manager (Platalyn) with managerOverride
+  npx tsx test-manager-notification.ts TeamManager          # Sends to TeamManager with managerOverride 
+  npx tsx test-manager-notification.ts Platalyn --userinfo  # Uses userInfo parameter (simulates logged-in user)
+  
+This test verifies the deposit notification HTML template and the manager notification system.
+It demonstrates two different ways of calling the method:
+
+1. With managerOverride (for testing) - Directly specifies the manager name
+2. With userInfo (for production) - Simulates having the user session with hierarchy information
+`);
+  process.exit(0);
+}
+
 async function testManagerNotification() {
   console.log('🧪 Testing manager notification functionality');
+
+  // Parse command line arguments for manager override
+  let managerOverride = 'Platalyn'; // Default manager
+  const args = process.argv.slice(2);
+  let useUserInfo = false;
+  
+  // Check for help flag
+  if (args.includes('--help') || args.includes('-h')) {
+    showHelp();
+  }
+  
+  // Check for --userinfo flag to test with userInfo parameter instead of managerOverride
+  if (args.includes('--userinfo')) {
+    useUserInfo = true;
+    console.log(`📝 Using userInfo parameter to simulate logged-in user`);
+    args.splice(args.indexOf('--userinfo'), 1); // Remove the flag from args
+  }
+  
+  if (args.length > 0 && !args[0].startsWith('-')) {
+    managerOverride = args[0];
+    console.log(`📝 Using manager override from command line: ${managerOverride}`);
+  }
   
   try {
     // 1. Test user to notify about (based on documentation)
@@ -107,7 +161,11 @@ async function testManagerNotification() {
     console.table(userInfo);
     
     // 4. Test sending a deposit notification
-    console.log('\n📨 Testing sendDepositNotification method');
+    if (useUserInfo) {
+      console.log(`\n📨 Testing sendDepositNotification method with userInfo (production mode)`);
+    } else {
+      console.log(`\n📨 Testing sendDepositNotification method with managerOverride="${managerOverride}" (test mode)`);
+    }
     const testDepositDetails = {
       amount: 100,
       currency: 'PHP',
@@ -129,11 +187,29 @@ async function testManagerNotification() {
       });
       
       // Race the API call against the timeout
-      // Use managerOverride parameter to bypass database lookup
-      notificationResult = await Promise.race([
-        casino747Api.sendDepositNotification(testUsername, testDepositDetails, 'Platalyn'),
-        timeoutPromise
-      ]);
+      if (useUserInfo) {
+        // Use userInfo parameter (simulates production usage with logged-in user)
+        console.log(`ℹ️ Using userInfo parameter to simulate logged-in user session`);
+        notificationResult = await Promise.race([
+          casino747Api.sendDepositNotification(
+            testUsername, 
+            testDepositDetails, 
+            undefined, // no manager override
+            { 
+              immediateManager: managerOverride, // use the manager from command line
+              topManager: userInfo.topManager 
+            }
+          ),
+          timeoutPromise
+        ]);
+      } else {
+        // Use managerOverride parameter (for testing)
+        console.log(`ℹ️ Using managerOverride parameter for direct testing`);
+        notificationResult = await Promise.race([
+          casino747Api.sendDepositNotification(testUsername, testDepositDetails, managerOverride),
+          timeoutPromise
+        ]);
+      }
       
       // 6. Check the notification result
       console.log(`\n📋 Notification result:`, notificationResult);

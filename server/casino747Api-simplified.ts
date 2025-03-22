@@ -12,12 +12,13 @@ export class Casino747Api {
    * Non-critical notification - doesn't affect the transaction
    * 
    * This implements the actual messaging API integration to notify managers about
-   * successful deposits from their players. It uses account hierarchy to
-   * determine the correct manager to notify or accepts a direct manager parameter.
+   * successful deposits from their players. In production, we rely on the user's
+   * established hierarchy information as they're already logged in.
    * 
    * @param username The player's username who made the deposit
    * @param details The deposit details including amount, method, etc.
-   * @param managerOverride Optional parameter to directly specify the manager
+   * @param managerOverride Optional parameter to directly specify the manager (for testing)
+   * @param userInfo Optional user object with hierarchy info (to avoid redundant DB lookups)
    */
   async sendDepositNotification(
     username: string, 
@@ -28,57 +29,68 @@ export class Casino747Api {
       reference: string;
       timestamp: Date;
     },
-    managerOverride?: string
+    managerOverride?: string,
+    userInfo?: {
+      immediateManager?: string;
+      topManager?: string;
+    }
   ): Promise<any> {
     try {
       console.log(`📧 [CASINO747] Sending deposit notification for player: ${username}`);
       
-      // Use manager override if provided, otherwise attempt to fetch from database
-      let finalManager = managerOverride;
+      // Use manager override if provided, otherwise use provided userInfo or fetch from database
+      let finalManager: string | undefined = managerOverride;
       let topManager = 'Marcthepogi';
       
       if (!managerOverride) {
-        console.log(`🔍 [CASINO747] No manager override provided, looking up user information`);
-        
-        // Step 1: Get user details including hierarchy information
-        const userInfo = await storage.getUserByUsername(username);
-        
-        if (!userInfo) {
-          console.log(`⚠️ [CASINO747] User info not found in database, using default manager: Platalyn`);
-          finalManager = 'Platalyn'; // Default fallback when no user info exists
-        } else {
-          // Step 2: Extract immediate manager information
-          const immediateManager = userInfo.immediateManager;
+        // Check if user info was provided (from active session)
+        if (userInfo && userInfo.immediateManager) {
+          console.log(`ℹ️ [CASINO747] Using provided user info with immediate manager: ${userInfo.immediateManager}`);
+          finalManager = userInfo.immediateManager;
           topManager = userInfo.topManager || 'Marcthepogi';
+        } else {
+          console.log(`🔍 [CASINO747] No user info provided, looking up from database`);
           
-          // If user has no immediate manager, try to get hierarchy info first
-          if (!immediateManager) {
-            try {
-              console.log(`ℹ️ [CASINO747] No immediate manager found for ${username}, fetching hierarchy info`);
-              // Try to fetch hierarchy info to get the manager
-              await this.getUserHierarchy(username, false);
-              
-              // After getting hierarchy info, fetch the user again
-              const updatedUser = await storage.getUserByUsername(username);
-              if (updatedUser && updatedUser.immediateManager) {
-                console.log(`✅ [CASINO747] Found immediate manager for ${username}: ${updatedUser.immediateManager}`);
-                finalManager = updatedUser.immediateManager;
-              } else {
-                console.log(`⚠️ [CASINO747] Still no immediate manager found for ${username} after hierarchy lookup`);
-                finalManager = 'Platalyn'; // Default fallback
-              }
-            } catch (hierarchyError) {
-              console.error(`❌ [CASINO747] Failed to get hierarchy info: ${hierarchyError}`);
-              finalManager = 'Platalyn'; // Default fallback on error
-            }
+          // Step 1: Get user details including hierarchy information from the database
+          const dbUserInfo = await storage.getUserByUsername(username);
+          
+          if (!dbUserInfo) {
+            console.log(`⚠️ [CASINO747] User info not found in database, using default manager: Platalyn`);
+            finalManager = 'Platalyn'; // Default fallback when no user info exists
           } else {
-            finalManager = immediateManager;
+            // Step 2: Extract immediate manager information
+            const immediateManager = dbUserInfo.immediateManager;
+            topManager = dbUserInfo.topManager || 'Marcthepogi';
+            
+            // If user has no immediate manager, try to get hierarchy info first
+            if (!immediateManager) {
+              try {
+                console.log(`ℹ️ [CASINO747] No immediate manager found for ${username}, fetching hierarchy info`);
+                // Try to fetch hierarchy info to get the manager
+                await this.getUserHierarchy(username, false);
+                
+                // After getting hierarchy info, fetch the user again
+                const updatedUser = await storage.getUserByUsername(username);
+                if (updatedUser && updatedUser.immediateManager) {
+                  console.log(`✅ [CASINO747] Found immediate manager for ${username}: ${updatedUser.immediateManager}`);
+                  finalManager = updatedUser.immediateManager;
+                } else {
+                  console.log(`⚠️ [CASINO747] Still no immediate manager found for ${username} after hierarchy lookup`);
+                  finalManager = 'Platalyn'; // Default fallback
+                }
+              } catch (hierarchyError) {
+                console.error(`❌ [CASINO747] Failed to get hierarchy info: ${hierarchyError}`);
+                finalManager = 'Platalyn'; // Default fallback on error
+              }
+            } else {
+              finalManager = immediateManager;
+            }
           }
-          
-          // Double-check the final manager value
-          if (!finalManager) {
-            finalManager = 'Platalyn';
-          }
+        }
+        
+        // Double-check the final manager value for safety
+        if (!finalManager) {
+          finalManager = 'Platalyn';
         }
       } else {
         console.log(`ℹ️ [CASINO747] Using provided manager override: ${managerOverride}`);
