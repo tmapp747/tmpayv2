@@ -556,28 +556,23 @@ export default function MobileGCashDeposit() {
                   </Button>
                 </div>
                 
-                {/* The iframe is positioned as relative */}
-                <div className="relative">
-                  {/* Non-scrollable iframe */}
-                  <iframe 
-                    src={payUrl} 
-                    className="w-full rounded-lg border border-blue-500/20"
-                    style={{ 
-                      height: "300px", 
-                      overflow: "hidden" // Make iframe non-scrollable
-                    }}
-                    title="GCash Payment"
-                  />
-                  
-                  {/* Small overlay for the bottom part of the iframe */}
-                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#001138] to-transparent h-24">
-                    <div className="absolute bottom-0 w-full text-center py-2">
-                      <div className="text-xs font-medium text-blue-200 flex items-center justify-center">
-                        <ChevronDown className="h-4 w-4 text-blue-300 animate-bounce mr-1" />
-                        <span>View QR code below</span>
-                      </div>
-                    </div>
+                {/* No iframe - DirectPay URL won't work in iframe */}
+                <div className="relative flex flex-col items-center p-3 bg-blue-900/40 rounded-lg border border-blue-600/30 mb-3">
+                  <div className="text-center mb-2">
+                    <p className="text-sm text-blue-200 mb-2">
+                      Tap the button below to pay with your GCash app:
+                    </p>
+                    <Button
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      onClick={() => window.open(payUrl, '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open GCash Payment
+                    </Button>
                   </div>
+                  <p className="text-xs text-blue-300 text-center mt-2">
+                    If the button doesn't work, use the "Open" button above or scan the QR code with another device.
+                  </p>
                 </div>
                 
                 {/* Centered QR code below the iframe */}
