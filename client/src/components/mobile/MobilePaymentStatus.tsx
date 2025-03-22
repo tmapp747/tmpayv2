@@ -323,6 +323,12 @@ const MobilePaymentStatus: React.FC<PaymentStatusProps> = ({ reference, transact
                       ? 'Your GCash payment was not successful. Please try again.' 
                       : 'Your GCash payment is being processed.'}
                   </p>
+                  {isGcashCompleted && (
+                    <p className="text-xs text-green-400 mt-1 flex items-center">
+                      <Check className="h-3 w-3 mr-1" /> 
+                      Notification sent to your manager
+                    </p>
+                  )}
                 </div>
               </div>
               
