@@ -10,6 +10,10 @@ export class Casino747Api {
   /**
    * Send a deposit notification to the immediate manager about a player's deposit
    * Non-critical notification - doesn't affect the transaction
+   * 
+   * This implements the actual messaging API integration to notify managers about
+   * successful deposits from their players. It uses actual account hierarchy to
+   * determine the correct manager to notify.
    */
   async sendDepositNotification(username: string, details: {
     amount: number;
@@ -17,20 +21,178 @@ export class Casino747Api {
     method: string;
     reference: string;
     timestamp: Date;
-  }): Promise<boolean> {
+  }): Promise<any> {
     try {
-      console.log(`📬 Sending deposit notification for ${username} via SMS/messaging system`);
+      console.log(`📧 [CASINO747] Sending deposit notification for player: ${username}`);
       
-      // This is a notification-only method, so we'll just log it
-      console.log(`💰 Deposit notification: ${details.amount} ${details.currency} via ${details.method}`);
-      console.log(`🧾 Reference: ${details.reference}, Time: ${details.timestamp.toISOString()}`);
+      // Step 1: Get user details including hierarchy information
+      const userInfo = await storage.getUserByUsername(username);
       
-      // In a real implementation, this would call the messaging API
-      return true;
+      if (!userInfo) {
+        console.error(`❌ [CASINO747] Failed to get user info for ${username} from database`);
+        return {
+          success: false,
+          delivered: false,
+          message: "Failed to get user info from database"
+        };
+      }
+      
+      // Step 2: Extract immediate manager information
+      const immediateManager = userInfo.immediateManager;
+      const topManager = userInfo.topManager || 'Marcthepogi';
+      
+      // If user has no immediate manager, try to get hierarchy info first
+      if (!immediateManager) {
+        try {
+          console.log(`ℹ️ [CASINO747] No immediate manager found for ${username}, fetching hierarchy info`);
+          // Try to fetch hierarchy info to get the manager
+          await this.getUserHierarchy(username, false);
+          
+          // After getting hierarchy info, fetch the user again
+          const updatedUser = await storage.getUserByUsername(username);
+          if (updatedUser && updatedUser.immediateManager) {
+            console.log(`✅ [CASINO747] Found immediate manager for ${username}: ${updatedUser.immediateManager}`);
+          } else {
+            console.log(`⚠️ [CASINO747] Still no immediate manager found for ${username} after hierarchy lookup`);
+            return {
+              success: true,
+              delivered: false,
+              message: "User has no immediate manager to notify"
+            };
+          }
+        } catch (hierarchyError) {
+          console.error(`❌ [CASINO747] Failed to get hierarchy info: ${hierarchyError}`);
+          return {
+            success: false,
+            delivered: false,
+            message: "Failed to get hierarchy information"
+          };
+        }
+      }
+      
+      // Get the user info again after potentially updating hierarchy
+      const finalUser = await storage.getUserByUsername(username);
+      const finalManager = finalUser?.immediateManager || immediateManager;
+      
+      // If still no manager, we can't send a notification
+      if (!finalManager) {
+        console.log(`ℹ️ [CASINO747] User ${username} has no immediate manager. Notification skipped.`);
+        return {
+          success: true,
+          delivered: false,
+          message: "User has no immediate manager to notify"
+        };
+      }
+      
+      // Step 3: Get authentication token using top manager
+      const authToken = await this.getTopManagerToken(topManager);
+      
+      if (!authToken) {
+        console.error(`❌ [CASINO747] Failed to get auth token for sending notification`);
+        return {
+          success: false,
+          delivered: false,
+          message: "Authentication token not available"
+        };
+      }
+      
+      // Step 4: Create notification message with HTML formatting
+      const subject = `Deposit Notification for Player ${username}`;
+      const formattedDate = new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
+      }).format(details.timestamp);
+      
+      const message = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deposit Successful - 747 eWallet</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 8px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); overflow: hidden; }
+        .header { background: #2c3e50; color: #ffffff; padding: 20px; text-align: center; font-size: 24px; }
+        .content { padding: 20px; text-align: center; }
+        .content h2 { color: #27ae60; margin-bottom: 10px; }
+        .details { background: #ecf0f1; padding: 15px; border-radius: 5px; text-align: left; margin: 20px auto; width: 80%; }
+        .details p { margin: 5px 0; font-size: 16px; }
+        .footer { background: #34495e; color: #ffffff; text-align: center; padding: 15px; font-size: 14px; margin-top: 20px; }
+        .highlight { font-weight: bold; color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><strong>🎉 Deposit Successful! 🎉</strong></div>
+        <div class="content">
+            <h2>Successful Deposit for Your Player: ${username} ✅</h2>
+            <p>Dear Manager,</p>
+            <p>This is to inform you that your player <strong>${username}</strong> has successfully deposited funds using ${details.method}, and the chips have been transferred to their casino wallet.</p>
+            <div class="details">
+                <p><strong>Username:</strong> <span class="highlight">${username}</span></p>
+                <p><strong>Amount Deposited:</strong> <span class="highlight">${details.amount.toFixed(2)} ${details.currency}</span></p>
+                <p><strong>Payment Method:</strong> ${details.method}</p>
+                <p><strong>Transaction Reference:</strong> ${details.reference}</p>
+                <p><strong>Date & Time:</strong> ${formattedDate}</p>
+                <p><strong>Transaction Status:</strong> ✅ Success</p>
+                <p><strong>Casino Wallet Top-up:</strong> ✅ Completed</p>
+            </div>
+            <p>Please ensure that the player is informed of this transaction.</p>
+        </div>
+        <div class="footer">© ${new Date().getFullYear()} 747 eWallet Casino | Need help? <a href="#" style="color: #f1c40f;">Contact Support</a></div>
+    </div>
+</body>
+</html>`;
+      
+      // Step 5: Send notification to immediate manager
+      console.log(`📤 [CASINO747] Sending deposit notification to ${finalManager} for player ${username}`);
+      
+      // Use the SendMessage API endpoint to send the notification
+      try {
+        // Make the API request to send the message
+        const response = await axios.post(`${this.baseUrl}/Default/SendMessage`, {
+          authToken,
+          platform: this.defaultPlatform,
+          username: finalManager,
+          subject,
+          message
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'text/plain'
+          }
+        });
+        
+        console.log(`✅ [CASINO747] Deposit notification sent successfully to ${finalManager}`);
+        return {
+          success: true,
+          delivered: true,
+          messageId: response.data?.messageId || `msg_${Date.now()}`,
+          message: "Notification sent successfully"
+        };
+      } catch (apiError) {
+        console.error(`❌ [CASINO747] Error sending notification to ${finalManager}:`, apiError);
+        
+        // Even if the notification fails, this shouldn't block the transaction
+        return {
+          success: false,
+          delivered: false,
+          message: `Failed to send notification: ${apiError instanceof Error ? apiError.message : 'API error'}`
+        };
+      }
     } catch (error) {
-      console.error("Error sending deposit notification:", error);
-      // Non-critical error, return false but don't throw
-      return false;
+      console.error(`❌ [CASINO747] Error in sendDepositNotification:`, error);
+      
+      // Notification failures should be logged but not stop the transaction
+      return {
+        success: false,
+        delivered: false,
+        message: `Error processing notification: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
     }
   }
   private baseUrl: string = 'https://bridge.747lc.com';
