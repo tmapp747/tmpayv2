@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(12, 31, 63, 0.15);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #0C1F3F;
+      padding: 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: bold;
+    }
+    .green {
+      color: #00A678;
+    }
+    .white {
+      color: #FFFFFF;
+    }
+    .body {
+      padding: 20px;
+      color: #333333;
+    }
+    .body h2 {
+      color: #00A678;
+      font-size: 20px;
+      margin-top: 0;
+    }
+    .details {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    .details p {
+      margin: 8px 0;
+    }
+    .success-box {
+      background-color: #E8F9F1;
+      border-left: 5px solid #00A678;
+      padding: 15px;
+      margin-top: 20px;
+    }
+    .footer {
+      background-color: #0C1F3F;
+      color: #FFFFFF;
+      text-align: center;
+      padding: 15px;
+      font-size: 14px;
+    }
+    .footer a {
+      color: #00A678;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="email-container">
+    <div class="header">
+      <h1><span class="green">747</span><span class="white"> e-Wallet</span></h1>
+    </div>
+    <div class="body">
+      <h2>Deposit Successful! ✅</h2>
+      <p>Dear Platalyn,</p>
+      <p>Your player <strong>Beding1948</strong> has successfully deposited funds to their account using the following details:</p>
+      
+      <div class="success-box">
+        <div class="details">
+          <p><strong>Username:</strong> beding1948</p>
+          <p><strong>Amount Deposited:</strong> ₱100.00</p>
+          <p><strong>Payment Method:</strong> DirectPay GCash</p>
+          <p><strong>Transaction Status:</strong> ✅ Success</p>
+          <p><strong>Casino Wallet Top-Up:</strong> ✅ Completed</p>
+        </div>
+      </div>
+
+      <p>Please inform the player that their transaction has been completed successfully.</p>
+    </div>
+    <div class="footer">
+      © 2025 747 eWallet Casino | <a href="https://agents.747ph.live/support">Contact Support</a>
+    </div>
+  </div>
+
+</body>
+</html>
