@@ -12,7 +12,7 @@
 import { casino747Api } from './server/casino747Api-simplified';
 import { db } from './server/db';
 import { users, transactions, qrPayments } from './shared/schema';
-import { eq, desc, and, or } from 'drizzle-orm';
+import { eq, desc, and, or, sql } from 'drizzle-orm';
 import { storage } from './server/storage';
 
 async function testRealTransactionNotification() {
@@ -23,8 +23,8 @@ async function testRealTransactionNotification() {
     // 1. Find the most recent successful transaction in the database
     console.log('📊 Fetching most recent successful transaction...');
     
-    // Use a simpler query approach for now
-    const recentTransactionQuery = `
+    console.log('Executing SQL query to get recent transactions...');
+    const { rows: recentTransactions } = await db.execute(sql`
       SELECT 
         t.id, 
         t.user_id as "userId", 
@@ -40,17 +40,14 @@ async function testRealTransactionNotification() {
       WHERE t.status = 'completed' OR t.status = 'payment_completed'
       ORDER BY t.created_at DESC
       LIMIT 5
-    `;
-    
-    console.log('Executing SQL query to get recent transactions...');
-    const { rows: recentTransactions } = await db.execute(recentTransactionQuery);
+    `);
 
     if (recentTransactions.length === 0) {
       console.log('❌ No successful transactions found in the database');
       console.log('Creating a mock transaction for testing purposes...');
       
       // Use one of the test users we know exists
-      const testUserQuery = `
+      const { rows: testUsers } = await db.execute(sql`
         SELECT
           id,
           username,
@@ -59,9 +56,7 @@ async function testRealTransactionNotification() {
           casino_username as "casinoUsername"
         FROM users
         LIMIT 5
-      `;
-      
-      const { rows: testUsers } = await db.execute(testUserQuery);
+      `);
       
       if (testUsers.length === 0) {
         console.error('❌ No users found in database. Cannot continue test.');
@@ -123,7 +118,17 @@ async function testRealTransactionNotification() {
     `;
     
     console.log(`Looking up user with ID ${selectedTransaction.userId}...`);
-    const { rows: txUser } = await db.execute(userQuery, [selectedTransaction.userId]);
+    const { rows: txUser } = await db.execute(sql`
+      SELECT
+        id,
+        username,
+        top_manager as "topManager",
+        immediate_manager as "immediateManager",
+        casino_username as "casinoUsername"
+      FROM users
+      WHERE id = ${selectedTransaction.userId}
+      LIMIT 1
+    `);
     
     if (txUser.length === 0) {
       console.error(`❌ Could not find user with ID ${selectedTransaction.userId}`);
