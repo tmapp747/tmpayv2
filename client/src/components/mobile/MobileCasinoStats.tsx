@@ -542,8 +542,10 @@ export default function MobileCasinoStats() {
       const isAreaManager = level === 5; // Area Manager
       const isAgent = level === 6; // Agent
       
-      // Get the role name
-      const roleName = getUserRole(level);
+      // Get the role name based on whether this is the current user
+      const roleName = isCurrentUser && userData?.user?.casinoUserType
+        ? userData.user.casinoUserType.charAt(0).toUpperCase() + userData.user.casinoUserType.slice(1)
+        : getUserRole(level);
       
       // Color gradient from darker to lighter blue based on hierarchy role
       const bgColor = isCurrentUser 
