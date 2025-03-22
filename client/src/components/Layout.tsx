@@ -1,6 +1,5 @@
 import { ReactNode, useEffect } from "react";
 import MobileNavigation from "./MobileNavigation";
-import DesktopSidebar from "./DesktopSidebar";
 import { BellIcon, UserIcon } from "lucide-react";
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -20,12 +19,16 @@ const Layout = ({ children }: LayoutProps) => {
   const getPageTitle = () => {
     switch (location) {
       case "/":
+      case "/mobile/dashboard":
         return "Home";
       case "/wallet":
+      case "/mobile/wallet":
         return "Wallet";
       case "/history":
+      case "/mobile/history":
         return "Transaction History";
       case "/profile":
+      case "/mobile/profile":
         return "Profile";
       default:
         return "747 E-Wallet";
@@ -59,7 +62,7 @@ const Layout = ({ children }: LayoutProps) => {
 
   return (
     <div className={cn(
-      "mobile-container flex min-h-screen pb-16 lg:pb-6 font-inter mobile-safe-area",
+      "mobile-container flex min-h-screen pb-16 font-inter mobile-safe-area",
       "text-foreground bg-background transition-colors duration-300",
       "max-w-[100vw] overflow-x-hidden", // Prevent horizontal overflow
       theme === "dark" ? "dark" : "light"
@@ -69,17 +72,16 @@ const Layout = ({ children }: LayoutProps) => {
       width: '100%', 
       maxWidth: '100vw',
       overflowX: 'hidden',
-      paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 64px)', // Added safe bottom padding for mobile
+      paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 64px)', // Safe bottom padding for mobile
     }}
     data-theme={theme}>
-      {/* Desktop Sidebar */}
-      <DesktopSidebar />
+      {/* Desktop sidebar removed - using mobile layout for all devices */}
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-x-hidden max-w-full relative">
         {/* Header with enhanced 3D styling */}
         <header className={cn(
-          "bg-[#1a2b47] p-4 lg:py-4 lg:px-6 border-b-2 border-[#3a4c67]/60",
+          "bg-[#1a2b47] p-4 border-b-2 border-[#3a4c67]/60",
           "flex items-center justify-between sticky top-0 z-20",
           "w-full max-w-[100vw] relative" // Ensure header doesn't overflow
         )} style={{
@@ -89,7 +91,7 @@ const Layout = ({ children }: LayoutProps) => {
           {/* Subtle gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-60"></div>
           
-          <div className="flex items-center lg:hidden mobile-clickable relative z-10">
+          <div className="flex items-center mobile-clickable relative z-10">
             <div className="w-10 h-10 overflow-hidden" style={{
               filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))',
               transform: 'translateZ(0)'
@@ -116,12 +118,6 @@ const Layout = ({ children }: LayoutProps) => {
             </h1>
           </div>
           
-          <div className="hidden lg:block relative z-10">
-            <h1 className="text-xl font-bold text-white" style={{
-              textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
-            }}>{getPageTitle()}</h1>
-          </div>
-          
           <div className="flex items-center space-x-3 relative z-10">
             <ThemeToggle />
             <div className="relative">
@@ -138,7 +134,7 @@ const Layout = ({ children }: LayoutProps) => {
                       }}>3</span>
               </button>
             </div>
-            <div className="lg:hidden">
+            <div>
               <button className="p-2 rounded-full text-white hover:bg-primary-foreground/20 transition-all duration-200 mobile-clickable"
                      style={{
                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
@@ -168,7 +164,7 @@ const Layout = ({ children }: LayoutProps) => {
                perspectiveOrigin: 'center'
              }}>
           {/* Added proper padding: pt-4 for header spacing, and increased bottom padding for mobile navigation */}
-          <div className="mx-auto p-4 pt-4 pb-20 lg:pb-8 max-w-full overflow-x-hidden relative">
+          <div className="mx-auto p-4 pt-4 pb-20 max-w-full overflow-x-hidden relative">
             {/* Subtle depth effect for content */}
             <div className="absolute inset-0 pointer-events-none rounded-lg opacity-50"
                  style={{
@@ -181,7 +177,7 @@ const Layout = ({ children }: LayoutProps) => {
         </div>
       </div>
       
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation - now shown for all devices */}
       <MobileNavigation />
     </div>
   );

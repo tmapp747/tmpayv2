@@ -38,45 +38,32 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 function Router() {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(); // Will always return true now
   const [location, navigate] = useLocation();
 
-  // Redirect to appropriate version based on device
+  // Redirect all users to mobile routes for consistent experience
   useEffect(() => {
-    // Only redirect specific routes and only on initial page load or direct navigation
-    if (isMobile) {
-      // Use consistent /mobile/[page] pattern for all mobile routes
-      if (location === "/dashboard") navigate("/mobile/dashboard");
-      if (location === "/wallet") navigate("/mobile/wallet");
-      if (location === "/profile") navigate("/mobile/profile");
-      if (location === "/auth") navigate("/mobile/auth");
-      if (location === "/history") navigate("/mobile/history");
-      
-      // Legacy routes compatibility
-      if (location === "/mobile") navigate("/mobile/dashboard");
-      if (location === "/mobile-wallet") navigate("/mobile/wallet");
-      if (location === "/mobile-profile") navigate("/mobile/profile");
-      if (location === "/mobile-deposit") navigate("/mobile/deposit");
-      if (location === "/mobile-auth") navigate("/mobile/auth");
-      
-      // This fixes the issue with mobile-auth not redirecting to /mobile/dashboard
-      if (location === "/mobile/auth" && sessionStorage.getItem("redirectToMobile")) {
-        sessionStorage.removeItem("redirectToMobile");
-        navigate("/mobile/dashboard");
-      }
-    } else {
-      // Redirect mobile routes to desktop if on desktop
-      if (location === "/mobile") navigate("/dashboard");
-      if (location === "/mobile/dashboard") navigate("/dashboard");
-      if (location === "/mobile/wallet") navigate("/wallet");
-      if (location === "/mobile/profile") navigate("/profile");
-      if (location === "/mobile/history") navigate("/history");
-      if (location === "/mobile/auth") navigate("/auth");
-      if (location === "/mobile-wallet") navigate("/wallet");
-      if (location === "/mobile-profile") navigate("/profile");
-      if (location === "/mobile-auth") navigate("/auth");
+    // Always use mobile routes for everyone, regardless of device
+    // Desktop routes redirect to mobile
+    if (location === "/dashboard") navigate("/mobile/dashboard");
+    if (location === "/wallet") navigate("/mobile/wallet");
+    if (location === "/profile") navigate("/mobile/profile");
+    if (location === "/auth") navigate("/mobile/auth");
+    if (location === "/history") navigate("/mobile/history");
+    
+    // Legacy routes compatibility
+    if (location === "/mobile") navigate("/mobile/dashboard");
+    if (location === "/mobile-wallet") navigate("/mobile/wallet");
+    if (location === "/mobile-profile") navigate("/mobile/profile");
+    if (location === "/mobile-deposit") navigate("/mobile/deposit");
+    if (location === "/mobile-auth") navigate("/mobile/auth");
+    
+    // This fixes the issue with mobile-auth not redirecting to /mobile/dashboard
+    if (location === "/mobile/auth" && sessionStorage.getItem("redirectToMobile")) {
+      sessionStorage.removeItem("redirectToMobile");
+      navigate("/mobile/dashboard");
     }
-  }, [isMobile, location, navigate]);
+  }, [location, navigate]);
 
   return (
     <Switch>

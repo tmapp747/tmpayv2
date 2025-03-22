@@ -11,11 +11,12 @@ const MobileNavigation = () => {
   const { toast } = useToast();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+  // Update paths to match our mobile-only strategy
   const navLinks = [
-    { path: "/", icon: Home, label: "Home" },
-    { path: "/wallet", icon: Wallet, label: "Wallet" },
-    { path: "/history", icon: History, label: "History" },
-    { path: "/profile", icon: User, label: "Profile" },
+    { path: "/mobile/dashboard", icon: Home, label: "Home" },
+    { path: "/mobile/wallet", icon: Wallet, label: "Wallet" },
+    { path: "/mobile/history", icon: History, label: "History" },
+    { path: "/mobile/profile", icon: User, label: "Profile" },
   ];
 
   const handleLogout = () => {
@@ -23,8 +24,8 @@ const MobileNavigation = () => {
     logoutMutation.mutate();
     // Adding a fallback in case the mutation doesn't redirect
     setTimeout(() => {
-      if (document.location.pathname !== '/auth') {
-        document.location.href = '/auth';
+      if (document.location.pathname !== '/mobile/auth') {
+        document.location.href = '/mobile/auth';
       }
     }, 2000);
   };
@@ -32,7 +33,7 @@ const MobileNavigation = () => {
   return (
     <>
       {showLogoutConfirm && (
-        <div className="lg:hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
           <div className="bg-[#1a2b47] p-5 m-4 rounded-lg mobile-safe-area border-2 border-[#3a4c67]/60 relative"
                style={{
                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4), 0 5px 10px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 0 30px rgba(59, 130, 246, 0.1)',
@@ -81,7 +82,8 @@ const MobileNavigation = () => {
         </div>
       )}
 
-      <div className="lg:hidden fixed bottom-0 left-0 w-full bg-[#1a2b47] border-t-2 border-[#3a4c67]/60 z-40 mobile-safe-area"
+      {/* Removed lg:hidden class to make navigation visible on all devices */}
+      <div className="fixed bottom-0 left-0 w-full bg-[#1a2b47] border-t-2 border-[#3a4c67]/60 z-40 mobile-safe-area"
            style={{
              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
              boxShadow: '0 -5px 20px rgba(0, 0, 0, 0.2), 0 -3px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
@@ -91,7 +93,13 @@ const MobileNavigation = () => {
 
         <div className="flex items-center justify-around p-2 relative z-10">
           {navLinks.map((link) => {
-            const isActive = location === link.path;
+            // Check if the current location matches this link path
+            // This supports both direct matches and prefix matches
+            const isActive = 
+              location === link.path || 
+              (link.path === "/mobile/dashboard" && location === "/") ||
+              (location.startsWith(link.path) && link.path !== "/mobile/dashboard");
+              
             return (
               <Link
                 key={link.path}
@@ -133,22 +141,5 @@ const MobileNavigation = () => {
     </>
   );
 };
-
-// Helper component that's no longer used
-/* Kept for reference but not exported
-const MobileNavButton = ({ href, icon, label }) => (
-  <a 
-    href={href}
-    className={cn(
-      "flex flex-col items-center justify-center",
-      "w-16 h-16 rounded-lg mobile-clickable",
-      "text-muted-foreground hover:text-primary"
-    )}
-  >
-    <i className={`icon-${icon} text-xl`} />
-    <span className="text-xs mt-1">{label}</span>
-  </a>
-);
-*/
 
 export default MobileNavigation;
