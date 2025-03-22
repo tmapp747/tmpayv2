@@ -196,7 +196,7 @@ export default function MobileAuthPage() {
       
       // Set redirect flag in session storage then redirect
       sessionStorage.setItem("redirectToMobile", "true");
-      window.location.href = '/mobile';
+      window.location.href = '/mobile/dashboard';
     },
     onError: (error: Error) => {
       console.error('Login error:', error);
@@ -260,7 +260,7 @@ export default function MobileAuthPage() {
       
       // Set redirect flag in session storage then redirect
       sessionStorage.setItem("redirectToMobile", "true");
-      window.location.href = '/mobile';
+      window.location.href = '/mobile/dashboard';
     },
     onError: (error: Error) => {
       console.error('Registration error:', error);
