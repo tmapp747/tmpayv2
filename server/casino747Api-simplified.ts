@@ -19,6 +19,7 @@ export class Casino747Api {
    * @param details The deposit details including amount, method, etc.
    * @param managerOverride Optional parameter to directly specify the manager (for testing)
    * @param userInfo Optional user object with hierarchy info (to avoid redundant DB lookups)
+   * @returns Object with success flag, delivered status, messageId (if sent), and status message
    */
   async sendDepositNotification(
     username: string, 
@@ -34,8 +35,31 @@ export class Casino747Api {
       immediateManager?: string;
       topManager?: string;
     }
-  ): Promise<any> {
+  ): Promise<{
+    success: boolean;
+    delivered: boolean;
+    messageId?: string;
+    message: string;
+    timedOut?: boolean;
+  }> {
     try {
+      // Validate input parameters
+      if (!username || username.trim() === '') {
+        return {
+          success: false,
+          delivered: false,
+          message: "Username is required for sending notification"
+        };
+      }
+
+      if (!details || typeof details.amount !== 'number' || !details.timestamp) {
+        return {
+          success: false,
+          delivered: false,
+          message: "Invalid deposit details provided"
+        };
+      }
+
       console.log(`📧 [CASINO747] Sending deposit notification for player: ${username}`);
       
       // Use manager override if provided, otherwise use provided userInfo or fetch from database
@@ -107,28 +131,43 @@ export class Casino747Api {
       }
       
       // Step 3: Get authentication token using top manager
-      const authToken = await this.getTopManagerToken(topManager);
-      
-      if (!authToken) {
-        console.error(`❌ [CASINO747] Failed to get auth token for sending notification`);
+      let authToken: string;
+      try {
+        authToken = await this.getTopManagerToken(topManager);
+      } catch (tokenError) {
+        console.error(`❌ [CASINO747] Failed to get auth token for sending notification:`, tokenError);
         return {
           success: false,
           delivered: false,
-          message: "Authentication token not available"
+          message: `Authentication error: ${tokenError instanceof Error ? tokenError.message : 'Token unavailable'}`
         };
       }
       
-      // Step 4: Create notification message with HTML formatting
-      const subject = `Deposit Notification for Player ${username}`;
-      const formattedDate = new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true
-      }).format(details.timestamp);
+      // Format the amount value properly
+      const formattedAmount = typeof details.amount === 'number' 
+        ? details.amount.toFixed(2) 
+        : parseFloat(details.amount.toString()).toFixed(2);
       
+      // Step 4: Format date properly with fallback
+      let formattedDate: string;
+      try {
+        formattedDate = new Intl.DateTimeFormat('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          hour12: true
+        }).format(details.timestamp);
+      } catch (dateError) {
+        console.warn(`⚠️ [CASINO747] Error formatting date, using current time instead:`, dateError);
+        formattedDate = new Date().toLocaleString('en-US');
+      }
+      
+      // Step 5: Create notification message with HTML formatting
+      const subject = `Deposit Notification for Player ${username}`;
+      
+      // Enhanced HTML template with better formatting and mobile responsiveness
       const message = `<!DOCTYPE html>
 <html>
 <head>
@@ -137,10 +176,12 @@ export class Casino747Api {
   <title>Deposit Notification - 747 eWallet</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f4f4;
       margin: 0;
       padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
     .email-container {
       max-width: 600px;
@@ -159,6 +200,7 @@ export class Casino747Api {
       margin: 0;
       font-size: 26px;
       font-weight: bold;
+      line-height: 1.4;
     }
     .green {
       color: #00A678;
@@ -167,37 +209,64 @@ export class Casino747Api {
       color: #FFFFFF;
     }
     .body {
-      padding: 20px;
+      padding: 25px;
       color: #333333;
+      line-height: 1.6;
     }
     .body h2 {
       color: #00A678;
-      font-size: 20px;
+      font-size: 22px;
       margin-top: 0;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
     }
     .details {
       margin-top: 20px;
       font-size: 16px;
     }
     .details p {
-      margin: 8px 0;
+      margin: 10px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .details p:last-child {
+      border-bottom: none;
     }
     .success-box {
       background-color: #E8F9F1;
       border-left: 5px solid #00A678;
-      padding: 15px;
-      margin-top: 20px;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 0 4px 4px 0;
     }
     .footer {
       background-color: #0C1F3F;
       color: #FFFFFF;
       text-align: center;
-      padding: 15px;
+      padding: 20px;
       font-size: 14px;
     }
     .footer a {
       color: #00A678;
       text-decoration: none;
+      font-weight: bold;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #00A678;
+    }
+    @media only screen and (max-width: 480px) {
+      .email-container {
+        margin: 10px;
+        width: auto;
+      }
+      .body {
+        padding: 15px;
+      }
     }
     </style>
 </head>
@@ -207,49 +276,57 @@ export class Casino747Api {
       <h1><span class="green">747</span><span class="white"> e-Wallet</span></h1>
     </div>
     <div class="body">
-      <h2>Deposit Successful! ✅</h2>
-      <p>Dear ${finalManager},</p>
-      <p>Your player <strong>${username}</strong> has successfully deposited funds to their account using the following details:</p>
+      <h2>✅ Deposit Successful!</h2>
+      <p>Dear <strong>${finalManager}</strong>,</p>
+      <p>Your player <strong>${username}</strong> has successfully deposited funds to their account. The transaction has been completed and the funds have been credited to the player's casino wallet.</p>
       
       <div class="success-box">
         <div class="details">
           <p><strong>Username:</strong> ${username}</p>
-          <p><strong>Amount Deposited:</strong> ₱${details.amount.toFixed(2)}</p>
+          <p><strong>Amount:</strong> <span class="highlight">₱${formattedAmount}</span></p>
           <p><strong>Payment Method:</strong> ${details.method}</p>
-          <p><strong>Transaction Reference:</strong> ${details.reference}</p>
+          <p><strong>Reference:</strong> ${details.reference}</p>
           <p><strong>Date & Time:</strong> ${formattedDate}</p>
-          <p><strong>Transaction Status:</strong> ✅ Success</p>
-          <p><strong>Casino Wallet Top-Up:</strong> ✅ Completed</p>
+          <p><strong>Status:</strong> ✅ Payment Completed</p>
+          <p><strong>Casino Wallet:</strong> ✅ Funds Added</p>
         </div>
       </div>
 
-      <p>Please inform the player that their transaction has been completed successfully.</p>
+      <p>The player has been notified of the successful transaction. If they have any questions, please assist them through your agent portal.</p>
+      <p>Thank you for using 747 e-Wallet services!</p>
     </div>
     <div class="footer">
-      © ${new Date().getFullYear()} 747 eWallet Casino | <a href="https://agents.747ph.live/support">Contact Support</a>
+      © ${new Date().getFullYear()} 747 eWallet Casino | <a href="https://747ph.live/support">Contact Support</a>
     </div>
   </div>
 </body>
 </html>`;
       
-      // Step 5: Send notification to immediate manager
+      // Step 6: Send notification to immediate manager with timeout protection
       console.log(`📤 [CASINO747] Sending deposit notification to ${finalManager} for player ${username}`);
       
-      // Use the SendMessage API endpoint to send the notification
+      // Create timeout promise to ensure we don't hang indefinitely
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('API request timed out after 15 seconds')), 15000);
+      });
+      
       try {
-        // Make the API request to send the message
-        const response = await axios.post(`${this.baseUrl}/Default/SendMessage`, {
-          authToken,
-          platform: this.defaultPlatform,
-          username: finalManager,
-          subject,
-          message
-        }, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'text/plain'
-          }
-        });
+        // Race the actual API call against the timeout
+        const response = await Promise.race([
+          axios.post(`${this.baseUrl}/Default/SendMessage`, {
+            authToken,
+            platform: this.defaultPlatform,
+            username: finalManager,
+            subject,
+            message
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'text/plain'
+            }
+          }),
+          timeoutPromise
+        ]);
         
         console.log(`✅ [CASINO747] Deposit notification sent successfully to ${finalManager}`);
         return {
@@ -259,14 +336,35 @@ export class Casino747Api {
           message: "Notification sent successfully"
         };
       } catch (apiError) {
+        // Check if this was a timeout error
+        if (apiError instanceof Error && apiError.message.includes('timed out')) {
+          console.warn(`⏱️ [CASINO747] Notification request timed out after 15 seconds`);
+          return {
+            success: true, // Consider it possibly successful since the message might still be delivered
+            delivered: false,
+            timedOut: true,
+            message: `Request timed out, notification status unknown`
+          };
+        }
+        
+        // Handle other API errors
         console.error(`❌ [CASINO747] Error sending notification to ${finalManager}:`, apiError);
         
-        // Even if the notification fails, this shouldn't block the transaction
-        return {
-          success: false,
-          delivered: false,
-          message: `Failed to send notification: ${apiError instanceof Error ? apiError.message : 'API error'}`
-        };
+        if (axios.isAxiosError(apiError)) {
+          return {
+            success: false,
+            delivered: false,
+            message: `API error (${apiError.response?.status || 'unknown'}): ${
+              apiError.response?.data?.message || apiError.message || 'Unknown error'
+            }`
+          };
+        } else {
+          return {
+            success: false,
+            delivered: false,
+            message: `Failed to send notification: ${apiError instanceof Error ? apiError.message : 'API error'}`
+          };
+        }
       }
     } catch (error) {
       console.error(`❌ [CASINO747] Error in sendDepositNotification:`, error);
