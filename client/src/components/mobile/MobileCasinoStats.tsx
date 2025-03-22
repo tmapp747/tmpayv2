@@ -1161,35 +1161,51 @@ export default function MobileCasinoStats() {
     );
   };
 
-  // Combined refresh function to handle both stats and hierarchy
-  const handleRefresh = async () => {
-    if (isRefreshing) return; // Prevent multiple clicks
+  // Function to refresh stats
+  const refreshStats = async () => {
+    if (isRefreshing) return; // Prevent multiple refreshes
     
     try {
       setIsRefreshing(true);
-      
-      // First refresh stats
       await manualRefreshStats();
-      
-      // Then refresh hierarchy
-      await manualRefreshHierarchy();
-      
-      // Update state to trigger re-renders
       await refetchStats();
-      await refetchHierarchy();
-      
       toast({
-        title: "Data refreshed",
-        description: "All casino data has been refreshed successfully",
+        title: "Statistics refreshed",
+        description: "Casino statistics data has been updated",
         variant: "default"
       });
     } catch (error) {
       toast({
         title: "Refresh failed",
-        description: "Please try again later",
+        description: "Could not refresh statistics data",
         variant: "destructive"
       });
-      console.error("Refresh error:", error);
+      console.error("Stats refresh error:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
+  // Function to refresh hierarchy
+  const refreshHierarchy = async () => {
+    if (isRefreshing) return; // Prevent multiple refreshes
+    
+    try {
+      setIsRefreshing(true);
+      await manualRefreshHierarchy();
+      await refetchHierarchy();
+      toast({
+        title: "Hierarchy refreshed",
+        description: "Management hierarchy data has been updated",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh hierarchy data",
+        variant: "destructive"
+      });
+      console.error("Hierarchy refresh error:", error);
     } finally {
       setIsRefreshing(false);
     }
@@ -1201,29 +1217,22 @@ export default function MobileCasinoStats() {
         {/* Statistics Section with Toggle */}
         <div 
           className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
-          onClick={() => setShowStatistics(!showStatistics)}
+          onClick={() => {
+            // When opening the stats section, refresh data
+            if (!showStatistics) {
+              refreshStats();
+            }
+            setShowStatistics(!showStatistics);
+          }}
         >
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-blue-300" />
               <h3 className="font-medium text-lg">Casino Statistics</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent toggle from activating
-                  handleRefresh();
-                }}
-                disabled={isRefreshing}
-                className="bg-blue-600/20 hover:bg-blue-600/40 p-1.5 rounded-full transition-colors disabled:opacity-50"
-                title="Refresh Data"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-blue-300' : 'text-blue-300'}`} />
-              </button>
-              <ChevronDown 
-                className={`h-5 w-5 transition-transform ${showStatistics ? 'rotate-180' : ''}`}
-              />
-            </div>
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform ${showStatistics ? 'rotate-180' : ''}`}
+            />
           </div>
           <p className="text-sm opacity-70 mt-1">
             View your performance metrics and financial data
@@ -1247,29 +1256,22 @@ export default function MobileCasinoStats() {
         {/* Hierarchy Section with Toggle */}
         <div 
           className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
-          onClick={() => setShowHierarchy(!showHierarchy)}
+          onClick={() => {
+            // When opening the hierarchy section, refresh data
+            if (!showHierarchy) {
+              refreshHierarchy();
+            }
+            setShowHierarchy(!showHierarchy);
+          }}
         >
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-blue-300" />
               <h3 className="font-medium text-lg">Management Hierarchy</h3>
             </div>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent toggle from activating
-                  handleRefresh();
-                }}
-                disabled={isRefreshing}
-                className="bg-blue-600/20 hover:bg-blue-600/40 p-1.5 rounded-full transition-colors disabled:opacity-50"
-                title="Refresh Data"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-blue-300' : 'text-blue-300'}`} />
-              </button>
-              <ChevronDown 
-                className={`h-5 w-5 transition-transform ${showHierarchy ? 'rotate-180' : ''}`}
-              />
-            </div>
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform ${showHierarchy ? 'rotate-180' : ''}`}
+            />
           </div>
           <p className="text-sm opacity-70 mt-1">
             Explore your position in the casino organization
