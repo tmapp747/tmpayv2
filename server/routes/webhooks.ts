@@ -4,14 +4,20 @@ import { storage } from '../storage';
 import { mapDirectPayWebhookToDbFields } from '../utils/api-mapper';
 import { casino747CompleteTopup } from '../routes';
 import { determineTransactionStatus, mapDirectPayStatusToGcashStatus } from '../../shared/api-mapping';
+import { getWebhookService } from '../services/WebhookService';
+import { casino747Api } from '../casino747Api-simplified';
 
 const router = express.Router();
+
+// Initialize webhook service
+const webhookService = getWebhookService(storage, casino747Api);
 
 /**
  * DirectPay webhook handler
  * 
  * This endpoint processes payment status updates from DirectPay in their official format.
  * It updates the transaction status and triggers casino transfer if payment is successful.
+ * Uses the enhanced WebhookService for better error handling and automatic retries.
  */
 router.post('/direct-pay', async (req: Request, res: Response) => {
   try {
@@ -27,84 +33,25 @@ router.post('/direct-pay', async (req: Request, res: Response) => {
       });
     }
     
-    // Find the transaction by reference ID
-    const transaction = await storage.getTransactionByReference(refId);
-    if (!transaction) {
-      console.error(`Transaction not found for reference: ${refId}`);
-      return res.status(404).json({ 
-        success: false, 
-        message: `Transaction not found for reference: ${refId}` 
+    // Process the webhook using our enhanced service
+    const result = await webhookService.processDirectPayWebhook(req.body);
+    
+    if (!result.success) {
+      // If there was an error processing the webhook, return error response
+      return res.status(result.status || 500).json({
+        success: false,
+        message: result.message || 'Error processing webhook',
+        error: result.error
       });
-    }
-    
-    // Map DirectPay status to our gcashStatus
-    const gcashStatus = mapDirectPayStatusToGcashStatus(status);
-    console.log(`Mapping DirectPay status ${status} to gcashStatus ${gcashStatus}`);
-    
-    // Transform the webhook payload
-    const mappedPayload = mapDirectPayWebhookToDbFields(req.body);
-    console.log('Mapped webhook payload:', mappedPayload);
-    
-    // Update transaction with webhook data
-    const updatedTransaction = await storage.updateTransactionGCashStatus(
-      transaction.id,
-      gcashStatus,
-      mappedPayload
-    );
-    
-    // If payment was successful, process casino transfer
-    if (gcashStatus === 'success') {
-      console.log(`Payment successful for transaction ${transaction.id}, processing casino transfer`);
-      try {
-        const user = await storage.getUser(transaction.userId);
-        if (!user) {
-          console.error(`User not found for transaction ${transaction.id}`);
-          return res.status(404).json({
-            success: false,
-            message: 'User not found'
-          });
-        }
-        
-        // Complete the casino topup
-        await casino747CompleteTopup(
-          user.casinoClientId!.toString(),
-          transaction.amount,
-          transaction.reference
-        );
-        
-        console.log(`Casino transfer completed for transaction ${transaction.id}`);
-        
-        // Update transaction status
-        await storage.updateTransactionStatus(
-          transaction.id,
-          'completed',
-          transaction.reference,
-          {
-            ...transaction.metadata,
-            paymentCompletedAt: new Date().toISOString(),
-            casinoTransferCompletedAt: new Date().toISOString()
-          }
-        );
-      } catch (error) {
-        console.error(`Error processing casino transfer: ${error}`);
-        // Update only the GCash status, casino transfer will be retried later
-        await storage.updateTransactionCasinoStatus(
-          transaction.id,
-          'failed',
-          { 
-            ...transaction.metadata,
-            casinoTransferError: (error as Error).message
-          }
-        );
-      }
     }
     
     // Return success response
     return res.status(200).json({
       success: true,
       message: 'Webhook processed successfully',
-      status: gcashStatus,
-      transactionId: transaction.id
+      status: result.gcashStatus,
+      transactionId: result.transactionId,
+      casinoTransferStatus: result.casinoTransferStatus
     });
     
   } catch (error) {

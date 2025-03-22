@@ -10,6 +10,11 @@ import { setupAuth } from "./auth";
 import webhookRoutes from './routes/webhooks';
 // Import Swagger documentation setup
 import { setupSwagger } from './swagger';
+// Import automatic payment processor
+import { getAutomaticPaymentProcessor } from './services/AutomaticPaymentProcessor';
+// Import storage and casino API for service initialization
+import { storage } from './storage';
+import { casino747Api } from './casino747Api-simplified';
 
 const app = express();
 app.use(express.json());
@@ -110,6 +115,15 @@ app.use((req, res, next) => {
   }, () => {
     log(`Server running at http://0.0.0.0:${port}`);
     log(`API available at http://0.0.0.0:${port}/api`);
+    
+    // Start automatic payment processor (background payment handling)
+    try {
+      const paymentProcessor = getAutomaticPaymentProcessor(storage, casino747Api);
+      paymentProcessor.start();
+      log(`🚀 Automatic payment processor started successfully`);
+    } catch (error) {
+      log(`❌ Error starting automatic payment processor: ${error}`);
+    }
   });
   
   return server;
