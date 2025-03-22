@@ -225,15 +225,8 @@ export class AutomaticPaymentProcessor {
       const expiredPayments = await db.query.qrPayments.findMany({
         where: and(
           inArray(qrPayments.status, ["pending", "processing"]),
-          or(
-            // Payments created more than 30 minutes ago
-            lt(qrPayments.createdAt, thirtyMinutesAgo),
-            // Or payments with expiresAt in the past
-            and(
-              sql`${qrPayments.expiresAt} IS NOT NULL`,
-              lt(qrPayments.expiresAt, now)
-            )
-          )
+          // Payments created more than 30 minutes ago - simplify the query to avoid sql function errors
+          lt(qrPayments.createdAt, thirtyMinutesAgo)
         ),
         limit: PROCESSING_LIMIT
       });
