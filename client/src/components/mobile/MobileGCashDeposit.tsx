@@ -11,8 +11,7 @@ import {
   Copy, 
   ExternalLink, 
   Smartphone,
-  Phone,
-  ChevronDown
+  Phone
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -28,33 +27,19 @@ export default function MobileGCashDeposit() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [qrData, setQrData] = useState<string | null>(null);
   const [payUrl, setPayUrl] = useState<string | null>(null);
-  const [referenceId, setReferenceId] = useState<string | null>(null);
+  const [referenceId, setReferenceId] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successData, setSuccessData] = useState<any>(null);
   const [copySuccess, setCopySuccess] = useState(false);
-  // Define interface for transaction success data
-  interface SuccessData {
-    amount: number;
-    newBalance: string | number;
-    transactionId: string;
-    timestamp: string;
-    paymentMethod: string;
-    statusUpdatedAt?: string;
-    completedAt?: string;
-  }
   
-  const [successData, setSuccessData] = useState<SuccessData | null>(null);
-  const { toast } = useToast();
-  const [location, navigate] = useLocation();
   const queryClient = useQueryClient();
-
-  // Setup swipe back gesture
+  const { toast } = useToast();
+  const [_, navigate] = useLocation();
+  
+  // Swipe right gesture to go back
   const swipeHandlers = useSwipe({
-    onSwipeRight: () => {
-      if (!isModalOpen && !isSuccess) {
-        navigate("/mobile/wallet");
-      }
-    },
+    onSwipeRight: () => navigate("/mobile/wallet")
   });
 
   // Handle displaying amounts in the preset buttons
@@ -108,38 +93,24 @@ export default function MobileGCashDeposit() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          amount: numAmount,
+          amount: numAmount
         }),
         credentials: "include"
       });
-
-      if (!res.ok) {
-        try {
-          const data = await res.json();
-          throw new Error(data.message || "Failed to generate QR code");
-        } catch (e) {
-          throw new Error(`Error ${res.status}: Failed to generate QR code. Please try again.`);
-        }
-      }
-
+      
       const data = await res.json();
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.qrPayment) {
-        // Store QR code data
-        setQrData(data.qrPayment.qrCodeData);
+      
+      if (data.success) {
+        // Store QR data and reference ID
+        setQrData(data.qrPayment.qrData);
+        setPayUrl(data.qrPayment.payUrl);
         setReferenceId(data.qrPayment.directPayReference);
         
-        // Check if there's a payment URL
-        if (data.qrPayment.payUrl) {
-          setPayUrl(data.qrPayment.payUrl);
-        } else {
-          toast({
-            title: "QR Code Generated",
-            description: "Please scan the QR code with your GCash app to complete payment",
-          });
-        }
+        // Show toast for confirmation
+        toast({
+          title: "GCash QR Generated",
+          description: "Please scan the QR code with your GCash app to complete payment",
+        });
         
         // Immediately invalidate transactions query to show the pending transaction
         queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
@@ -511,97 +482,85 @@ export default function MobileGCashDeposit() {
           </div>
           
           {payUrl ? (
-            // If we have a payment URL, show the iframe with button overlay
+            // If we have a payment URL, show the payment options
             <div className="w-full mx-auto">
-              <div className="bg-white/5 backdrop-blur-md rounded-xl p-3 mb-4 relative">
-                {/* Quick action buttons positioned above iframe */}
-                <div className="grid grid-cols-3 gap-2 mb-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
-                    onClick={handleShareLink}
-                  >
-                    <div className="flex flex-col items-center text-xs">
-                      <Share2 className="h-4 w-4 mb-1" />
-                      <span>Share</span>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60",
-                      copySuccess && "bg-green-900/40 border-green-500/30"
-                    )}
-                    onClick={handleCopyLink}
-                  >
-                    <div className="flex flex-col items-center text-xs">
-                      <Copy className="h-4 w-4 mb-1" />
-                      <span>{copySuccess ? "Copied" : "Copy link"}</span>
-                    </div>
-                  </Button>
-                  
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
-                    onClick={() => window.open(payUrl, '_blank')}
-                  >
-                    <div className="flex flex-col items-center text-xs">
-                      <ExternalLink className="h-4 w-4 mb-1" />
-                      <span>Open</span>
-                    </div>
-                  </Button>
-                </div>
-                
-                {/* No iframe - DirectPay URL won't work in iframe */}
-                <div className="relative flex flex-col items-center p-3 bg-blue-900/40 rounded-lg border border-blue-600/30 mb-3">
-                  <div className="text-center mb-2">
-                    <p className="text-sm text-blue-200 mb-2">
-                      Tap the button below to pay with your GCash app:
-                    </p>
-                    <Button
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      onClick={() => window.open(payUrl, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Open GCash Payment
-                    </Button>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
+                  onClick={handleShareLink}
+                >
+                  <div className="flex flex-col items-center text-xs">
+                    <Share2 className="h-4 w-4 mb-1" />
+                    <span>Share</span>
                   </div>
-                  <p className="text-xs text-blue-300 text-center mt-2">
-                    If the button doesn't work, use the "Open" button above or scan the QR code with another device.
-                  </p>
-                </div>
+                </Button>
                 
-                {/* Centered QR code below the iframe */}
-                <div className="mt-4 flex flex-col items-center">
-                  <div className="bg-white p-3 rounded-lg shadow-md mb-2" style={{ width: "150px", height: "150px" }}>
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(payUrl || '')}`}
-                      alt="Payment QR Code"
-                      className="w-full h-full object-contain"
-                    />
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60",
+                    copySuccess && "bg-green-900/40 border-green-500/30"
+                  )}
+                  onClick={handleCopyLink}
+                >
+                  <div className="flex flex-col items-center text-xs">
+                    <Copy className="h-4 w-4 mb-1" />
+                    <span>{copySuccess ? "Copied" : "Copy link"}</span>
                   </div>
-                  <p className="text-xs text-blue-300 text-center">
-                    <Smartphone className="h-3 w-3 inline mr-1" />
-                    Scan with another device to pay
-                  </p>
-                </div>
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500/20 text-white bg-blue-900/40 hover:bg-blue-800/60"
+                  onClick={() => window.open(payUrl, '_blank')}
+                >
+                  <div className="flex flex-col items-center text-xs">
+                    <ExternalLink className="h-4 w-4 mb-1" />
+                    <span>Open</span>
+                  </div>
+                </Button>
               </div>
               
-              <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-500/30">
-                <p className="text-blue-200 text-xs mb-2 flex items-start">
-                  <Phone className="h-4 w-4 mr-2 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <span>
-                    You can also pay using <strong>another device</strong> by sharing this payment link or scanning the QR code.
-                  </span>
+              {/* No iframe - DirectPay URL won't work in iframe */}
+              <div className="relative flex flex-col items-center p-3 bg-blue-900/40 rounded-lg border border-blue-600/30 mb-3">
+                <div className="text-center mb-2">
+                  <p className="text-sm text-blue-200 mb-2">
+                    Tap the button below to pay with your GCash app:
+                  </p>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => window.open(payUrl, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Open GCash Payment
+                  </Button>
+                </div>
+                <p className="text-xs text-blue-300 text-center mt-2">
+                  If the button doesn't work, use the "Open" button above or scan the QR code with another device.
+                </p>
+              </div>
+              
+              {/* Centered QR code below */}
+              <div className="mt-4 flex flex-col items-center">
+                <div className="bg-white p-3 rounded-lg shadow-md mb-2" style={{ width: "150px", height: "150px" }}>
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(payUrl || '')}`}
+                    alt="Payment QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <p className="text-xs text-blue-300 text-center">
+                  <Smartphone className="h-3 w-3 inline mr-1" />
+                  Scan with another device to pay
                 </p>
               </div>
             </div>
           ) : (
-            // Otherwise show the QR code image with cross-device instructions
+            // Otherwise show the QR code image
             <div className="mx-auto space-y-4">
               <div className="p-4 bg-white rounded-lg mx-auto" style={{ maxWidth: "280px" }}>
                 {qrData && qrData.includes('<iframe') ? (
