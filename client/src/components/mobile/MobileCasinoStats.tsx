@@ -1159,9 +1159,55 @@ export default function MobileCasinoStats() {
     );
   };
 
+  // Combined refresh function to handle both stats and hierarchy
+  const handleRefresh = async () => {
+    if (isRefreshing) return; // Prevent multiple clicks
+    
+    try {
+      setIsRefreshing(true);
+      
+      // First refresh stats
+      await manualRefreshStats();
+      
+      // Then refresh hierarchy
+      await manualRefreshHierarchy();
+      
+      // Update state to trigger re-renders
+      await refetchStats();
+      await refetchHierarchy();
+      
+      toast({
+        title: "Data refreshed",
+        description: "All casino data has been refreshed successfully",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+      console.error("Refresh error:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
   return (
     <div className="rounded-xl overflow-hidden bg-[#001030] shadow-lg">
       <div className="p-4 space-y-4">
+        {/* Refresh Button */}
+        <div className="flex justify-end">
+          <button 
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+          </button>
+        </div>
+      
         {/* Statistics Section with Toggle */}
         <div 
           className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
