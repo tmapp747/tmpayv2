@@ -1,0 +1,57 @@
+Here’s a clearer and more structured version of your technical explanation, rewritten for better understanding and optimized implementation clarity:
+
+⸻
+
+Optimized Flow for Casino Platform Integration
+	1.	User Login & Token Initialization
+	•	After a successful login, the authenticated user automatically retrieves the associated casino token.
+	•	This is easy to implement because all 3 casino tokens are already stored in the environment.
+	•	All user-related data required for operations is already saved in the database from the registration process.
+	2.	User Dashboard Page Load (Initial Load Behavior)
+	•	Upon page load, the system will call:
+	•	getUser API – to retrieve user profile and status.
+	•	hierarchy API – to load agent/player relationships.
+	•	getBalance – to display wallet balance on the bank card.
+	•	These APIs are only called once during the initial page load.
+	3.	Manual Refresh Behavior
+	•	A refresh icon on the UI allows users to manually trigger:
+	•	Updated user profile data.
+	•	Updated hierarchy.
+	•	Wallet balance refresh.
+	•	Updated transaction history and logs.
+	4.	Transaction Monitoring (Special Case for DirectPay GCash Deposits)
+	•	When a deposit is initiated using DirectPay GCash:
+	•	The system begins real-time status polling for that transaction.
+	•	Polling continues only while the transaction is pending.
+	•	If the transaction stays idle or pending for too long, polling stops to prevent infinite checks.
+	5.	Webhook Integration for Payment Confirmation
+	•	The webhook (e.g. https://direct-payph.com/api/webhook/gcash_sync) must be properly configured.
+	•	Once DirectPay confirms a successful GCash deposit, it triggers the webhook.
+	•	The webhook then automatically calls the casino transfer API — no manual intervention is needed.
+
+⸻
+
+Sample Transfer API Call (For Reference)
+
+curl -X 'POST' \
+  'https://bridge.747lc.com/Default/Transfer' \
+  -H 'accept: text/plain' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "authToken": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "platform": 1,
+  "amount": 100,
+  "toAgent": false,
+  "currency": "php",
+  "nonce": "unique",
+  "clientId": 0,
+  "username": "athan45",
+  "comment": "Deposit of 100 using 747 eWallet with transaction reference#"
+}'
+
+Expected Response:
+	•	A JSON response with "status": 0 indicates a successful transfer.
+
+⸻
+
+Let me know if you’d like this turned into a developer documentation page, flowchart, or Zapier-ready webhook integration guide.

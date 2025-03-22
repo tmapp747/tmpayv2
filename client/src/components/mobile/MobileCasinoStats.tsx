@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { User } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface CasinoStatistics {
   clientId: number;
@@ -96,6 +97,7 @@ export default function MobileCasinoStats() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [showStatistics, setShowStatistics] = useState<boolean>(false);
   const [showHierarchy, setShowHierarchy] = useState<boolean>(false);
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   
   // Fetch user data
   const { data: userData } = useQuery<{ user: User }>({
@@ -106,8 +108,34 @@ export default function MobileCasinoStats() {
   // Get username either from authenticated user or default to Athan45 for demo
   const username = userData?.user?.username || "Athan45";
   
-  // Fetch casino statistics with fallback to Athan45
-  const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery<CasinoStatistics>({
+  const { toast } = useToast();
+
+  // Manual refresh function for stats
+  const manualRefreshStats = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/casino/user-stats/${username}?forceRefresh=true`);
+      if (!response.ok) {
+        throw new Error(`Failed to refresh: ${response.statusText}`);
+      }
+      const data = await response.json();
+      toast({
+        title: "Statistics refreshed",
+        description: "Latest casino statistics have been loaded",
+        variant: "default"
+      });
+      return data;
+    } catch (error) {
+      toast({
+        title: "Failed to refresh stats",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }, [username, toast]);
+
+  // Fetch casino statistics with fallback to Athan45 - following the optimized flow
+  const { data: statsData, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery<CasinoStatistics>({
     queryKey: ['/api/casino/user-stats', username],
     queryFn: async () => {
       console.log("Fetching stats for user:", username);
@@ -115,6 +143,12 @@ export default function MobileCasinoStats() {
         const response = await fetch(`/api/casino/user-stats/${username}`);
         
         if (!response.ok) {
+          // Handle 429 specifically
+          if (response.status === 429) {
+            console.warn("Rate limited, will retry later");
+            throw new Error("Too many requests, please try again later");
+          }
+          
           console.error("Failed to fetch stats:", response.status, response.statusText);
           throw new Error(`Failed to fetch casino statistics: ${response.statusText}`);
         }
@@ -131,16 +165,66 @@ export default function MobileCasinoStats() {
         throw error;
       }
     },
-    // Always enabled, even if user is not authenticated
+    // Only fetch once during initial load, not continuously
     enabled: true,
-    refetchInterval: 30000, // Refresh every 30 seconds
-    retry: 2,
-    // The next time this component loads, return the cached data
-    staleTime: 60000,
+    refetchOnWindowFocus: false,
+    refetchInterval: false, // Don't auto-refresh, use manual refresh button
+    retry: (failureCount, error) => {
+      // Don't retry rate limit errors
+      if (error.message.includes("Too many requests")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    // Cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Fetch hierarchy data with fallback to demonstration data for Athan45
-  const { data: hierarchyData, isLoading: hierarchyLoading, error: hierarchyError } = useQuery<{ 
+  // Manual refresh function for hierarchy
+  const manualRefreshHierarchy = useCallback(async () => {
+    try {
+      if (!userData?.user?.username) {
+        toast({
+          title: "Cannot refresh hierarchy",
+          description: "You must be logged in to refresh hierarchy data",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      const isAgent = userData.user.casinoUserType === 'agent';
+      const response = await fetch('/api/casino/user-hierarchy?forceRefresh=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: userData.user.username,
+          isAgent: isAgent
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to refresh hierarchy: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      toast({
+        title: "Hierarchy refreshed",
+        description: "Latest account structure has been loaded",
+        variant: "default"
+      });
+      return data;
+    } catch (error) {
+      toast({
+        title: "Failed to refresh hierarchy",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }, [userData, toast]);
+
+  // Fetch hierarchy data with fallback to demonstration data for Athan45 - optimized for on-load only
+  const { data: hierarchyData, isLoading: hierarchyLoading, error: hierarchyError, refetch: refetchHierarchy } = useQuery<{ 
     success: boolean, 
     hierarchy: Array<{
       id: number;
@@ -209,6 +293,12 @@ export default function MobileCasinoStats() {
         });
         
         if (!response.ok) {
+          // Handle 429 specifically
+          if (response.status === 429) {
+            console.warn("Rate limited on hierarchy fetch, will retry later");
+            throw new Error("Too many requests, please try again later");
+          }
+          
           console.error("Failed to fetch hierarchy:", response.status, response.statusText);
           throw new Error(`Failed to fetch hierarchy data: ${response.statusText}`);
         }
@@ -228,12 +318,19 @@ export default function MobileCasinoStats() {
         throw error;
       }
     },
-    // Always enabled
+    // Only fetch once during initial load, not continuously
     enabled: true,
-    refetchInterval: 60000, // Refresh every minute
-    retry: 2,
-    retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30000),
-    staleTime: 60000, // Cache for 1 minute
+    refetchOnWindowFocus: false,
+    refetchInterval: false, // No auto-refresh
+    retry: (failureCount, error) => {
+      // Don't retry rate limit errors
+      if (error.message.includes("Too many requests")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    // Cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
 
   const toggleSection = (section: string) => {
