@@ -1,0 +1,77 @@
+To implement this seamless payment and return flow for DirectPay GCash, here’s the best approach using redirects and webhook coordination:
+
+⸻
+
+Overall Flow Breakdown
+	1.	User Initiates Payment
+	•	User clicks “Deposit with GCash”.
+	•	Frontend calls your API which sends a request to DirectPay’s GCash endpoint with:
+	•	webhook: your backend endpoint to receive transaction status.
+	•	redirectUrl: the page where the user should return after completing payment (e.g. /payment-status?tx_id=ref_XXXX).
+	2.	User Redirected to GCash App
+	•	DirectPay returns a link like https://payment.infinitipay.co/tx/9168725.
+	•	User is redirected to that GCash payment link.
+	3.	After Payment – Return via redirectUrl
+	•	Once the user completes or cancels the payment, GCash redirects them to the redirectUrl you provided (e.g. /payment-status?tx_id=ref_4e748771b7a37ca4).
+	•	This URL opens a page in your app that can automatically check if the transaction was successful.
+	4.	Webhook Handles Background Confirmation
+	•	Separately, your webhook (e.g. /api/webhook/gcash_sync) is triggered by DirectPay as soon as the payment is successful.
+	•	Your webhook should:
+	•	Update the transaction status in your database.
+	•	Trigger the automatic casino transfer via API if needed.
+
+⸻
+
+How to Implement in Your App
+
+1. Frontend Redirect URL Setup
+
+Set this as redirectUrl in your DirectPay request:
+
+https://your-app.com/payment-status?tx_id=ref_4e748771b7a37ca4
+
+2. Thank You Page Logic (/payment-status)
+
+In this page:
+	•	Read the tx_id from the URL.
+	•	Call your backend (e.g. /api/check-transaction-status?tx_id=...) to fetch the latest status.
+	•	If status = success, show a Thank You screen and a button to go back to Dashboard.
+	•	If still pending, optionally show a loader and retry for a few seconds.
+
+Sample Logic (Pseudo JavaScript):
+
+// payment-status.js
+const tx_id = new URLSearchParams(window.location.search).get("tx_id");
+
+async function checkStatus() {
+  const res = await fetch(`/api/check-transaction-status?tx_id=${tx_id}`);
+  const data = await res.json();
+  if (data.status === "success") {
+    window.location.href = `/thank-you?tx_id=${tx_id}`;
+  } else {
+    setTimeout(checkStatus, 3000); // Retry every 3 seconds
+  }
+}
+checkStatus();
+
+3. Thank You Page (/thank-you)
+
+This shows a message like:
+	•	“Your deposit was successful!”
+	•	A button: “Go to Dashboard” → /dashboard.
+
+⸻
+
+Summary
+
+Feature	What to Do
+Redirect after GCash	Use redirectUrl param with tx_id
+Webhook	Ensure your webhook updates DB and triggers casino transfer
+Return page	Poll for status using tx_id, redirect to thank you
+Thank You Page	Shows confirmation + Go to Dashboard button
+
+
+
+⸻
+
+Would you like a working code example for the frontend + backend setup of this flow? I can generate it in Laravel, Next.js, or plain HTML + PHP.

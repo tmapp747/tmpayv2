@@ -9,7 +9,7 @@ import { db } from '../db';
 import { IStorage } from '../storage';
 import { Casino747Api } from '../casino747Api-simplified';
 import { mapDirectPayStatusToGcashStatus, determineTransactionStatus, generateTransactionTimeline } from '../../shared/api-mapping';
-import { eq, and, inArray, isNull, or } from 'drizzle-orm';
+import { eq, and, inArray, isNull, or, lt, sql } from 'drizzle-orm';
 import { transactions, qrPayments } from '../../shared/schema';
 
 // Processing intervals
@@ -89,6 +89,7 @@ export class AutomaticPaymentProcessor {
   private async processPendingCasinoTransfers(): Promise<void> {
     try {
       // Find transactions with completed payment but pending casino transfer
+      // Using direct query without 'with' relation to avoid relation issues
       const pendingTransfers = await db.query.transactions.findMany({
         where: and(
           or(
@@ -97,9 +98,6 @@ export class AutomaticPaymentProcessor {
           ),
           eq(transactions.type, "deposit")
         ),
-        with: {
-          qrPayment: true
-        },
         limit: PROCESSING_LIMIT
       });
 
@@ -223,16 +221,17 @@ export class AutomaticPaymentProcessor {
       const now = new Date();
       
       // Find QR payments that have expired (older than 30 minutes) and still in pending status
+      const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
       const expiredPayments = await db.query.qrPayments.findMany({
         where: and(
           inArray(qrPayments.status, ["pending", "processing"]),
           or(
             // Payments created more than 30 minutes ago
-            db.sql`${qrPayments.createdAt} < ${new Date(now.getTime() - 30 * 60 * 1000)}`,
+            lt(qrPayments.createdAt, thirtyMinutesAgo),
             // Or payments with expiresAt in the past
             and(
-              db.sql`${qrPayments.expiresAt} IS NOT NULL`,
-              db.sql`${qrPayments.expiresAt} < ${now}`
+              sql`${qrPayments.expiresAt} IS NOT NULL`,
+              lt(qrPayments.expiresAt, now)
             )
           )
         ),
