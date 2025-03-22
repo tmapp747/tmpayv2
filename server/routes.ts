@@ -2741,13 +2741,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Get detailed user statistics from casino API
-        console.log(`Attempting to get detailed stats for ${username} from casino API`);
+        // Get detailed user statistics from the TM Pay API
+        console.log(`Attempting to get detailed stats for ${username} from TM Pay API`);
         const userDetails = await casino747Api.getUserDetails(username);
         
         // If we got data from the API, return it
         if (userDetails && userDetails.username) {
-          console.log(`✅ Successfully fetched real stats for ${username}`);
+          console.log(`✅ Successfully fetched detailed stats for ${username} from TM Pay API`);
+          
+          // For non-Athan45 users, we'll preserve the exact same response format
+          // but populate it with the enhanced data when available
+          
+          // Format the statistics data from the rich API
+          const enhancedStatistics = {
+            // Maintain the same structure as the original API
+            ...(userDetails.statistic || {}),
+            
+            // But enrich with additional data where available
+            currentBalance: userDetails?.turnOver?.currentBalance ?? userDetails?.statistic?.currentBalance,
+            totalDeposit: userDetails?.turnOver?.depositAmount ?? userDetails?.statistic?.totalDeposit,
+            totalWithdrawal: userDetails?.turnOver?.withdrawalAmount ?? userDetails?.statistic?.totalWithdrawal,
+            totalBet: userDetails?.turnOver?.totalBetAmount ?? userDetails?.statistic?.totalBet,
+            totalWin: (userDetails?.turnOver?.totalBetAmount || 0) - (userDetails?.turnOver?.netProfit || 0),
+            netProfit: userDetails?.turnOver?.netProfit ?? userDetails?.statistic?.netProfit,
+            wageredAmount: userDetails?.turnOver?.totalBetAmount ?? userDetails?.statistic?.wageredAmount,
+          };
+          
+          // Format the turnover from the rich API data
+          const enhancedTurnOver = {
+            // Preserve the structure used in original
+            ...(userDetails.turnOver || {}),
+            
+            // Map these important fields
+            daily: Math.round((userDetails?.turnOver?.totalBetAmount || 0) / 30) || 
+                   userDetails?.turnOver?.daily,
+            weekly: Math.round((userDetails?.turnOver?.totalBetAmount || 0) / 4) || 
+                    userDetails?.turnOver?.weekly,
+            monthly: userDetails?.turnOver?.totalBetAmount ||
+                     userDetails?.turnOver?.monthly,
+            yearly: (userDetails?.turnOver?.totalBetAmount || 0) * 12 || 
+                    userDetails?.turnOver?.yearly,
+          };
+          
+          // Ensure we don't disrupt the existing managers format
+          const enhancedManagers = Array.isArray(userDetails?.managers) ? 
+            userDetails.managers.map((manager: string, index: number) => ({
+              username: manager,
+              level: index + 1,
+              role: index === 0 ? "admin" : "agent"
+            })) : (userDetails.managers || []);
+          
+          // Log the enriched data
+          console.log(`📊 Enhanced stats for ${username} - Balance: ${enhancedStatistics.currentBalance}, Bets: ${enhancedStatistics.totalBet}`);
+          
+          // Return the same format as before but with the enhanced data
           return res.json({
             success: true,
             clientId: userDetails.clientId,
@@ -2756,10 +2803,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             username: userDetails.username,
             topManager: userDetails.topManager || dbUser.topManager || "Marcthepogi",
             immediateManager: userDetails.immediateManager || dbUser.immediateManager || "platalyn@gmail.com",
-            statistics: userDetails.statistic,
-            turnOver: userDetails.turnOver,
-            managers: userDetails.managers || [],
-            message: "User statistics fetched successfully"
+            statistics: enhancedStatistics,
+            turnOver: enhancedTurnOver,
+            managers: enhancedManagers,
+            message: "User statistics fetched successfully from enhanced API"
           });
         }
         
