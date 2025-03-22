@@ -1,13 +1,23 @@
-import { createContext, ReactNode, useContext, useState, useEffect } from "react";
-import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import { getQueryFn, queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/api-client"; 
-import { useToast } from "@/hooks/use-toast";
-import sessionManager, { SessionStatus } from "@/lib/session-manager";
+/**
+ * Enhanced AuthManager with Session Manager Integration
+ * 
+ * This authentication system uses a combination of:
+ * 1. Session cookies for server authentication
+ * 2. React Query for client-side state management
+ * 3. Session Manager for offline/connectivity detection
+ * 
+ * Benefits:
+ * - More robust handling of network failures
+ * - Better detection of server restarts
+ * - Cleaner separation of connectivity and auth concerns
+ * - Reduced unnecessary API calls when offline
+ */
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest, getQueryFn } from '@/lib/queryClient';
+import sessionManager from '@/lib/session-manager';
 
 // Types for user data
 interface User {
@@ -39,12 +49,13 @@ type AuthContextType = {
   user: User | null;
   isLoading: boolean;
   error: Error | null;
-  refreshToken: (token: string) => Promise<string>;
-  loginMutation: UseMutationResult<{ user: User, message: string }, Error, LoginData>;
-  logoutMutation: UseMutationResult<{ success: boolean, message: string }, Error, void>;
-  registerMutation: UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
+  refreshToken: () => Promise<string>;
+  loginMutation: any; // UseMutationResult<{ user: User, message: string }, Error, LoginData>;
+  logoutMutation: any; // UseMutationResult<{ success: boolean, message: string }, Error, void>;
+  registerMutation: any; // UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
   logout: () => Promise<boolean>;
-  sessionStatus: SessionStatus;
+  isOffline: boolean;
+  isServerUnreachable: boolean;
 };
 
 // Login form data type
@@ -70,120 +81,179 @@ type RegisterData = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 // Session refresh function - using Passport.js sessions
-const refreshSession = async (): Promise<string> => {
+const refreshToken = async (): Promise<string> => {
   try {
-    console.log("Attempting to refresh session...");
-    const res = await fetch("/api/auth/refresh-token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    console.log('🔄 Attempting to refresh authentication session...');
+    
+    // Immediately return empty string if we already know the session is expired
+    if (sessionManager.sessionStatus === 'expired') {
+      console.log('⚠️ Session already known to be expired, not attempting refresh');
+      return '';
+    }
+    
+    // Try to refresh the token from the server
+    const res = await fetch('/api/auth/refresh-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // Include cookies for session auth
     });
     
-    // Handle 401 errors gracefully - user is simply not logged in
-    if (res.status === 401) {
-      console.log("Session refresh 401 - user not authenticated");
-      
-      // Record session as expired in session manager
-      sessionManager.setSessionStatus('expired');
-      
-      // Don't update state if we're on the auth page already
-      if (window.location.pathname !== '/auth') {
-        // Clear user data from cache
-        queryClient.setQueryData(["/api/user/info"], { user: null });
+    console.log('🔄 Refresh token response status:', res.status);
+    
+    if (!res.ok) {
+      // Log detailed error information
+      let errorDetails = '';
+      try {
+        const errorData = await res.json();
+        errorDetails = JSON.stringify(errorData);
+      } catch (e) {
+        // If response isn't JSON, try to get text
+        try {
+          errorDetails = await res.text();
+        } catch (e2) {
+          errorDetails = 'Could not parse error response';
+        }
       }
       
-      // Return empty string without throwing for expected 401s
-      return '';
+      console.error('❌ Token refresh failed with status:', res.status, errorDetails);
+      
+      // For 401/403 errors, mark the session as expired to prevent further attempts
+      if (res.status === 401 || res.status === 403) {
+        console.log('🔒 User session has expired or is invalid. Session marked as expired.');
+        sessionManager.setSessionStatus('expired');
+        
+        // Clear session indicator in localStorage to help UI show correct state
+        localStorage.setItem('sessionState', 'expired');
+        
+        // Show toast notification about session expiration when appropriate
+        if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
+          // Use custom event to trigger toast in components that listen for it
+          window.dispatchEvent(new CustomEvent('session-expired', {
+            detail: { message: 'Your session has expired. Please log in again.' }
+          }));
+          
+          // Wait a moment before redirecting to allow the toast to be seen
+          setTimeout(() => {
+            // Clear any session-related data
+            localStorage.removeItem('lastActive');
+            
+            // Redirect to login page
+            window.location.href = '/auth';
+          }, 1500);
+        }
+        
+        return '';
+      }
+      
+      // For server errors (5xx), don't mark session as expired
+      // The server might be restarting or temporarily unavailable
+      if (res.status >= 500) {
+        console.error('🔥 Server error during token refresh:', res.status);
+        // We'll try again later, this could be a temporary server issue
+        return '';
+      }
+      
+      throw new Error(`Failed to refresh token: ${res.status} ${errorDetails}`);
     }
     
-    // For other non-2xx responses, handle as errors
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      console.error("Session refresh failed:", errorData.message || res.statusText);
-      throw new Error(errorData.message || "Failed to refresh session");
-    }
+    const data = await res.json();
     
-    // Parse response data
-    let data;
-    try {
-      data = await res.json();
-    } catch (e) {
-      console.log("Empty response from refresh endpoint");
-      return '';
-    }
-    
-    console.log("Session refreshed successfully");
+    // Reset the session status since we successfully refreshed
     sessionManager.setSessionStatus('active');
     
-    // Update the query cache with returned user data
-    if (data.user) {
-      queryClient.setQueryData(["/api/user/info"], { user: data.user });
-    }
+    // Update session state in localStorage
+    localStorage.setItem('sessionState', 'active');
+    localStorage.setItem('lastActive', Date.now().toString());
     
-    // Return empty string as we're not using tokens anymore
-    return '';
+    console.log('✅ Session refreshed successfully');
+    
+    return data.accessToken || '';
   } catch (error) {
-    console.error("Session refresh failed:", error);
+    console.error('❌ Token refresh failed with error:', error);
     
-    // Only clear user data and redirect if not already on auth page
-    if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
-      // If refresh fails, we need to log the user out
-      queryClient.setQueryData(["/api/user/info"], { user: null });
-      
-      // Redirect to login page for unauthorized access
-      window.location.href = '/auth';
-    }
+    // If it's not a network error, mark session as expired
+    sessionManager.setSessionStatus('expired');
     
-    // Always throw for unexpected errors
     throw error;
   }
 };
 
 // Auth Provider component
-function AuthProvider({ children }: { children: ReactNode }) {
+function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isServerUnreachable, setIsServerUnreachable] = useState(sessionManager.isServerUnreachable);
   
-  // Get session status from session manager
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus>(
-    sessionManager.sessionStatus
-  );
-
   // Fetch user data from server on initial load
   const {
     data: userData,
     error,
     isLoading,
     refetch,
-  } = useQuery<{ user: User } | null>({
+  } = useQuery<{ user: User | null }>({
     queryKey: ["/api/user/info"],
     queryFn: getQueryFn({ on401: "returnNull" }),
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
     // Don't fetch if we already know the session is expired
-    enabled: sessionStatus !== 'expired',
+    enabled: sessionManager.sessionStatus !== 'expired' && navigator.onLine && !isServerUnreachable,
   });
-
-  // Listen for network status changes
+  
+  // Subscribe to session manager events
   useEffect(() => {
-    const handleOnline = () => {
-      console.log('🌐 Network connection restored, checking authentication status');
-      // Only refetch if we don't know session is expired
-      if (sessionStatus !== 'expired') {
-        refetch();
+    const unsubscribeStatus = sessionManager.subscribe('sessionStatus', 
+      (status: 'active' | 'expired' | 'unknown') => {
+        console.log('Session status changed to:', status);
+        if (status === 'active' && navigator.onLine && !isServerUnreachable) {
+          refetch();
+        }
+      }
+    );
+    
+    const unsubscribeServer = sessionManager.subscribe('serverUnreachable', 
+      (unreachable: boolean) => {
+        console.log('Server unreachable status changed to:', unreachable);
+        setIsServerUnreachable(unreachable);
+        if (!unreachable && navigator.onLine && sessionManager.sessionStatus === 'active') {
+          refetch();
+        }
+      }
+    );
+    
+    // Listen for browser online/offline events
+    const handleOnlineStatus = () => {
+      const isNowOnline = navigator.onLine;
+      console.log('Network status changed to:', isNowOnline ? 'online' : 'offline');
+      setIsOffline(!isNowOnline);
+      
+      if (isNowOnline && sessionManager.sessionStatus === 'active') {
+        sessionManager.pingServer().then(reachable => {
+          if (reachable) {
+            refetch();
+          }
+        });
       }
     };
     
-    window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
-  }, [refetch, sessionStatus]);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    
+    // Initial offline check
+    setIsOffline(!navigator.onLine);
+    
+    return () => {
+      unsubscribeStatus();
+      unsubscribeServer();
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, [refetch]);
   
-  // Listen for session expired events
+  // Listen for session expired events from the API client
   useEffect(() => {
     const handleSessionExpired = (event: CustomEvent) => {
       console.log('🔒 Session expired event received');
-      setSessionStatus('expired');
+      sessionManager.setSessionStatus('expired');
       
       // Show toast notification
       toast({
@@ -197,25 +267,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('session-expired' as any, handleSessionExpired as any);
   }, [toast]);
   
-  // Keep sessionStatus in sync with the session manager
-  useEffect(() => {
-    // Function to sync session status from manager
-    const syncSessionStatus = () => {
-      const newStatus = sessionManager.sessionStatus;
-      if (newStatus !== sessionStatus) {
-        setSessionStatus(newStatus);
-      }
-    };
-    
-    // Set up timer to periodically check session status
-    const interval = setInterval(syncSessionStatus, 5000);
-    
-    // Clean up interval
-    return () => clearInterval(interval);
-  }, [sessionStatus]);
-
   const user = userData?.user || null;
-
+  
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
@@ -242,14 +295,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
       const responseData = await res.json();
       console.log("Login successful, user data received");
       
-      // Update session manager status
-      sessionManager.setSessionStatus('active');
-      
       return responseData;
     },
     onSuccess: (data) => {
       console.log("Login successful, updating application state");
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
+      
+      // Mark session as active
+      sessionManager.setSessionStatus('active');
       
       // No need to save to localStorage - auth handled by server session
       toast({
@@ -271,7 +324,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-
+  
   // Registration mutation
   const registerMutation = useMutation({
     mutationFn: async (userData: RegisterData) => {
@@ -298,16 +351,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
       const responseData = await res.json();
       console.log("Registration successful, user data received");
       
-      // Update session manager status
-      sessionManager.setSessionStatus('active');
-      
       return responseData;
     },
     onSuccess: (data) => {
       console.log("Registration successful, updating application state");
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
-
-      // No need to save to localStorage - auth handled by server session
+      
+      // Mark session as active
+      sessionManager.setSessionStatus('active');
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created and you're now logged in!",
@@ -327,7 +379,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
   });
-
+  
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -368,10 +420,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       console.log("Logout successful, clearing application state");
       queryClient.setQueryData(["/api/user/info"], { user: null });
-
-      // Update session manager status
+      
+      // Mark session as expired
       sessionManager.setSessionStatus('expired');
-
+      
       // Clear query cache for user-specific data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
       queryClient.removeQueries({ queryKey: ["/api/transactions"] });
@@ -380,13 +432,13 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Redirecting to login page after logout");
       // Redirect to login page after logout
       window.location.href = '/auth';
-
+      
       toast({
         title: "Logged out",
         description: "You've been successfully logged out.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Logout mutation error:", error);
       
       toast({
@@ -399,7 +451,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Forcing client-side logout due to API error");
       queryClient.setQueryData(["/api/user/info"], { user: null });
       
-      // Update session manager status
+      // Mark session as expired
       sessionManager.setSessionStatus('expired');
       
       // Clear query cache for user-specific data
@@ -410,7 +462,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
       window.location.href = '/auth';
     },
   });
-
+  
   // Simple logout function for components to use
   const logout = async (): Promise<boolean> => {
     try {
@@ -421,19 +473,20 @@ function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
   };
-
+  
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
         error,
-        refreshToken: refreshSession,
+        refreshToken,
         loginMutation,
         logoutMutation,
         registerMutation,
         logout,
-        sessionStatus,
+        isOffline,
+        isServerUnreachable,
       }}
     >
       {children}

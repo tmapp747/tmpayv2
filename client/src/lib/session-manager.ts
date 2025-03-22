@@ -1,271 +1,213 @@
 /**
- * Session Manager Utility
+ * Session Manager for 747 Casino E-Wallet
  * 
- * This utility provides a centralized way to manage session state,
- * handling network connectivity issues and server restarts gracefully.
- * It works together with the api-client.ts and authentication hooks
- * to provide a seamless user experience.
+ * This module centralizes all session-related functionality:
+ * - Session status tracking (active, expired, unknown)
+ * - Server connectivity tracking
+ * - Ping checks for server availability
+ * - Browser online/offline detection
+ * 
+ * This provides a single source of truth for authentication and
+ * connectivity state throughout the application.
  */
 
-// Types for session manager
+// Define session status types
 export type SessionStatus = 'active' | 'expired' | 'unknown';
-export type NetworkStatus = 'online' | 'offline' | 'server-unreachable';
 
-// Session events that components can listen for
-export const SESSION_EVENTS = {
-  SESSION_EXPIRED: 'session-expired',
-  NETWORK_STATUS_CHANGED: 'network-status-changed',
-  SERVER_STATUS_CHANGED: 'server-status-changed',
-};
-
-// Class for managing session and network state
+// Class to manage session and connectivity state
 class SessionManager {
+  // Track session status
   private _sessionStatus: SessionStatus = 'unknown';
-  private _networkStatus: NetworkStatus = navigator.onLine ? 'online' : 'offline';
-  private _lastActivity: number = Date.now();
-  private _serverUnreachableSince: number | null = null;
-  private _sessionExpiryTimestamp: number | null = null;
-  private _checkInterval: NodeJS.Timeout | null = null;
-  private _reconnectAttempts: number = 0;
-  private _maxReconnectAttempts: number = 5;
+  
+  // Track server connectivity
+  private _isServerUnreachable: boolean = false;
+  
+  // Event listeners for status changes
+  private listeners: Map<string, Set<Function>> = new Map();
+  
+  // Timer for automatic ping checks
+  private pingCheckInterval: number | null = null;
+  
+  // Last time we successfully contacted the server
+  private lastSuccessfulServerContact: number | null = null;
   
   constructor() {
-    // Initialize session state from localStorage if available
-    const sessionState = localStorage.getItem('sessionState');
-    if (sessionState === 'active') {
-      this._sessionStatus = 'active';
-      const lastActiveStr = localStorage.getItem('lastActive');
-      if (lastActiveStr) {
-        this._lastActivity = parseInt(lastActiveStr, 10);
-      }
-    } else if (sessionState === 'expired') {
-      this._sessionStatus = 'expired';
+    // Initialize session status from localStorage if available
+    const storedStatus = localStorage.getItem('sessionState');
+    if (storedStatus === 'active' || storedStatus === 'expired') {
+      this._sessionStatus = storedStatus;
     }
     
-    // Set up listeners for network events
-    window.addEventListener('online', this.handleOnline.bind(this));
-    window.addEventListener('offline', this.handleOffline.bind(this));
+    // Set up browser online/offline event listeners
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
     
-    // Start background check interval
-    this.startBackgroundChecks();
+    // Start regular ping checks
+    this.startPingChecks();
+    
+    console.log('Session manager initialized with status:', this._sessionStatus);
   }
   
-  /**
-   * Gets the current session status
-   */
+  // Getters for state
   get sessionStatus(): SessionStatus {
     return this._sessionStatus;
   }
   
-  /**
-   * Gets the current network status
-   */
-  get networkStatus(): NetworkStatus {
-    return this._networkStatus;
+  get isServerUnreachable(): boolean {
+    return this._isServerUnreachable;
   }
   
-  /**
-   * Update the session status
-   */
+  // Setters with event notifications
   setSessionStatus(status: SessionStatus): void {
-    const previous = this._sessionStatus;
-    this._sessionStatus = status;
-    
-    // Persist session state to localStorage
-    localStorage.setItem('sessionState', status);
-    
-    // Update last activity timestamp for active sessions
-    if (status === 'active') {
-      this._lastActivity = Date.now();
-      localStorage.setItem('lastActive', this._lastActivity.toString());
-      this._sessionExpiryTimestamp = null;
-    } else if (status === 'expired') {
-      this._sessionExpiryTimestamp = Date.now();
-    }
-    
-    // Only dispatch event if status changed
-    if (previous !== status) {
-      // Dispatch custom event for components to listen for
-      window.dispatchEvent(new CustomEvent(SESSION_EVENTS.SESSION_EXPIRED, {
-        detail: { 
-          previous, 
-          current: status, 
-          message: status === 'expired' ? 'Your session has expired. Please log in again.' : undefined
-        }
-      }));
+    if (this._sessionStatus !== status) {
+      this._sessionStatus = status;
+      localStorage.setItem('sessionState', status);
+      this.notifyListeners('sessionStatus', status);
+      console.log('Session status changed to:', status);
     }
   }
   
-  /**
-   * Update the network status
-   */
-  setNetworkStatus(status: NetworkStatus): void {
-    const previous = this._networkStatus;
-    this._networkStatus = status;
-    
-    // Track server unreachable time
-    if (status === 'server-unreachable' && this._serverUnreachableSince === null) {
-      this._serverUnreachableSince = Date.now();
-      this._reconnectAttempts = 0;
-    } else if (status === 'online') {
-      this._serverUnreachableSince = null;
-      this._reconnectAttempts = 0;
-    }
-    
-    // Only dispatch event if status changed
-    if (previous !== status) {
-      // Dispatch custom event for components to listen for
-      window.dispatchEvent(new CustomEvent(SESSION_EVENTS.NETWORK_STATUS_CHANGED, {
-        detail: { previous, current: status }
-      }));
+  setServerUnreachable(unreachable: boolean): void {
+    if (this._isServerUnreachable !== unreachable) {
+      this._isServerUnreachable = unreachable;
+      this.notifyListeners('serverUnreachable', unreachable);
+      console.log('Server unreachable status changed to:', unreachable);
+      
+      if (!unreachable) {
+        this.lastSuccessfulServerContact = Date.now();
+      }
+      
+      // If the server becomes reachable again, clear the error count
+      if (!unreachable) {
+        localStorage.setItem('serverErrorCount', '0');
+      }
     }
   }
   
-  /**
-   * Handle online event from the browser
-   */
-  private handleOnline(): void {
-    console.log('🌐 Network connection detected');
-    this.setNetworkStatus('online');
-    
-    // Schedule a ping to check if server is actually available
-    setTimeout(() => this.pingServer(), 1000);
+  // Event handlers for online/offline
+  private handleOnline = (): void => {
+    console.log('Browser online event detected');
+    // When we come back online, we'll ping the server to check true connectivity
+    this.pingServer();
   }
   
-  /**
-   * Handle offline event from the browser
-   */
-  private handleOffline(): void {
-    console.log('❌ Network connection lost');
-    this.setNetworkStatus('offline');
+  private handleOffline = (): void => {
+    console.log('Browser offline event detected');
+    // Mark server as unreachable when offline to prevent unnecessary requests
+    this.setServerUnreachable(true);
   }
   
-  /**
-   * Ping the server to check if it's reachable
-   */
+  // Ping the server to check connectivity
   async pingServer(): Promise<boolean> {
+    if (!navigator.onLine) {
+      console.log('Browser reports offline, skipping ping');
+      return false;
+    }
+    
     try {
-      // Use a lightweight endpoint for ping
+      console.log('Pinging server to check connectivity...');
+      
+      // Use our simple ping endpoint
       const response = await fetch('/api/ping', { 
-        method: 'GET', 
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        // Very short timeout to prevent long waits
+        signal: AbortSignal.timeout(3000)
       });
       
       if (response.ok) {
-        // Server is reachable and responding
-        console.log('✅ Server connection verified');
-        this.setNetworkStatus('online');
+        console.log('Server ping successful, server is reachable');
+        this.setServerUnreachable(false);
+        this.lastSuccessfulServerContact = Date.now();
         return true;
       } else {
-        // Server is reachable but returning errors
-        console.log(`⚠️ Server responding with error: ${response.status}`);
-        this._reconnectAttempts++;
-        
-        if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-          this.setNetworkStatus('server-unreachable');
-        }
-        
+        console.log('Server ping failed with status:', response.status);
+        this.setServerUnreachable(true);
         return false;
       }
     } catch (error) {
-      // Server is unreachable
-      console.error('❌ Failed to connect to server:', error);
-      this._reconnectAttempts++;
-      
-      if (this._reconnectAttempts >= this._maxReconnectAttempts) {
-        this.setNetworkStatus('server-unreachable');
-      }
-      
+      console.error('Server ping failed:', error);
+      this.setServerUnreachable(true);
       return false;
     }
   }
   
-  /**
-   * Start background checks for session and network status
-   */
-  private startBackgroundChecks(): void {
+  // Set up regular ping checks to ensure server is still available
+  startPingChecks(intervalMs: number = 30000): void {
     // Clear any existing interval
-    if (this._checkInterval) {
-      clearInterval(this._checkInterval);
+    if (this.pingCheckInterval) {
+      window.clearInterval(this.pingCheckInterval);
     }
     
-    // Set up new interval (every 30 seconds)
-    this._checkInterval = setInterval(() => {
-      // If server has been unreachable for too long, attempt reconnection
-      if (this._networkStatus === 'server-unreachable' && this._serverUnreachableSince) {
-        const timeUnreachable = Date.now() - this._serverUnreachableSince;
-        // Try to reconnect every 2 minutes
-        if (timeUnreachable > 2 * 60 * 1000) {
-          console.log('🔄 Attempting to reconnect to server...');
-          this.pingServer();
-          this._serverUnreachableSince = Date.now(); // Reset the timer
-        }
-      }
+    // Set up new interval
+    this.pingCheckInterval = window.setInterval(() => {
+      // Only ping if online and we think server might be unreachable
+      // or if it's been more than 5 minutes since our last successful contact
+      const fiveMinutes = 5 * 60 * 1000;
+      const needsFreshnessCheck = 
+        this.lastSuccessfulServerContact === null || 
+        (Date.now() - this.lastSuccessfulServerContact) > fiveMinutes;
       
-      // Check for session activity
-      if (this._sessionStatus === 'active') {
-        const inactiveTime = Date.now() - this._lastActivity;
-        // If no activity for 15 minutes, ping the server
-        if (inactiveTime > 15 * 60 * 1000) {
-          this.pingServer();
-          this._lastActivity = Date.now(); // Reset the timer even on failed ping
-        }
+      if (navigator.onLine && (this._isServerUnreachable || needsFreshnessCheck)) {
+        this.pingServer();
       }
-    }, 30000);
+    }, intervalMs);
+    
+    console.log(`Server ping checks started with interval of ${intervalMs}ms`);
   }
   
-  /**
-   * Record user activity to prevent session timeouts
-   */
-  recordActivity(): void {
-    if (this._sessionStatus === 'active') {
-      this._lastActivity = Date.now();
-      localStorage.setItem('lastActive', this._lastActivity.toString());
+  // Stop ping checks (typically on cleanup)
+  stopPingChecks(): void {
+    if (this.pingCheckInterval) {
+      window.clearInterval(this.pingCheckInterval);
+      this.pingCheckInterval = null;
+      console.log('Server ping checks stopped');
     }
   }
   
-  /**
-   * Handle server restart detection
-   */
-  notifyServerRestarting(): void {
-    console.log('🔄 Server restart detected');
-    this.setNetworkStatus('server-unreachable');
-    
-    // Set a timeout to check if server is back up
-    setTimeout(() => {
-      console.log('🔄 Checking if server is back up after restart...');
-      this.pingServer();
-    }, 5000);
-  }
-  
-  /**
-   * Check if the session has expired
-   */
-  checkSessionExpiry(): boolean {
-    if (this._sessionExpiryTimestamp) {
-      return true;
+  // Event subscription for other components
+  subscribe(event: string, callback: Function): () => void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
     }
     
-    return this._sessionStatus === 'expired';
+    this.listeners.get(event)!.add(callback);
+    
+    // Return an unsubscribe function
+    return () => {
+      const eventListeners = this.listeners.get(event);
+      if (eventListeners) {
+        eventListeners.delete(callback);
+      }
+    };
   }
   
-  /**
-   * Cleanup resources when component unmounts
-   */
-  dispose(): void {
-    if (this._checkInterval) {
-      clearInterval(this._checkInterval);
-      this._checkInterval = null;
+  // Notify all listeners of an event
+  private notifyListeners(event: string, data: any): void {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      eventListeners.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in session manager listener for event ${event}:`, error);
+        }
+      });
     }
-    
-    window.removeEventListener('online', this.handleOnline.bind(this));
-    window.removeEventListener('offline', this.handleOffline.bind(this));
+  }
+  
+  // Cleanup method (for component unmounting)
+  cleanup(): void {
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
+    this.stopPingChecks();
+    this.listeners.clear();
+    console.log('Session manager cleaned up');
   }
 }
 
 // Create a singleton instance
-export const sessionManager = new SessionManager();
+const sessionManager = new SessionManager();
 
-// Export a hook for React components to use
+// Export the singleton
 export default sessionManager;

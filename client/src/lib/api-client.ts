@@ -2,32 +2,13 @@
 /**
  * API client utility for making authenticated requests with token refresh
  * Enhanced with offline detection and session expiration handling
+ * Now uses the centralized session manager for better state management
  */
+import sessionManager from './session-manager';
 
 // Track token refresh status to prevent multiple simultaneous refreshes
 let isRefreshing = false;
 let refreshPromise: Promise<string> | null = null;
-
-// Track online status
-let isOnline = navigator.onLine;
-
-// Session expiration timestamp stored in memory (this will reset on page reload or app restart)
-let sessionExpiryTimestamp: number | null = null;
-
-// Flag to track if the server is known to be restarting or unreachable
-let isServerUnreachable = false;
-
-// Listen for online/offline events
-window.addEventListener('online', () => {
-  console.log('🌐 Network connection restored');
-  isOnline = true;
-  isServerUnreachable = false; // Reset server unreachable status when we're back online
-});
-
-window.addEventListener('offline', () => {
-  console.log('❌ Network connection lost');
-  isOnline = false;
-});
 
 /**
  * Make an authenticated API request with automatic token refresh
@@ -41,7 +22,7 @@ export async function apiRequest(
   retry = true
 ): Promise<Response> {
   // Check for network connectivity first
-  if (!isOnline) {
+  if (!navigator.onLine) {
     console.log(`⚠️ Network offline, cannot make request: ${method} ${endpoint}`);
     // Return a synthetic offline response
     return new Response(JSON.stringify({ 
@@ -55,7 +36,7 @@ export async function apiRequest(
   }
   
   // Check if server is known to be unreachable (after multiple failed attempts)
-  if (isServerUnreachable && !endpoint.includes('/api/auth/refresh-token')) {
+  if (sessionManager.isServerUnreachable && !endpoint.includes('/api/auth/refresh-token')) {
     console.log(`⚠️ Server unreachable, cannot make request: ${method} ${endpoint}`);
     // Return a synthetic server unreachable response
     return new Response(JSON.stringify({ 
@@ -68,8 +49,8 @@ export async function apiRequest(
     });
   }
   
-  // Check if session is known to be expired in memory
-  if (sessionExpiryTimestamp && Date.now() > sessionExpiryTimestamp && 
+  // Check if session is known to be expired
+  if (sessionManager.sessionStatus === 'expired' && 
       !endpoint.includes('/api/auth/login') && 
       !endpoint.includes('/api/auth/refresh-token')) {
     console.log(`⚠️ Session known to be expired, not making request: ${method} ${endpoint}`);
@@ -112,7 +93,7 @@ export async function apiRequest(
     
     // Reset server unreachable status on any successful response
     if (res.status !== 502 && res.status !== 503 && res.status !== 504) {
-      isServerUnreachable = false;
+      sessionManager.setServerUnreachable(false);
     }
     
     // Log response status for debugging
@@ -128,11 +109,11 @@ export async function apiRequest(
       
       if (consecutiveErrors >= 3) {
         console.log('❌ Server appears to be down or restarting, marking as unreachable');
-        isServerUnreachable = true;
+        sessionManager.setServerUnreachable(true);
         
         // Set a timeout to reset the unreachable status after 30 seconds to allow retry
         setTimeout(() => {
-          isServerUnreachable = false;
+          sessionManager.setServerUnreachable(false);
           localStorage.setItem('serverErrorCount', '0');
           console.log('🔄 Server unreachable status reset, will attempt reconnection');
         }, 30000);
@@ -166,14 +147,14 @@ export async function apiRequest(
         } else {
           console.log('Session refresh failed, not retrying original request');
           // If refresh failed, mark session as expired to prevent further requests
-          sessionExpiryTimestamp = Date.now();
+          sessionManager.setSessionStatus('expired');
           // If refresh failed, return the original 401 response
           return res;
         }
       } catch (error) {
         console.error('Error during session refresh:', error);
         // On error, mark session as expired
-        sessionExpiryTimestamp = Date.now();
+        sessionManager.setSessionStatus('expired');
         // Return the original 401 response
         return res;
       } finally {
@@ -191,16 +172,16 @@ export async function apiRequest(
     // Mark as offline or server unreachable based on navigator.onLine
     if (navigator.onLine) {
       console.log('❌ Server appears to be unreachable');
-      isServerUnreachable = true;
+      sessionManager.setServerUnreachable(true);
       
       // Set a timeout to reset the unreachable status after 30 seconds
       setTimeout(() => {
-        isServerUnreachable = false;
+        sessionManager.setServerUnreachable(false);
         console.log('🔄 Server unreachable status reset, will attempt reconnection');
       }, 30000);
     } else {
       console.log('❌ Device is offline');
-      isOnline = false;
+      // sessionManager automatically tracks online status via navigator.onLine
     }
     
     // Return a synthetic error response
@@ -226,7 +207,7 @@ async function refreshAccessToken(): Promise<string> {
     console.log('🔄 Attempting to refresh authentication session...');
     
     // Immediately return empty string if we already know the session is expired
-    if (sessionExpiryTimestamp && Date.now() > sessionExpiryTimestamp) {
+    if (sessionManager.sessionStatus === 'expired') {
       console.log('⚠️ Session already known to be expired, not attempting refresh');
       return '';
     }
@@ -260,10 +241,7 @@ async function refreshAccessToken(): Promise<string> {
       // For 401/403 errors, mark the session as expired to prevent further attempts
       if (res.status === 401 || res.status === 403) {
         console.log('🔒 User session has expired or is invalid. Session marked as expired.');
-        sessionExpiryTimestamp = Date.now();
-        
-        // Clear session indicator in localStorage to help UI show correct state
-        localStorage.setItem('sessionState', 'expired');
+        sessionManager.setSessionStatus('expired');
         
         // Show toast notification about session expiration when appropriate
         if (window.location.pathname !== '/auth' && window.location.pathname !== '/') {
@@ -274,11 +252,8 @@ async function refreshAccessToken(): Promise<string> {
           
           // Wait a moment before redirecting to allow the toast to be seen
           setTimeout(() => {
-            // Clear any session-related data
-            localStorage.removeItem('lastActive');
-            
-            // Redirect to login page
-            window.location.href = '/auth';
+            // Redirect to login page through the session manager
+            sessionManager.redirectToLogin();
           }, 1500);
         }
         
