@@ -12,7 +12,16 @@ import {
   Award, 
   CreditCard,
   Globe,
-  Key
+  Key,
+  Activity,
+  BarChart2,
+  Target,
+  Hash,
+  Calendar,
+  ArrowDownRight,
+  ArrowUpRight,
+  RefreshCw,
+  Zap
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { User } from "@/lib/types";
@@ -34,6 +43,17 @@ interface CasinoStatistics {
     wageredAmount: number;
     lastLoginDate: string;
     registrationDate: string;
+    
+    // Enhanced data fields from TM Pay API
+    daily?: number;
+    weekly?: number;
+    currentCasinoBalance?: number;
+    casinoNetProfit?: number;
+    depositCount?: number;
+    withdrawalCount?: number;
+    casinoBetCount?: number;
+    sportBetCount?: number;
+    sportNetProfit?: number;
   };
   turnOver: {
     daily: number;
@@ -46,6 +66,12 @@ interface CasinoStatistics {
     level: number;
     role: string;
   }>;
+  
+  // Raw data fields for advanced usage
+  _rawData?: {
+    turnOver?: any;
+    statistic?: any;
+  };
 }
 
 interface CasinoHierarchy {
@@ -392,6 +418,112 @@ export default function MobileCasinoStats() {
           </AnimatePresence>
         </div>
         
+        {/* Enhanced Activity Stats */}
+        {statistics.casinoBetCount !== undefined && (
+          <div 
+            className="bg-gradient-to-br from-purple-600 to-indigo-800 rounded-xl p-4 shadow-md text-white"
+            onClick={() => toggleSection('activity')}
+          >
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">Enhanced Activity</h3>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${expandedSection === 'activity' ? 'rotate-180' : ''}`}
+              />
+            </div>
+            <AnimatePresence>
+              {expandedSection === 'activity' && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <Hash className="h-4 w-4 mr-2 opacity-70" />
+                        <span className="text-sm opacity-80">Total Bet Count</span>
+                      </div>
+                      <span className="font-medium">{statistics.casinoBetCount?.toLocaleString() || 'N/A'}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <ArrowUpRight className="h-4 w-4 mr-2 opacity-70" />
+                        <span className="text-sm opacity-80">Deposit Count</span>
+                      </div>
+                      <span className="font-medium">{statistics.depositCount?.toLocaleString() || 'N/A'}</span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <ArrowDownRight className="h-4 w-4 mr-2 opacity-70" />
+                        <span className="text-sm opacity-80">Withdrawal Count</span>
+                      </div>
+                      <span className="font-medium">{statistics.withdrawalCount?.toLocaleString() || 'N/A'}</span>
+                    </div>
+                    
+                    {statistics.totalBet && statistics.casinoBetCount && (
+                      <div className="flex justify-between items-center pt-1 border-t border-white/20">
+                        <div className="flex items-center">
+                          <BarChart2 className="h-4 w-4 mr-2 opacity-70" />
+                          <span className="text-sm opacity-80">Avg. Bet Amount</span>
+                        </div>
+                        <span className="font-medium">
+                          {formatCurrency(statistics.totalBet / statistics.casinoBetCount)}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {statistics.netProfit && statistics.depositCount && (
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <RefreshCw className="h-4 w-4 mr-2 opacity-70" />
+                          <span className="text-sm opacity-80">ROI per Deposit</span>
+                        </div>
+                        <span className="font-medium">
+                          {formatCurrency(statistics.netProfit / statistics.depositCount)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+        
+        {/* Transaction Efficiency */}
+        {statistics.casinoBetCount !== undefined && statistics.depositCount !== undefined && (
+          <div className="grid grid-cols-2 gap-2 mt-3 mb-3">
+            <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl p-3 flex items-center shadow-md text-white">
+              <div className="mr-3 bg-white/20 rounded-full p-2">
+                <Zap className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-xs opacity-80">Bets/Deposit</p>
+                <p className="font-bold">
+                  {(statistics.casinoBetCount / Math.max(1, statistics.depositCount)).toFixed(1)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-xl p-3 flex items-center shadow-md text-white">
+              <div className="mr-3 bg-white/20 rounded-full p-2">
+                <Activity className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-xs opacity-80">Win Rate</p>
+                <p className="font-bold">
+                  {statistics.totalWin && statistics.totalBet 
+                    ? `${((statistics.totalWin / statistics.totalBet) * 100).toFixed(1)}%` 
+                    : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Account Information */}
         <div 
           className="bg-[#001849] rounded-xl p-4 shadow-md"
