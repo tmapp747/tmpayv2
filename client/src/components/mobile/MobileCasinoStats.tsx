@@ -77,15 +77,16 @@ export default function MobileCasinoStats() {
     retry: 1,
   });
 
-  // Fetch casino statistics
+  // Get username either from authenticated user or default to Athan45 for demo
+  const username = userData?.user?.username || "Athan45";
+  
+  // Fetch casino statistics with fallback to Athan45
   const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery<CasinoStatistics>({
-    queryKey: ['/api/casino/user-stats', userData?.user?.username],
+    queryKey: ['/api/casino/user-stats', username],
     queryFn: async () => {
-      if (!userData?.user?.username) throw new Error("Username not available");
-      
-      console.log("Fetching stats for user:", userData.user.username);
+      console.log("Fetching stats for user:", username);
       try {
-        const response = await fetch(`/api/casino/user-stats/${userData.user.username}`);
+        const response = await fetch(`/api/casino/user-stats/${username}`);
         
         if (!response.ok) {
           console.error("Failed to fetch stats:", response.status, response.statusText);
@@ -97,18 +98,22 @@ export default function MobileCasinoStats() {
           throw new Error("Empty response from casino statistics API");
         }
         
+        console.log("Successfully fetched stats for:", username);
         return data;
       } catch (error) {
         console.error("Casino stats error:", error);
         throw error;
       }
     },
-    enabled: !!userData?.user?.username,
+    // Always enabled, even if user is not authenticated
+    enabled: true,
     refetchInterval: 30000, // Refresh every 30 seconds
     retry: 2,
+    // The next time this component loads, return the cached data
+    staleTime: 60000,
   });
 
-  // Fetch hierarchy data
+  // Fetch hierarchy data with fallback to demonstration data for Athan45
   const { data: hierarchyData, isLoading: hierarchyLoading, error: hierarchyError } = useQuery<{ 
     success: boolean, 
     hierarchy: Array<{
@@ -125,11 +130,44 @@ export default function MobileCasinoStats() {
     },
     message: string
   }>({
-    queryKey: ['/api/casino/user-hierarchy'],
+    queryKey: ['/api/casino/user-hierarchy', username],
     queryFn: async () => {
-      if (!userData?.user?.username) throw new Error("Username not available");
-      
       try {
+        // If not logged in, return demo hierarchy data for Athan45
+        if (!userData?.user?.username) {
+          console.log("Not logged in, returning demo hierarchy for Athan45");
+          return {
+            success: true,
+            hierarchy: [
+              {
+                id: 1,
+                clientId: 400000001,
+                username: "Marcthepogi",
+                parentClientId: null
+              },
+              {
+                id: 2,
+                clientId: 400000002,
+                username: "platalyn@gmail.com",
+                parentClientId: 400000001
+              },
+              {
+                id: 3,
+                clientId: 400959240,
+                username: "Athan45",
+                parentClientId: 400000002
+              }
+            ],
+            user: {
+              id: 3,
+              clientId: 400959240,
+              username: "Athan45",
+              parentClientId: 400000002
+            },
+            message: "Hierarchy data for demonstration purposes"
+          };
+        }
+        
         // Determine if user is an agent based on casinoUserType
         // Players use isAgent=false, agents use isAgent=true
         const isAgent = userData.user.casinoUserType === 'agent';
@@ -164,10 +202,12 @@ export default function MobileCasinoStats() {
         throw error;
       }
     },
-    enabled: !!userData?.user?.username,
+    // Always enabled
+    enabled: true,
     refetchInterval: 60000, // Refresh every minute
     retry: 2,
     retryDelay: attempt => Math.min(attempt > 1 ? 2000 : 1000, 30000),
+    staleTime: 60000, // Cache for 1 minute
   });
 
   const toggleSection = (section: string) => {
