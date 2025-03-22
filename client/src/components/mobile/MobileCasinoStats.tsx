@@ -381,7 +381,9 @@ export default function MobileCasinoStats() {
         <div className="grid grid-cols-2 gap-2">
           {renderStatCard(
             "Balance", 
-            formatCurrency(statistics.currentBalance), 
+            // Try to get current balance from turnOver.daily first,
+            // then fall back to statistics.currentBalance
+            turnOver?.daily || statistics.currentBalance, 
             <DollarSign className="h-4 w-4 text-white" />,
             "bg-gradient-to-br from-blue-500 to-blue-700 text-white"
           )}
@@ -1196,18 +1198,6 @@ export default function MobileCasinoStats() {
   return (
     <div className="rounded-xl overflow-hidden bg-[#001030] shadow-lg">
       <div className="p-4 space-y-4">
-        {/* Refresh Button */}
-        <div className="flex justify-end">
-          <button 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-          </button>
-        </div>
-      
         {/* Statistics Section with Toggle */}
         <div 
           className="bg-gradient-to-br from-[#001849] to-[#002366] rounded-xl p-4 shadow-md cursor-pointer"
@@ -1218,9 +1208,22 @@ export default function MobileCasinoStats() {
               <CreditCard className="h-5 w-5 text-blue-300" />
               <h3 className="font-medium text-lg">Casino Statistics</h3>
             </div>
-            <ChevronDown 
-              className={`h-5 w-5 transition-transform ${showStatistics ? 'rotate-180' : ''}`}
-            />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent toggle from activating
+                  handleRefresh();
+                }}
+                disabled={isRefreshing}
+                className="bg-blue-600/20 hover:bg-blue-600/40 p-1.5 rounded-full transition-colors disabled:opacity-50"
+                title="Refresh Data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-blue-300' : 'text-blue-300'}`} />
+              </button>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${showStatistics ? 'rotate-180' : ''}`}
+              />
+            </div>
           </div>
           <p className="text-sm opacity-70 mt-1">
             View your performance metrics and financial data
@@ -1251,9 +1254,22 @@ export default function MobileCasinoStats() {
               <Users className="h-5 w-5 text-blue-300" />
               <h3 className="font-medium text-lg">Management Hierarchy</h3>
             </div>
-            <ChevronDown 
-              className={`h-5 w-5 transition-transform ${showHierarchy ? 'rotate-180' : ''}`}
-            />
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent toggle from activating
+                  handleRefresh();
+                }}
+                disabled={isRefreshing}
+                className="bg-blue-600/20 hover:bg-blue-600/40 p-1.5 rounded-full transition-colors disabled:opacity-50"
+                title="Refresh Data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin text-blue-300' : 'text-blue-300'}`} />
+              </button>
+              <ChevronDown 
+                className={`h-5 w-5 transition-transform ${showHierarchy ? 'rotate-180' : ''}`}
+              />
+            </div>
           </div>
           <p className="text-sm opacity-70 mt-1">
             Explore your position in the casino organization
