@@ -247,7 +247,32 @@ async function testNotificationWithTransaction(transaction: any, user: any) {
     } catch (apiError) {
       console.log(`\n⚠️ API call did not complete: ${apiError.message}`);
       console.log('This may be due to network latency or the API endpoint taking too long to respond.');
-      console.log('The notification was likely sent, but we couldn\'t get the confirmation response.');
+      
+      if (apiError instanceof Error) {
+        console.log('\nError details:');
+        console.log(`Message: ${apiError.message}`);
+        console.log(`Stack: ${apiError.stack}`);
+        
+        // If it's a TypeError, it might be related to a property access issue
+        if (apiError instanceof TypeError) {
+          console.log('\nTypeError detected - likely an issue with a property or method call');
+          console.log('Check for undefined values or incorrect property access');
+        }
+        
+        // Try to determine if the error is related to a specific property
+        if (apiError.message.includes('amount')) {
+          console.log('\nThe error appears to be related to the amount field');
+          console.log('Debug amount data:', depositDetails.amount, typeof depositDetails.amount);
+        } else if (apiError.message.includes('timestamp')) {
+          console.log('\nThe error appears to be related to the timestamp field');
+          console.log('Debug timestamp data:', depositDetails.timestamp, typeof depositDetails.timestamp);
+        }
+      }
+      
+      console.log('\nDeposit details structure being sent:');
+      console.log(JSON.stringify(depositDetails, null, 2));
+      
+      console.log('\nThe notification was likely not sent due to the error.');
     }
     
   } catch (error) {
