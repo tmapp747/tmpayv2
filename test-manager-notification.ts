@@ -129,8 +129,9 @@ async function testManagerNotification() {
       });
       
       // Race the API call against the timeout
+      // Use managerOverride parameter to bypass database lookup
       notificationResult = await Promise.race([
-        casino747Api.sendDepositNotification(testUsername, testDepositDetails),
+        casino747Api.sendDepositNotification(testUsername, testDepositDetails, 'Platalyn'),
         timeoutPromise
       ]);
       
