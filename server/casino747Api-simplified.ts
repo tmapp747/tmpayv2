@@ -388,21 +388,52 @@ export class Casino747Api {
   }
   
   /**
-   * Get user details from the 747 API
+   * Get user details from the 747 API using the direct API endpoint
+   * This uses the optimized direct API endpoint: https://tmpay747.azurewebsites.net/api/Bridge/get-user/{username}
+   * which provides comprehensive user statistics including:
+   * - Current balance
+   * - Detailed betting statistics
+   * - Complete turnover information
+   * - Manager hierarchy
+   * 
    * @param username The username to look up
    */
   async getUserDetails(username: string) {
     try {
+      console.log(`📊 [CASINO747] Fetching detailed user data for ${username} from TM Pay API`);
+      
+      // Make direct API call to the optimized endpoint
       const response = await axios.get(`${this.userLookupUrl}/${username}`, {
         headers: {
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': '*/*'
+        },
+        timeout: 10000 // 10-second timeout for better reliability
       });
+      
+      // Log successful response
+      console.log(`✅ [CASINO747] Successfully fetched data for ${username} from TM Pay API`);
+      
+      // Log detailed stats for debugging
+      if (response.data && response.data.turnOver) {
+        console.log(`📈 [STATS] ${username} - Balance: ${response.data.turnOver.currentBalance}, Bets: ${response.data.turnOver.totalBetAmount}, Deposits: ${response.data.turnOver.depositAmount}`);
+      }
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching user details:', error);
-      throw new Error('Failed to fetch user details from 747 Casino API');
+      // Enhanced error logging
+      console.error(`❌ [CASINO747] Error fetching user details for ${username}:`, error);
+      
+      // Detailed error output based on error type
+      if (axios.isAxiosError(error)) {
+        console.error(`API Error: ${error.message}`);
+        if (error.response) {
+          console.error(`Response status: ${error.response.status}`);
+          console.error(`Response data:`, error.response.data);
+        }
+      }
+      
+      throw new Error(`Failed to fetch user details from TM Pay API: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
