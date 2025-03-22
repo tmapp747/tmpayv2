@@ -634,8 +634,10 @@ export default function MobileCasinoStats() {
       const userIndex = hierarchyData.hierarchy.findIndex(n => 
         n.clientId === currentUser?.clientId);
       
-      // Get user's role based on position
-      const userRole = userIndex >= 0 ? getUserRole(userIndex) : 'Player';
+      // Get user's role based on casinoUserType instead of position
+      const userRole = userData?.user?.casinoUserType ? 
+        userData.user.casinoUserType.charAt(0).toUpperCase() + userData.user.casinoUserType.slice(1) : 
+        (userIndex >= 0 ? getUserRole(userIndex) : 'Player');
       
       // Find top manager (3rd in hierarchy) - vital for API calls
       const topManager = hierarchyData.hierarchy.length > 2 ? 
