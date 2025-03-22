@@ -4670,6 +4670,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Add a lightweight ping endpoint for client connectivity checks
+  app.get('/api/ping', (req, res) => {
+    res.status(200).json({ 
+      timestamp: new Date().toISOString(),
+      status: 'OK'
+    });
+  });
 
   const httpServer = createServer(app);
   return httpServer;

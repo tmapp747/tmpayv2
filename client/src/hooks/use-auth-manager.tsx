@@ -7,6 +7,7 @@ import {
 import { getQueryFn, queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/api-client"; 
 import { useToast } from "@/hooks/use-toast";
+import sessionManager, { SessionStatus } from "@/lib/session-manager";
 
 // Types for user data
 interface User {
@@ -43,6 +44,7 @@ type AuthContextType = {
   logoutMutation: UseMutationResult<{ success: boolean, message: string }, Error, void>;
   registerMutation: UseMutationResult<{ user: User, message: string }, Error, RegisterData>;
   logout: () => Promise<boolean>;
+  sessionStatus: SessionStatus;
 };
 
 // Login form data type
@@ -83,6 +85,9 @@ const refreshSession = async (): Promise<string> => {
     if (res.status === 401) {
       console.log("Session refresh 401 - user not authenticated");
       
+      // Record session as expired in session manager
+      sessionManager.setSessionStatus('expired');
+      
       // Don't update state if we're on the auth page already
       if (window.location.pathname !== '/auth') {
         // Clear user data from cache
@@ -110,6 +115,8 @@ const refreshSession = async (): Promise<string> => {
     }
     
     console.log("Session refreshed successfully");
+    sessionManager.setSessionStatus('active');
+    
     // Update the query cache with returned user data
     if (data.user) {
       queryClient.setQueryData(["/api/user/info"], { user: data.user });
@@ -138,11 +145,9 @@ const refreshSession = async (): Promise<string> => {
 function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   
-  // Check if session is already known to be expired from localStorage
-  const sessionState = localStorage.getItem('sessionState');
-  const [sessionStatus, setSessionStatus] = useState<'active' | 'expired' | 'unknown'>(
-    sessionState === 'expired' ? 'expired' : 
-    sessionState === 'active' ? 'active' : 'unknown'
+  // Get session status from session manager
+  const [sessionStatus, setSessionStatus] = useState<SessionStatus>(
+    sessionManager.sessionStatus
   );
 
   // Fetch user data from server on initial load
@@ -174,7 +179,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('online', handleOnline);
   }, [refetch, sessionStatus]);
   
-  // Listen for session expired events from the API client
+  // Listen for session expired events
   useEffect(() => {
     const handleSessionExpired = (event: CustomEvent) => {
       console.log('🔒 Session expired event received');
@@ -191,6 +196,23 @@ function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener('session-expired' as any, handleSessionExpired as any);
     return () => window.removeEventListener('session-expired' as any, handleSessionExpired as any);
   }, [toast]);
+  
+  // Keep sessionStatus in sync with the session manager
+  useEffect(() => {
+    // Function to sync session status from manager
+    const syncSessionStatus = () => {
+      const newStatus = sessionManager.sessionStatus;
+      if (newStatus !== sessionStatus) {
+        setSessionStatus(newStatus);
+      }
+    };
+    
+    // Set up timer to periodically check session status
+    const interval = setInterval(syncSessionStatus, 5000);
+    
+    // Clean up interval
+    return () => clearInterval(interval);
+  }, [sessionStatus]);
 
   const user = userData?.user || null;
 
@@ -219,6 +241,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Login response received successfully");
       const responseData = await res.json();
       console.log("Login successful, user data received");
+      
+      // Update session manager status
+      sessionManager.setSessionStatus('active');
       
       return responseData;
     },
@@ -272,6 +297,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Registration response received successfully");
       const responseData = await res.json();
       console.log("Registration successful, user data received");
+      
+      // Update session manager status
+      sessionManager.setSessionStatus('active');
       
       return responseData;
     },
@@ -341,6 +369,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       console.log("Logout successful, clearing application state");
       queryClient.setQueryData(["/api/user/info"], { user: null });
 
+      // Update session manager status
+      sessionManager.setSessionStatus('expired');
+
       // Clear query cache for user-specific data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
       queryClient.removeQueries({ queryKey: ["/api/transactions"] });
@@ -367,6 +398,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
       // Force logout on frontend even if API call fails
       console.log("Forcing client-side logout due to API error");
       queryClient.setQueryData(["/api/user/info"], { user: null });
+      
+      // Update session manager status
+      sessionManager.setSessionStatus('expired');
       
       // Clear query cache for user-specific data
       queryClient.removeQueries({ queryKey: ["/api/user"] });
@@ -399,6 +433,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
         logoutMutation,
         registerMutation,
         logout,
+        sessionStatus,
       }}
     >
       {children}
